@@ -1,0 +1,140 @@
+﻿<Window x:Class="SmartMove.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About SmartMove"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        MinWidth="450">
+
+    <Window.Resources>
+        <ResourceDictionary Source="CommonResources.xaml"/>
+    </Window.Resources>
+
+    <!-- Remove the default windows border and header-->
+    <WindowChrome.WindowChrome>
+        <WindowChrome ResizeBorderThickness="0"
+                      CaptionHeight="0"
+                      CornerRadius="0"
+                      GlassFrameThickness="0">
+        </WindowChrome>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="AboutWindowGrid" Background="#171F2C" Focusable="False">
+        <Border x:Name="AboutWindowBorder" BorderThickness="5,0,5,5" BorderBrush="#171F2C" Focusable="False">
+            <Grid x:Name="MainPanel" Background="Transparent" Focusable="False">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="40"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="50"/>
+                </Grid.RowDefinitions>
+                <Grid x:Name="HeaderPanel" Grid.Row="0" Background="Transparent" Focusable="False"
+                      MouseDown="HeaderPanel_OnMouseDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="20,0,0,0" VerticalAlignment="Center" Background="Transparent" Focusable="False">
+                        <Image Source="{StaticResource ConversionLogo}" Width="24" Height="24"/>
+                        <TextBlock Text="SmartMove" Margin="10,0,0,0" Foreground="#E8F1FF"
+                                   FontSize="16" FontFamily="Segoe UI" FontWeight="SemiBold"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button x:Name="CloseButton" Grid.Column="1" Margin="0,3,0,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Width="38" Height="20" Focusable="False" FocusVisualStyle="{x:Null}"
+                            Click="CloseButton_OnClick">
+                        <Button.Template>
+                            <ControlTemplate TargetType="{x:Type ButtonBase}">
+                                <Border x:Name="ButtonBorder" Background="#FFBE6060">
+                                    <Rectangle Width="16" Height="16" OpacityMask="{StaticResource CloseIconBrush}" Fill="White"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="ButtonBorder" Property="Background" Value="#FFCD4646"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter TargetName="ButtonBorder" Property="Background" Value="#FF432323"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+                <Grid x:Name="ContentPanel" Grid.Row="1" Background="White" Focusable="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="ABOUT" Margin="20,15,0,0" Foreground="#3474C5"
+                               FontSize="16" FontFamily="Segoe UI" FontWeight="Normal"
+                               HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Row="1" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=AssemblyProduct}"
+                               Style="{StaticResource NormalTextBloclStyle}" Margin="20,10,0,0"/>
+                    <TextBlock Grid.Row="2" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=AssemblyVersion}"
+                               Style="{StaticResource NormalTextBloclStyle}" Margin="20,5,0,0"/>
+                    <TextBlock Grid.Row="3" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=AssemblyCopyright}"
+                               Style="{StaticResource NormalTextBloclStyle}" Margin="20,5,0,0"/>
+                    <TextBlock Grid.Row="4" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=AssemblyCompany}"
+                               Style="{StaticResource NormalTextBloclStyle}" Margin="20,5,0,15"/>
+                    <Border x:Name="DashedLineBorder" Grid.Row="5" Margin="20,0,20,0">
+                        <Line X1="0" X2="{Binding ElementName=DashedLineBorder, Path=ActualWidth, Mode=OneWay}"
+                                          VerticalAlignment="Center" SnapsToDevicePixels="True"
+                                          Stroke="#B5B5B5" StrokeThickness="1" StrokeDashArray="1,3" StrokeDashCap="Round"/>
+                    </Border>
+                    <TextBlock Grid.Row="6" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=AssemblyDescription}"
+                               Style="{StaticResource NormalTextBloclStyle}" Margin="20,15,0,0" Height="40" TextWrapping="Wrap"/>
+                    <StackPanel Grid.Row="7" Margin="20,5,0,15" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                        <TextBlock x:Name="SKTextDisplay" Style="{StaticResource NormalTextBloclStyle}"/>
+                        <TextBlock x:Name="SKLinkDisplay" Style="{StaticResource HyperLinkStyle}"
+                                   MouseUp="Link_OnClick"/>
+                    </StackPanel>
+                </Grid>
+                <Grid x:Name="CustomLogoPanel" Grid.Row="2" Background="White" Focusable="False" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Border x:Name="DashedLineBorder2" Grid.Row="0" Margin="20,0,20,0">
+                        <Line X1="0" X2="{Binding ElementName=DashedLineBorder2, Path=ActualWidth, Mode=OneWay}"
+                                          VerticalAlignment="Center" SnapsToDevicePixels="True"
+                                          Stroke="#B5B5B5" StrokeThickness="1" StrokeDashArray="1,3" StrokeDashCap="Round"/>
+                    </Border>
+                    <Grid Grid.Row="1" Margin="20,15,20,15" Background="Transparent" Focusable="False">
+                        <WebBrowser x:Name="CustomLogoDisplayer"
+                                    MaxWidth="{Binding ElementName=DashedLineBorder2, Path=ActualWidth, Mode=OneWay}"/>
+                    </Grid>
+                </Grid>
+                <Grid x:Name="BottomPanel" Grid.Row="3" Background="White" Focusable="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Border x:Name="LineBorder" Grid.Row="0">
+                        <Line X1="0" X2="{Binding ElementName=LineBorder, Path=ActualWidth, Mode=OneWay}"
+                              VerticalAlignment="Center" SnapsToDevicePixels="True"
+                              Stroke="#B5B5B5" StrokeThickness="2" StrokeDashCap="Round"/>
+                    </Border>
+                    <Grid Grid.Row="1" Margin="20,0,0,0" Background="Transparent" Focusable="False">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Source="{StaticResource CpLogo}" Width="118" Height="21" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <Button x:Name="Ok" Grid.Column="1" Style="{StaticResource OkButtonControlStyle}" Margin="10" HorizontalAlignment="Right" TabIndex="0"
+                                Click="CloseButton_OnClick"/>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

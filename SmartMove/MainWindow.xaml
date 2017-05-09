@@ -1,0 +1,335 @@
+﻿<Window x:Class="SmartMove.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+        xmlns:local="clr-namespace:SmartMove"
+        Title="SmartMove"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        MinWidth="550" MaxWidth="550">
+
+    <Window.Resources>
+        <ResourceDictionary Source="CommonResources.xaml"/>
+    </Window.Resources>
+
+    <!-- Remove the default windows border and header-->
+    <WindowChrome.WindowChrome>
+        <WindowChrome ResizeBorderThickness="0"
+                      CaptionHeight="0"
+                      CornerRadius="0"
+                      GlassFrameThickness="0">
+        </WindowChrome>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="MainWindowGrid" Background="#171F2C" Focusable="False">
+        <Border x:Name="MainWindowBorder" BorderThickness="5,0,5,5" BorderBrush="#171F2C" Focusable="False">
+            <Grid x:Name="MainPanel" Background="Transparent" Focusable="False">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="70"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid x:Name="HeaderPanel" Grid.Row="0" Background="Transparent" Focusable="False"
+                      MouseDown="HeaderPanel_OnMouseDown">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="24"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel x:Name="ControlButtonsPanel" Grid.Row="0" Orientation="Horizontal" Margin="0,2,0,0" HorizontalAlignment="Right" VerticalAlignment="Center" Background="Transparent" Focusable="False">
+                        <Button x:Name="MinimizeButton" Width="28" Height="20" Focusable="False" FocusVisualStyle="{x:Null}"
+                                Click="MinimizeButton_OnClick">
+                            <Button.Template>
+                                <ControlTemplate TargetType="{x:Type ButtonBase}">
+                                    <Border x:Name="ButtonBorder" Background="Transparent">
+                                        <Rectangle Width="16" Height="16" OpacityMask="{StaticResource MinimizeIconBrush}" Fill="White"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="ButtonBorder" Property="Background" Value="#FF4D76B5"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="ButtonBorder" Property="Background" Value="#FF314159"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button x:Name="CloseButton" Width="38" Height="20" Margin="1,0,0,0" Focusable="False" FocusVisualStyle="{x:Null}"
+                                Click="CloseButton_OnClick">
+                            <Button.Template>
+                                <ControlTemplate TargetType="{x:Type ButtonBase}">
+                                    <Border x:Name="ButtonBorder" Background="#FFBE6060">
+                                        <Rectangle Width="16" Height="16" OpacityMask="{StaticResource CloseIconBrush}" Fill="White"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="ButtonBorder" Property="Background" Value="#FFCD4646"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="ButtonBorder" Property="Background" Value="#FF432323"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                    <Grid x:Name="TitleBarButtonsPanel" Grid.Row="1" Background="Transparent" Focusable="False">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="20,0,0,0" VerticalAlignment="Top" Background="Transparent" Focusable="False">
+                            <Image Source="{StaticResource ConversionLogo}" Width="33" Height="32"/>
+                            <TextBlock Text="SmartMove" Margin="10,0,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                       Foreground="#E8F1FF" FontSize="20" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,10,0" VerticalAlignment="Center" Background="Transparent" Focusable="False">
+                            <Button x:Name="HelpButton" Focusable="False" FocusVisualStyle="{x:Null}"
+                                    ToolTip="About SmartMove"
+                                    Click="HelpButton_OnClick">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="{x:Type ButtonBase}">
+                                        <Border x:Name="ButtonBorder" Padding="3" CornerRadius="2" Background="Transparent">
+                                            <Grid Background="Transparent">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Rectangle Width="16" Height="16" OpacityMask="{StaticResource HelpIconBrush}" Fill="#E8F1FF"/>
+                                                <TextBlock Grid.Column="1" Text="Help" Margin="5,0,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                                           Foreground="#E8F1FF" FontSize="12"/>
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ButtonBorder" Property="Background" Value="#FF4D76B5"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="ButtonBorder" Property="Background" Value="#FF314159"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+                <Grid x:Name="ContentPanel" Grid.Row="1" Background="White" Focusable="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid x:Name="InputPanel" Grid.Row="0" Background="Transparent" Focusable="False">
+                        <Grid Margin="20,15,20,20" Background="Transparent" Focusable="False">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="Cisco Configuration file:" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <Grid Grid.Row="1" Margin="0,6,0,0" Background="Transparent" Focusable="False">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="ConfigFilePath" Grid.Column="0" Style="{StaticResource TextBoxControlStyle}">
+                                    <i:Interaction.Behaviors>
+                                        <local:TripleClickSelectsAllTextBehavior/>
+                                    </i:Interaction.Behaviors>
+                                </TextBox>
+                                <Button x:Name="BrowseConfigFile" Grid.Column="1" Style="{StaticResource BrowseButtonControlStyle}" Margin="10,0,0,0"
+                                        Click="BrowseConfigFile_OnClick"/>
+                            </Grid>
+                            <TextBlock Grid.Row="2" Text="Target folder:" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <Grid Grid.Row="3" Margin="0,6,0,0" Background="Transparent" Focusable="False">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TargetFolderPath" Grid.Column="0" Style="{StaticResource TextBoxControlStyle}">
+                                    <i:Interaction.Behaviors>
+                                        <local:TripleClickSelectsAllTextBehavior/>
+                                    </i:Interaction.Behaviors>
+                                </TextBox>
+                                <Button x:Name="BrowseTargetFolder" Grid.Column="1" Style="{StaticResource BrowseButtonControlStyle}" Margin="10,0,0,0"
+                                        Click="BrowseTargetFolder_OnClick"/>
+                            </Grid>
+                            <TextBlock Grid.Row="4" Text="Import to a domain (optional):" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <TextBox x:Name="DomainName" Grid.Row="5" Margin="0,6,0,0" Style="{StaticResource TextBoxWithWatermarkControlStyle}"
+                                     Tag="domain name"
+                                     Width="300" HorizontalAlignment="Left">
+                                <i:Interaction.Behaviors>
+                                    <local:TripleClickSelectsAllTextBehavior/>
+                                </i:Interaction.Behaviors>
+                            </TextBox>
+                            <CheckBox x:Name="ConvertNAT" Grid.Row="6" Content="Convert NAT configuration"
+                                      IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertNATConfiguration, Mode=TwoWay}"
+                                      Margin="0,15,0,0" Background="Transparent" Focusable="False"/>
+                            <Grid Grid.Row="7" Margin="0,15,0,0" Background="Transparent" Focusable="False">
+                                <Button x:Name="Go" Style="{StaticResource GoButtonControlStyle}" HorizontalAlignment="Right"
+                                        Click="Go_OnClick"/>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                    <Grid x:Name="OutputPanel" Grid.Row="1" Background="Transparent" Focusable="False" Visibility="Collapsed">
+                        <Grid x:Name="ProgressPanel" Margin="20,10,20,20" VerticalAlignment="Top" Background="Transparent" Focusable="False">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock x:Name="ProgressText" Grid.Row="0" Text="Progress" Margin="5" Style="{StaticResource NormalTextBloclStyle}"
+                                       FontSize="16" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Row="1" Text="Please wait a few moments" Margin="5" Style="{StaticResource NormalTextBloclStyle}"
+                                       FontSize="12" HorizontalAlignment="Center"/>
+                            <ProgressBar x:Name="ProgressIndicator" Grid.Row="2" Margin="1,1,1,20"
+                                         Orientation="Horizontal" IsIndeterminate="False" Minimum="0" Maximum="100"
+                                         Width="300" Height="5">
+                                <ProgressBar.Template>
+                                    <ControlTemplate TargetType="{x:Type ProgressBar}">
+                                        <Grid>
+                                            <Border x:Name="PART_Track" BorderThickness="1" Background="#E0E4E8" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"/>
+                                            <Border x:Name="PART_Indicator" BorderThickness="1" Background="#4B9C09" HorizontalAlignment="Left" Opacity="1" Height="{TemplateBinding Height}"/>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </ProgressBar.Template>
+                            </ProgressBar>
+                        </Grid>
+                        <Grid x:Name="ResultsPanel" Margin="20,0,20,20" VerticalAlignment="Top" Background="Transparent" Focusable="False">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid x:Name="ResultsTitle" Grid.Row="0" Background="Transparent" Focusable="False">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Conversion Results" Style="{StaticResource NormalTextBloclStyle}"
+                                           Foreground="#3474C5" FontSize="16"/>
+                                <Border x:Name="LineBorder" Grid.Column="1" Margin="10,5,0,0">
+                                    <Line X1="0" X2="{Binding ElementName=LineBorder, Path=ActualWidth, Mode=OneWay}"
+                                          VerticalAlignment="Center" SnapsToDevicePixels="True"
+                                          Stroke="#B5B5B5" StrokeThickness="1" StrokeDashArray="1,3" StrokeDashCap="Round"/>
+                                </Border>
+                            </Grid>
+                            <Grid x:Name="OrigConfigFilePanel" Grid.Row="1" Background="Transparent" Focusable="False">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Configuration File" Margin="10,6,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                           Foreground="#2E3F58" FontWeight="SemiBold"/>
+                                <StackPanel Grid.Row="1" Margin="20,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                    <TextBlock x:Name="OriginalFileLink" Text="Original file" Style="{StaticResource HyperLinkStyle}"
+                                               MouseUp="Link_OnClick"/>
+                                    <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConfigurationFileLinesCount}"
+                                               Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                               Foreground="#A7A9AC" FontSize="12"/>
+                                    <StackPanel x:Name="ConversionIssuesPanel" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                        <Rectangle Margin="10,0,0,0" Width="16" Height="16" OpacityMask="{StaticResource AlertIconBrush}" Fill="#2D5B91"/>
+                                        <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConversionIssuesCount}"
+                                                   Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}" FontSize="12"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                            <Grid x:Name="ConvertedPolicyPreviewPanel" Grid.Row="2" Background="Transparent" Focusable="False">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Converted Policy Preview" Margin="10,6,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                           Foreground="#2E3F58" FontWeight="SemiBold"/>
+                                <Grid Grid.Row="1" Margin="20,0,0,0" Background="Transparent" Focusable="False">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <StackPanel Grid.Row="0" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                        <TextBlock x:Name="ConvertedPolicyLink" Text="Converted Policy" Style="{StaticResource HyperLinkStyle}"
+                                                   MouseUp="Link_OnClick"/>
+                                        <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertedPolicyRulesCount}"
+                                                   Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                                   Foreground="#A7A9AC" FontSize="12"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                        <TextBlock x:Name="ConvertedOptimizedPolicyLink" Text="Converted optimized Policy" Style="{StaticResource HyperLinkStyle}"
+                                                   MouseUp="Link_OnClick"/>
+                                        <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertedOptimizedPolicyRulesCount}"
+                                                   Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                                   Foreground="#A7A9AC" FontSize="12"/>
+                                    </StackPanel>
+                                    <StackPanel x:Name="ConvertedNatPolicyPanel" Grid.Row="2" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                        <TextBlock x:Name="ConvertedNatPolicy" Text="Converted NAT Policy" Style="{StaticResource HyperLinkStyle}"
+                                                   MouseUp="Link_OnClick"/>
+                                        <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertedNATPolicyRulesCount}"
+                                                   Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                                   Foreground="#A7A9AC" FontSize="12"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                            <Grid x:Name="BashScriptsPanel" Grid.Row="3" Background="Transparent" Focusable="False">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Bash Scripts (to be executed on management server)" Margin="10,6,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                           Foreground="#2E3F58" FontWeight="SemiBold"/>
+                                <Grid Grid.Row="1" Margin="20,0,0,0" Background="Transparent" Focusable="False">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock x:Name="ObjectsScript" Grid.Row="0" Text="bash script for creating objects" Style="{StaticResource HyperLinkStyle}" Margin="0,6,0,0"
+                                               MouseUp="Link_OnClick"/>
+                                    <TextBlock x:Name="RulebaseScript" Grid.Row="1" Text="bash script for creating Policy package" Style="{StaticResource HyperLinkStyle}" Margin="0,6,0,0"
+                                               MouseUp="Link_OnClick"/>
+                                    <TextBlock x:Name="RulebaseOptimizedScript" Grid.Row="2" Text="bash script for creating optimized Policy package" Style="{StaticResource HyperLinkStyle}" Margin="0,6,0,0"
+                                               MouseUp="Link_OnClick"/>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Grid>
+                <Grid x:Name="StatusPanel" Grid.Row="2" Background="#E0E4E8" Focusable="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Margin="20,10,20,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                        <ContentControl Template="{StaticResource BulletTemplate}">
+                            <StackPanel Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                <TextBlock x:Name="SKTextDisplay" Style="{StaticResource NormalTextBloclStyle}"/>
+                                <TextBlock x:Name="SKLinkDisplay" Style="{StaticResource HyperLinkStyle}"
+                                           MouseUp="Link_OnClick"/>
+                            </StackPanel>
+                        </ContentControl>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Margin="20,5,20,10" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                        <ContentControl Template="{StaticResource BulletTemplate}">
+                            <StackPanel Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                <TextBlock x:Name="PSTextDisplay" Style="{StaticResource NormalTextBloclStyle}"/>
+                                <TextBlock x:Name="PSLinkDisplay" Style="{StaticResource HyperLinkStyle}"
+                                           MouseUp="Link_OnClick"/>
+                            </StackPanel>
+                        </ContentControl>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

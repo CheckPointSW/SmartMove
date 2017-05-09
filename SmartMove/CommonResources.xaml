@@ -1,0 +1,249 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Image resources -->
+    <BitmapImage x:Key="ConversionLogo" UriSource="/Resources/ConversionLogo.png"/>
+    <BitmapImage x:Key="CpLogo" UriSource="/Resources/CPLogo.png"/>
+    <BitmapImage x:Key="ErrorIcon" UriSource="/Resources/big_error.png"/>
+    <BitmapImage x:Key="WarningIcon" UriSource="/Resources/big_warning.png"/>
+    <BitmapImage x:Key="InfoIcon" UriSource="/Resources/big_info.png"/>
+
+    <!-- Icon resources -->
+    <DrawingBrush x:Key="MinimizeIconBrush" Viewbox="0,0,16,16" ViewboxUnits="Absolute">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.ClipGeometry>
+                    <RectangleGeometry Rect="0,0,16,16"/>
+                </DrawingGroup.ClipGeometry>
+                <DrawingGroup>
+                    <DrawingGroup.Transform>
+                        <MatrixTransform Matrix="1,0,0,1,0,10"/>
+                    </DrawingGroup.Transform>
+                    <GeometryDrawing Brush="White" Geometry="F1M1.999,1.969C1.999,1.969 14,1.969 14,1.969 14,1.969 14,4 14,4 14,4 1.999,4 1.999,4 1.999,4 1.999,1.969 1.999,1.969z"/>
+                </DrawingGroup>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
+    <DrawingBrush x:Key="CloseIconBrush" Viewbox="0,0,16,16" ViewboxUnits="Absolute">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.ClipGeometry>
+                    <RectangleGeometry Rect="0,0,16,16"/>
+                </DrawingGroup.ClipGeometry>
+                <DrawingGroup>
+                    <DrawingGroup.Transform>
+                        <MatrixTransform Matrix="1,0,0,1,2,2"/>
+                    </DrawingGroup.Transform>
+                    <GeometryDrawing Brush="White" Geometry="F1M2.486,1.028C2.486,1.028,3.679,2.221,5.171,3.713L6.011,4.552 6.85,3.713C8.342,2.221 9.535,1.028 9.535,1.028 9.535,1.028 10.971,2.465 10.971,2.465 10.971,2.465 9.778,3.658 8.286,5.15L7.447,5.989 8.287,6.828C9.779,8.32 10.972,9.513 10.972,9.513 10.972,9.513 9.535,10.949 9.535,10.949 9.535,10.949 8.342,9.756 6.85,8.264L6.011,7.425 5.171,8.265C3.679,9.757 2.486,10.95 2.486,10.95 2.486,10.95 1.05,9.514 1.05,9.514 1.05,9.514 2.243,8.321 3.735,6.829L4.575,5.989 3.735,5.149C2.243,3.657 1.05,2.464 1.05,2.464 1.05,2.464 2.486,1.028 2.486,1.028z"/>
+                </DrawingGroup>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
+    <DrawingBrush x:Key="HelpIconBrush" Viewbox="0,0,16,16" ViewboxUnits="Absolute">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.ClipGeometry>
+                    <RectangleGeometry Rect="0,0,16,16"/>
+                </DrawingGroup.ClipGeometry>
+                <DrawingGroup.Transform>
+                    <MatrixTransform Matrix="1,0,0,1,1.012,1.286"/>
+                </DrawingGroup.Transform>
+                <GeometryDrawing Brush="#FFE8F1FF" Geometry="F1M9.805,4.075C9.69,3.746 9.507,3.454 9.26,3.2 9.012,2.945 8.694,2.742 8.305,2.592 7.916,2.441 7.448,2.366 6.902,2.366 6.66,2.366 6.43,2.385 6.208,2.422 5.985,2.459 5.784,2.504 5.603,2.557 5.423,2.61 5.266,2.668 5.138,2.731 5.008,2.793 4.92,2.848 4.874,2.894 4.827,2.94 4.798,3.001 4.784,3.075 4.77,3.149 4.763,3.267 4.763,3.429 4.763,3.586 4.768,3.716 4.78,3.818 4.792,3.92 4.806,3.998 4.825,4.054 4.844,4.11 4.867,4.148 4.895,4.168 4.923,4.189 4.952,4.2 4.985,4.2 5.031,4.2 5.097,4.177 5.182,4.13 5.268,4.084 5.376,4.033 5.506,3.977 5.636,3.922 5.791,3.871 5.971,3.825 6.152,3.778 6.36,3.755 6.597,3.755 6.856,3.755 7.082,3.791 7.274,3.863 7.466,3.935 7.626,4.038 7.753,4.172 7.88,4.306 7.974,4.466 8.037,4.651 8.1,4.837 8.13,5.04 8.13,5.262 8.13,5.462 8.105,5.649 8.052,5.825 7.997,6.001 7.913,6.154 7.798,6.284 7.681,6.413 7.534,6.517 7.357,6.596 7.179,6.675 6.967,6.714 6.721,6.714L6.624,6.714C6.522,6.714 6.433,6.724 6.36,6.745 6.285,6.766 6.224,6.804 6.176,6.86 6.128,6.916 6.094,6.99 6.076,7.082 6.056,7.175 6.05,7.295 6.055,7.443L6.117,9.083C6.121,9.134 6.138,9.175 6.166,9.208 6.194,9.241 6.238,9.266 6.298,9.284 6.358,9.303 6.44,9.315 6.544,9.323 6.649,9.329 6.777,9.333 6.93,9.333 7.171,9.333 7.355,9.312 7.482,9.27 7.609,9.229 7.675,9.166 7.68,9.083L7.736,7.728C8.069,7.691 8.372,7.605 8.649,7.471 8.923,7.337 9.16,7.159 9.357,6.937 9.554,6.714 9.706,6.45 9.816,6.145 9.924,5.839 9.979,5.496 9.979,5.117 9.979,4.751 9.92,4.404 9.805,4.075 M6.003,11.548C6.033,11.678 6.086,11.783 6.161,11.862 6.239,11.94 6.34,11.996 6.465,12.032 6.59,12.066 6.749,12.083 6.944,12.083 7.129,12.083 7.284,12.066 7.412,12.032 7.539,11.996 7.641,11.94 7.718,11.862 7.795,11.783 7.847,11.678 7.878,11.548 7.908,11.419 7.923,11.259 7.923,11.07 7.923,10.875 7.908,10.711 7.878,10.579 7.847,10.448 7.795,10.341 7.718,10.26 7.641,10.179 7.539,10.121 7.412,10.086 7.284,10.052 7.129,10.034 6.944,10.034 6.749,10.034 6.59,10.052 6.465,10.086 6.34,10.121 6.239,10.179 6.161,10.26 6.086,10.341 6.033,10.448 6.003,10.579 5.972,10.711 5.958,10.875 5.958,11.07 5.958,11.259 5.972,11.419 6.003,11.548 M6.993,14.016C3.131,14.016 0,10.879 0,7.008 0,3.137 3.131,0 6.993,0 10.856,0 13.988,3.137 13.988,7.008 13.988,10.879 10.856,14.016 6.993,14.016"/>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
+    <DrawingBrush x:Key="AlertIconBrush" Viewbox="0,0,16,16" ViewboxUnits="Absolute">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <DrawingGroup.ClipGeometry>
+                    <RectangleGeometry Rect="0,0,16,16"/>
+                </DrawingGroup.ClipGeometry>
+                <DrawingGroup>
+                    <DrawingGroup.Transform>
+                        <MatrixTransform Matrix="1,0,0,1,-1,-1"/>
+                    </DrawingGroup.Transform>
+                    <GeometryDrawing Brush="#FF2D5B91" Geometry="F1M8.992,10.825C8.331,10.825 7.795,11.354 7.795,12.008 7.795,12.662 8.331,13.192 8.992,13.192 9.653,13.192 10.189,12.662 10.189,12.008 10.189,11.354 9.653,10.825 8.992,10.825z M9.005,4.827C7.826,4.827 7.559,5.727 7.559,6.131 7.559,6.131 8.057,9.412 8.057,9.412 8.057,9.817 8.481,10.145 9.005,10.145 9.528,10.145 9.952,9.817 9.952,9.412 9.952,9.412 10.45,6.131 10.45,6.131 10.45,5.727 10.069,4.827 9.005,4.827z M9.018,1.922C12.898,1.922 16.044,5.067 16.044,8.948 16.044,12.828 12.898,15.974 9.018,15.974 5.138,15.974 1.992,12.828 1.992,8.948 1.992,5.067 5.138,1.922 9.018,1.922z"/>
+                </DrawingGroup>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
+    <!-- Control Templates & Styles -->
+    <!-- TextBox -->
+    <ControlTemplate x:Key="TextBoxControlTemplate" TargetType="TextBox">
+        <Border ClipToBounds="True"
+                Background="Transparent"
+                BorderThickness="1"
+                BorderBrush="{TemplateBinding Background}">
+            <Grid Margin="3,0,0,0">
+                <ScrollViewer x:Name="PART_ContentHost"
+                              HorizontalAlignment="Left" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </ControlTemplate>
+
+    <ControlTemplate x:Key="TextBoxWithWatermarkControlTemplate" TargetType="TextBox">
+        <Border ClipToBounds="True"
+                Background="Transparent"
+                BorderThickness="1"
+                BorderBrush="{TemplateBinding Background}">
+            <Grid Margin="3,0,0,0">
+                <ScrollViewer x:Name="PART_ContentHost"
+                              HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <TextBlock x:Name="watermarkLabel" Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Tag, Mode=OneTime}"
+                           FontFamily="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=FontFamily}"
+                           FontSize="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=FontSize}"
+                           FontWeight="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=FontWeight}"
+                           FontStyle="Italic" Foreground="#A7A9AC" Width="Auto"
+                           Margin="3,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                           Visibility="Hidden"/>
+            </Grid>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="Text" Value="{x:Null}">
+                <Setter TargetName="watermarkLabel" Property="Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="Text" Value="">
+                <Setter TargetName="watermarkLabel" Property="Visibility" Value="Visible"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <Style x:Key="TextBoxControlStyle" TargetType="TextBox">
+        <Setter Property="Template" Value="{StaticResource TextBoxControlTemplate}"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Width" Value="Auto"/>
+        <Setter Property="Background" Value="#C9C9C9"/>
+        <Setter Property="Foreground" Value="#333333"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#4FB4F1"/>
+            </Trigger>
+            <Trigger Property="IsFocused" Value="True">
+                <Setter Property="Background" Value="#4FB4F1"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="#A7A9AC"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="TextBoxWithWatermarkControlStyle" TargetType="TextBox" BasedOn="{StaticResource TextBoxControlStyle}">
+        <Setter Property="Template" Value="{StaticResource TextBoxWithWatermarkControlTemplate}"/>
+    </Style>
+
+    <!-- Button -->
+    <ControlTemplate x:Key="CaptionButtonControlTemplate" TargetType="ButtonBase">
+        <Border x:Name="ButtonBorder"
+                ClipToBounds="True"
+                Background="{TemplateBinding Background}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                BorderBrush="{TemplateBinding BorderBrush}">
+            <Grid Background="Transparent"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <TextBlock Text="{TemplateBinding Content}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{TemplateBinding Foreground}"
+                           FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}"/>
+            </Grid>
+        </Border>
+    </ControlTemplate>
+
+    <Style x:Key="BrowseButtonControlStyle" TargetType="ButtonBase">
+        <Setter Property="Template" Value="{StaticResource CaptionButtonControlTemplate}"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Background" Value="#E0E4E8"/>
+        <Setter Property="Foreground" Value="#333333"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderBrush" Value="#4FB4F1"/>
+        <Setter Property="Content" Value="..."/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#CDD0D4"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="#B4B7BA"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="#EFF1F3"/>
+                <Setter Property="Foreground" Value="#A7A9AC"/>
+            </Trigger>
+            <Trigger Property="IsFocused" Value="True">
+                <Setter Property="BorderThickness" Value="1"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="GoButtonControlStyle" TargetType="ButtonBase" BasedOn="{StaticResource BrowseButtonControlStyle}">
+        <Setter Property="Width" Value="100"/>
+        <Setter Property="Background" Value="#4B9C09"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Content" Value="GO"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#458F08"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="#3a7807"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="OkButtonControlStyle" TargetType="ButtonBase" BasedOn="{StaticResource BrowseButtonControlStyle}">
+        <Setter Property="Width" Value="100"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Content" Value="OK"/>
+    </Style>
+
+    <!-- TextBlock -->
+    <Style  x:Key="HyperLinkStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="Foreground" Value="#3594ff"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="TextBlock.TextDecorations" Value="{x:Null}"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="true">
+                <Setter Property="TextBlock.TextDecorations" Value="Underline"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="NormalTextBloclStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="Foreground" Value="#333333"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- BulletDecorator -->
+    <ControlTemplate x:Key="BulletTemplate" TargetType="{x:Type ContentControl}">
+        <BulletDecorator>
+            <BulletDecorator.Bullet>
+                <Rectangle Height="5" Width="5" Fill="#333333"/>
+            </BulletDecorator.Bullet>
+            <ContentPresenter Margin="5,0,0,0"/>
+        </BulletDecorator>
+    </ControlTemplate>
+
+</ResourceDictionary>

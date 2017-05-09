@@ -1,0 +1,112 @@
+﻿<Window x:Class="SmartMove.MessageWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SmartMove"
+        Title="SmartMove Message"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        MinWidth="500">
+
+    <Window.Resources>
+        <ResourceDictionary Source="CommonResources.xaml"/>
+    </Window.Resources>
+
+    <!-- Remove the default windows border and header-->
+    <WindowChrome.WindowChrome>
+        <WindowChrome ResizeBorderThickness="0"
+                      CaptionHeight="0"
+                      CornerRadius="0"
+                      GlassFrameThickness="0">
+        </WindowChrome>
+    </WindowChrome.WindowChrome>
+
+    <Grid  x:Name="MessageWindowGrid" Background="#171F2C" Focusable="False">
+        <Border x:Name="MessageWindowBorder" BorderThickness="5,0,5,5" BorderBrush="#171F2C" Focusable="False">
+            <Grid x:Name="MainPanel" Background="Transparent" Focusable="False">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="40"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="50"/>
+                </Grid.RowDefinitions>
+                <Grid x:Name="HeaderPanel" Grid.Row="0" Background="Transparent" Focusable="False"
+                      MouseDown="HeaderPanel_OnMouseDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="20,0,0,0" VerticalAlignment="Center" Background="Transparent" Focusable="False">
+                        <Image Source="{StaticResource ConversionLogo}" Width="24" Height="24"/>
+                        <TextBlock Text="SmartMove" Margin="10,0,0,0" Foreground="#E8F1FF"
+                                   FontSize="16" FontFamily="Segoe UI" FontWeight="SemiBold"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button x:Name="CloseButton" Grid.Column="1" Margin="0,3,0,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Width="38" Height="20" Focusable="False" FocusVisualStyle="{x:Null}"
+                            Click="CloseButton_OnClick">
+                        <Button.Template>
+                            <ControlTemplate TargetType="{x:Type ButtonBase}">
+                                <Border x:Name="ButtonBorder" Background="#FFBE6060">
+                                    <Rectangle Width="16" Height="16" OpacityMask="{StaticResource CloseIconBrush}" Fill="White"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="ButtonBorder" Property="Background" Value="#FFCD4646"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter TargetName="ButtonBorder" Property="Background" Value="#FF432323"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+                <Grid x:Name="ContentPanel" Grid.Row="1" Background="White" Focusable="False">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Image Grid.Column="0" Width="48" Height="48" Margin="20" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Source" Value="{StaticResource ErrorIcon}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageType}" Value="{x:Static local:MessageTypes.Warning}">
+                                        <Setter Property="Source" Value="{StaticResource WarningIcon}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageType}" Value="{x:Static local:MessageTypes.Info}">
+                                        <Setter Property="Source" Value="{StaticResource InfoIcon}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
+                    <TextBlock Grid.Column="1" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Message}"
+                               Style="{StaticResource NormalTextBloclStyle}" Margin="0,20,20,20"/>
+                </Grid>
+                <Grid x:Name="BottomPanel" Grid.Row="2" Background="White" Focusable="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Border x:Name="LineBorder" Grid.Row="0">
+                        <Line X1="0" X2="{Binding ElementName=LineBorder, Path=ActualWidth, Mode=OneWay}"
+                              VerticalAlignment="Center" SnapsToDevicePixels="True"
+                              Stroke="#B5B5B5" StrokeThickness="2" StrokeDashCap="Round"/>
+                    </Border>
+                    <Grid Grid.Row="1" Margin="20,0,0,0" Background="Transparent" Focusable="False">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Style="{StaticResource OkButtonControlStyle}" Margin="10" HorizontalAlignment="Right" TabIndex="0"
+                                Click="CloseButton_OnClick"/>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
