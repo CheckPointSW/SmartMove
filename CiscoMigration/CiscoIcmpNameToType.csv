@@ -1,0 +1,14 @@
+Name,Type
+echo-reply,0
+unreachable,3
+source-quench,4
+redirect,5
+echo,8
+time-exceeded,11
+parameter-problem,12
+timestamp-request,13
+timestamp-reply,14
+information-request,15
+information-reply,16
+mask-request,17
+mask-reply,18
