@@ -1,0 +1,13 @@
+"dest-unreach","3"
+"echo-reply","0"
+"echo-request","8"
+"info-reply","16"
+"info-req","15"
+"mask-reply","18"
+"mask-request","17"
+"param-prblm","12"
+"redirect","5"
+"source-quench","4"
+"time-exceeded",11
+"timestamp","13"
+"timestamp-reply","14"
