@@ -23,7 +23,7 @@ namespace CheckPointObjects
     /// <summary>
     /// Generates Management API command line scripts for bash environment.
     /// </summary>
-    static public class CLIScriptBuilder
+    public static class CLIScriptBuilder
     {
         public static string GenerateScriptHeader(string toolVersion, bool isObjectsScript)
         {
@@ -39,7 +39,7 @@ namespace CheckPointObjects
               .Append(Environment.NewLine)
               .Append(scriptType)
               .Append(Environment.NewLine)
-              .Append("# Note: You should run the script in \"expert mode\" as a user with root permissions.")
+              .Append("# Note: You should run the script in \"expert mode\" as an user with root permissions.")
               .Append(Environment.NewLine);
 
             return sb.ToString();

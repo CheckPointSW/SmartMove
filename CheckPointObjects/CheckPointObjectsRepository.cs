@@ -54,7 +54,7 @@ namespace CheckPointObjects
         /// </summary>
         public void Initialize()
         {
-            string[] names = { "any", "icmp-proto" };   // general objects
+            string[] names = { CheckPointObject.Any, "icmp-proto" };   // general objects
             foreach (string name in names)
             {
                 var cpPredifinedObject = new CheckPoint_PredifinedObject { Name = name };
@@ -192,7 +192,7 @@ namespace CheckPointObjects
 
         public bool IsKnownService(string serviceName)
         {
-            return (serviceName == "any" || serviceName == "icmp-proto" || _knownServices.ContainsValue(serviceName));
+            return (serviceName == CheckPointObject.Any || serviceName == "icmp-proto" || _knownServices.ContainsValue(serviceName));
         }
 
         #endregion

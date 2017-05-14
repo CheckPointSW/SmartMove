@@ -41,6 +41,8 @@ namespace CheckPointObjects
         /// </summary>
         protected const string CommentsValidityRegex = @"[^A-Za-z0-9 @#*$(){}\[\]_.\-=:,/]";
 
+        public const string Any = "any";
+
         public string Name { get; set; }
 
         public string SafeName()
@@ -485,9 +487,9 @@ namespace CheckPointObjects
                 return true;   // sub-policy's automatic cleanup rule
             }
 
-            if ((Source.Count == 1 && Source[0].Name == "any") &&
-                (Destination.Count == 1 && Destination[0].Name == "any") &&
-                (Service.Count == 1 && Service[0].Name == "any") &&
+            if ((Source.Count == 1 && Source[0].Name == Any) &&
+                (Destination.Count == 1 && Destination[0].Name == Any) &&
+                (Service.Count == 1 && Service[0].Name == Any) &&
                 (Action == ActionType.Drop))
             {
                 return true;   // user defined cleanup rule

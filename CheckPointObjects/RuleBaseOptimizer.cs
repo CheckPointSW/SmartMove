@@ -33,9 +33,9 @@ namespace CheckPointObjects
     ///       5.2. both the source and service columns match
     ///       5.3. both the destination and service columns match
     /// </summary>
-    static public class RuleBaseOptimizer
+    public static class RuleBaseOptimizer
     {
-        static public CheckPoint_Layer Optimize(CheckPoint_Layer originalLayer, string newName)
+        public static CheckPoint_Layer Optimize(CheckPoint_Layer originalLayer, string newName)
         {
             CheckPoint_Layer curLayer = originalLayer;
             CheckPoint_Layer newLayer;
@@ -61,7 +61,7 @@ namespace CheckPointObjects
             return newLayer;
         }
 
-        static private void AddRule(CheckPoint_Layer layer, CheckPoint_Rule newRule)
+        private static void AddRule(CheckPoint_Layer layer, CheckPoint_Rule newRule)
         {
             bool match = false;
 
@@ -88,7 +88,7 @@ namespace CheckPointObjects
             }
         }
 
-        static private CheckPoint_Rule MergeRules(CheckPoint_Rule rule1, CheckPoint_Rule rule2)
+        private static CheckPoint_Rule MergeRules(CheckPoint_Rule rule1, CheckPoint_Rule rule2)
         {
             var mergedRule = new CheckPoint_Rule();
 
@@ -144,11 +144,11 @@ namespace CheckPointObjects
             return mergedRule;
         }
 
-        static private void OmitAnyFromList(List<CheckPointObject> list)
+        private static void OmitAnyFromList(List<CheckPointObject> list)
         {
             if (list.Count > 1)
             {
-                foreach (var item in list.Where(item => item.Name == "any"))
+                foreach (var item in list.Where(item => item.Name == CheckPointObject.Any))
                 {
                     list.Remove(item);
                     break;
@@ -156,7 +156,7 @@ namespace CheckPointObjects
             }
         }
 
-        static private int GetFirstRuleWithSameAction(CheckPoint_Layer layer, CheckPoint_Rule.ActionType action)
+        private static int GetFirstRuleWithSameAction(CheckPoint_Layer layer, CheckPoint_Rule.ActionType action)
         {
             int matchedRules = 0;
             int pos = layer.Rules.Count - 1;
@@ -170,7 +170,7 @@ namespace CheckPointObjects
             return (matchedRules == 0) ? -1 : (pos + 1);
         }
 
-        static private bool IsRuleSimilarToRule(CheckPoint_Rule rule1, CheckPoint_Rule rule2)
+        private static bool IsRuleSimilarToRule(CheckPoint_Rule rule1, CheckPoint_Rule rule2)
         {
             if (rule1.Action != rule2.Action)
             {
@@ -200,7 +200,7 @@ namespace CheckPointObjects
             return (sourceMatch && destMatch || destMatch && serviceMatch || sourceMatch && serviceMatch);
         }
 
-        static private bool CompareLists(List<CheckPointObject> items, List<CheckPointObject> searchedItems)
+        private static bool CompareLists(List<CheckPointObject> items, List<CheckPointObject> searchedItems)
         {
             var list1 = (from o in items select o.Name).ToList();
             var list2 = (from o in searchedItems select o.Name).ToList();
