@@ -35,7 +35,7 @@ namespace CiscoMigration
 
     /// <summary>
     /// Represents a basic Cisco command.
-    /// Each derived command auto-parses the appropriate configuration text according to its "name" (via reflection mechanism).
+    /// Each derived command auto-parses the appropriate configuration line text according to its "name" (via reflection mechanism).
     /// Some commands may have child commands (network group commad has child network object commands).
     /// The "Id" property is the configuration line number.
     /// The "ParentId" property is the parent configuration line number.
@@ -44,6 +44,7 @@ namespace CiscoMigration
     public class CiscoCommand : ICiscoCommand
     {
         public const string InterfacePrefix = "Interface_";
+        public const string Any = "any";
 
         private string _text = "";
         private string[] _words;

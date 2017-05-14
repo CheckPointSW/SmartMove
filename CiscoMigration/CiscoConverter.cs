@@ -128,7 +128,7 @@ namespace CiscoMigration
             }
         }
 
-        static private class CheckPointServiceObjectsFactory
+        private static class CheckPointServiceObjectsFactory
         {
             public static ProtocolType ProtocolStringToProtocolType(ref string sProtocol)
             {
@@ -278,7 +278,7 @@ namespace CiscoMigration
                     case ProtocolType.Ip:
                         if (portOperator == TcpUdpPortOperatorType.All)
                         {
-                            name = "any";
+                            name = CheckPointObject.Any;
                         }
                         else
                         {
@@ -2228,10 +2228,10 @@ namespace CiscoMigration
                         var cpRule = new CheckPoint_Rule();
                         cpRule.Enabled = true;
                         cpRule.Layer = ciscoAccessGroup.AccessListName;
-                        cpRule.Source.Add(_cpObjects.GetObject("any"));
+                        cpRule.Source.Add(_cpObjects.GetObject(CheckPointObject.Any));
                         cpRule.Destination.Add(_cpObjects.GetObject(CiscoHostnameCommand.HostName));
                         cpRule.DestinationNegated = true;
-                        cpRule.Service.Add(_cpObjects.GetObject("any"));
+                        cpRule.Service.Add(_cpObjects.GetObject(CheckPointObject.Any));
                         cpRule.Action = CheckPoint_Rule.ActionType.Drop;
                         cpRule.ConversionComments = "Automatic rule for management-only interface";
 
@@ -2356,7 +2356,7 @@ namespace CiscoMigration
             switch (ciscoAcl.Source.Type)
             {
                 case Cisco_AccessList.SourceDest.SourceDestType.Any:
-                    cpRule.Source.Add(_cpObjects.GetObject("any"));
+                    cpRule.Source.Add(_cpObjects.GetObject(CheckPointObject.Any));
                     break;
 
                 case Cisco_AccessList.SourceDest.SourceDestType.Any6:
@@ -2402,7 +2402,7 @@ namespace CiscoMigration
             switch (ciscoAcl.Destination.Type)
             {
                 case Cisco_AccessList.SourceDest.SourceDestType.Any:
-                    cpRule.Destination.Add(_cpObjects.GetObject("any"));
+                    cpRule.Destination.Add(_cpObjects.GetObject(CheckPointObject.Any));
                     break;
 
                 case Cisco_AccessList.SourceDest.SourceDestType.Any6:
@@ -3091,9 +3091,9 @@ namespace CiscoMigration
             {
                 var inspectedRule = Acl_To_CPRule(ciscoInspectedAcl);
 
-                if ((inspectedRule.Source.Count == 1 && inspectedRule.Source[0].Name == "any") &&
-                    (inspectedRule.Destination.Count == 1 && inspectedRule.Destination[0].Name == "any") &&
-                    (inspectedRule.Service.Count == 1 && inspectedRule.Service[0].Name == "any"))
+                if ((inspectedRule.Source.Count == 1 && inspectedRule.Source[0].Name == CheckPointObject.Any) &&
+                    (inspectedRule.Destination.Count == 1 && inspectedRule.Destination[0].Name == CheckPointObject.Any) &&
+                    (inspectedRule.Service.Count == 1 && inspectedRule.Service[0].Name == CheckPointObject.Any))
                 {
                     continue;   // cisco any/any/any??? skip!!!
                 }
@@ -3132,7 +3132,7 @@ namespace CiscoMigration
                             }
 
                             // Do not match if rule's destination is 'any'
-                            if (cpRule.Destination.Count == 1 && cpRule.Destination[0].Name == "any")
+                            if (cpRule.Destination.Count == 1 && cpRule.Destination[0].Name == CheckPointObject.Any)
                             {
                                 continue;
                             }
@@ -3176,9 +3176,9 @@ namespace CiscoMigration
         {
             // Do not match on any/any/any rule!!!
             // There may be such rules due to usage of generic IP protocol as a service in ACL...
-            if ((fwRule.Source.Count == 1 && fwRule.Source[0].Name == "any") &&
-                (fwRule.Destination.Count == 1 && fwRule.Destination[0].Name == "any") &&
-                (fwRule.Service.Count == 1 && fwRule.Service[0].Name == "any"))
+            if ((fwRule.Source.Count == 1 && fwRule.Source[0].Name == CheckPointObject.Any) &&
+                (fwRule.Destination.Count == 1 && fwRule.Destination[0].Name == CheckPointObject.Any) &&
+                (fwRule.Service.Count == 1 && fwRule.Service[0].Name == CheckPointObject.Any))
             {
                 return false;
             }
@@ -3190,8 +3190,8 @@ namespace CiscoMigration
 
             if (inspectedRuleSourceRanges.Overlaps(fwRuleSourceRanges) && inspectedRuleDestRanges.Overlaps(fwRuleDestRanges))
             {
-                if ((fwRule.Service.Count == 1 && fwRule.Service[0].Name == "any") ||
-                    (inspectedRule.Service.Count == 1 && inspectedRule.Service[0].Name == "any"))
+                if ((fwRule.Service.Count == 1 && fwRule.Service[0].Name == CheckPointObject.Any) ||
+                    (inspectedRule.Service.Count == 1 && inspectedRule.Service[0].Name == CheckPointObject.Any))
                 {
                     return true;
                 }
@@ -3352,16 +3352,16 @@ namespace CiscoMigration
                             cpNatRule.TranslatedSource = _cpObjects.GetObject(translatedSourceName);
                         }
 
-                        if (ciscoNat.MappedInterface == "any")
+                        if (ciscoNat.MappedInterface == CiscoCommand.Any)
                         {
-                            cpNatRule.Destination = _cpObjects.GetObject("any");
+                            cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
                         }
                         else
                         {
                             var ciscoInterface = (Cisco_Interface)_ciscoParser.GetCommandByCiscoId(CiscoCommand.InterfacePrefix + ciscoNat.MappedInterface);
                             if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                             {
-                                cpNatRule.Destination = _cpObjects.GetObject("any");
+                                cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
                                 cpNatRule.IsNonNatSectionRule = true;
                             }
                             else
@@ -3477,7 +3477,7 @@ namespace CiscoMigration
                 ApplyConversionIncidentOnCheckPointObject(cpNatRule, ciscoNat);
 
                 // Source
-                if (ciscoNat.SourceId != "any")
+                if (ciscoNat.SourceId != CiscoCommand.Any)
                 {
                     cpNatRule.Source = GetCheckPointObjectOrCreateDummy(ciscoNat.SourceId,
                                                                         CheckPointDummyObjectType.NetworkGroup,
@@ -3485,7 +3485,7 @@ namespace CiscoMigration
                                                                         "Error creating a NAT rule, missing information for Cisco source",
                                                                         "Source details: " + ciscoNat.SourceId + ".");
 
-                    if (ciscoNat.RealInterface != "any")
+                    if (ciscoNat.RealInterface != CiscoCommand.Any)
                     {
                         var ciscoInterface = (Cisco_Interface)_ciscoParser.GetCommandByCiscoId(CiscoCommand.InterfacePrefix + ciscoNat.RealInterface);
                         if (ciscoInterface == null)
@@ -3506,16 +3506,16 @@ namespace CiscoMigration
                 }
                 else   // Identity NAT ???
                 {
-                    if (ciscoNat.RealInterface == "any")
+                    if (ciscoNat.RealInterface == CiscoCommand.Any)
                     {
-                        cpNatRule.Source = _cpObjects.GetObject("any");
+                        cpNatRule.Source = _cpObjects.GetObject(CheckPointObject.Any);
                     }
                     else
                     {
                         var ciscoInterface = (Cisco_Interface)_ciscoParser.GetCommandByCiscoId(CiscoCommand.InterfacePrefix + ciscoNat.RealInterface);
                         if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                         {
-                            cpNatRule.Source = _cpObjects.GetObject("any");
+                            cpNatRule.Source = _cpObjects.GetObject(CheckPointObject.Any);
                             cpNatRule.IsNonNatSectionRule = true;
                         }
                         else
@@ -3532,16 +3532,16 @@ namespace CiscoMigration
                 // Destination
                 if (string.IsNullOrEmpty(ciscoNat.DestinationId))   // Manual NAT
                 {
-                    if (ciscoNat.MappedInterface == "any")
+                    if (ciscoNat.MappedInterface == CiscoCommand.Any)
                     {
-                        cpNatRule.Destination = _cpObjects.GetObject("any");
+                        cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
                     }
                     else
                     {
                         var ciscoInterface = (Cisco_Interface)_ciscoParser.GetCommandByCiscoId(CiscoCommand.InterfacePrefix + ciscoNat.MappedInterface);
                         if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                         {
-                            cpNatRule.Destination = _cpObjects.GetObject("any");
+                            cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
                             cpNatRule.IsNonNatSectionRule = true;
                         }
                         else
@@ -3556,7 +3556,7 @@ namespace CiscoMigration
                 }
                 else   // Twice NAT
                 {
-                    if (ciscoNat.DestinationId != "any")
+                    if (ciscoNat.DestinationId != CiscoCommand.Any)
                     {
                         cpNatRule.Destination = GetCheckPointObjectOrCreateDummy(ciscoNat.DestinationId,
                                                                                  CheckPointDummyObjectType.NetworkGroup,
@@ -3564,7 +3564,7 @@ namespace CiscoMigration
                                                                                  "Error creating a NAT rule, missing information for Cisco destination",
                                                                                  "Destination details: " + ciscoNat.DestinationId + ".");
 
-                        if (ciscoNat.MappedInterface != "any")
+                        if (ciscoNat.MappedInterface != CiscoCommand.Any)
                         {
                             var ciscoInterface = (Cisco_Interface)_ciscoParser.GetCommandByCiscoId(CiscoCommand.InterfacePrefix + ciscoNat.MappedInterface);
                             if (ciscoInterface == null)
@@ -3585,16 +3585,16 @@ namespace CiscoMigration
                     }
                     else
                     {
-                        if (ciscoNat.MappedInterface == "any")
+                        if (ciscoNat.MappedInterface == CiscoCommand.Any)
                         {
-                            cpNatRule.Destination = _cpObjects.GetObject("any");
+                            cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
                         }
                         else
                         {
                             var ciscoInterface = (Cisco_Interface)_ciscoParser.GetCommandByCiscoId(CiscoCommand.InterfacePrefix + ciscoNat.MappedInterface);
                             if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                             {
-                                cpNatRule.Destination = _cpObjects.GetObject("any");
+                                cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
                                 cpNatRule.IsNonNatSectionRule = true;
                             }
                             else
@@ -3628,7 +3628,7 @@ namespace CiscoMigration
                                                                                   "Error creating a NAT rule, missing topology information for Cisco interface",
                                                                                   "Interface details: " + ciscoNat.MappedInterface + ".");
                 }
-                else if (ciscoNat.SourceId != ciscoNat.TranslatedSourceId && ciscoNat.TranslatedSourceId != "any")
+                else if (ciscoNat.SourceId != ciscoNat.TranslatedSourceId && ciscoNat.TranslatedSourceId != CiscoCommand.Any)
                 {
                     cpNatRule.TranslatedSource = GetCheckPointObjectOrCreateDummy(ciscoNat.TranslatedSourceId,
                                                                                   CheckPointDummyObjectType.Host,
@@ -3638,7 +3638,7 @@ namespace CiscoMigration
                 }
 
                 // Translated destination for Twice NAT only
-                if (ciscoNat.DestinationId != ciscoNat.TranslatedDestinationId && ciscoNat.TranslatedDestinationId != "any")
+                if (ciscoNat.DestinationId != ciscoNat.TranslatedDestinationId && ciscoNat.TranslatedDestinationId != CiscoCommand.Any)
                 {
                     cpNatRule.TranslatedDestination = GetCheckPointObjectOrCreateDummy(ciscoNat.TranslatedDestinationId,
                                                                                        CheckPointDummyObjectType.Host,
@@ -3922,8 +3922,8 @@ namespace CiscoMigration
                     continue;
                 }
 
-                string natRuleInterface1 = (cpNatRule.Interface1 != "any") ? (CiscoCommand.InterfacePrefix + cpNatRule.Interface1) : cpNatRule.Interface1;
-                string natRuleInterface2 = (cpNatRule.Interface2 != "any") ? (CiscoCommand.InterfacePrefix + cpNatRule.Interface2) : cpNatRule.Interface2;
+                string natRuleInterface1 = (cpNatRule.Interface1 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + cpNatRule.Interface1) : cpNatRule.Interface1;
+                string natRuleInterface2 = (cpNatRule.Interface2 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + cpNatRule.Interface2) : cpNatRule.Interface2;
 
                 foreach (CheckPoint_Rule cpParentRule in cpPackage.ParentLayer.Rules)
                 {
@@ -3940,8 +3940,8 @@ namespace CiscoMigration
                     }
 
                     // NAT rule interfaces should match on firewall rule interfaces (zones)
-                    if (natRuleInterface1 != "any" && natRuleInterface1 != parentLayerRuleZone.Name && 
-                        natRuleInterface2 != "any" && natRuleInterface2 != parentLayerRuleZone.Name)
+                    if (natRuleInterface1 != CiscoCommand.Any && natRuleInterface1 != parentLayerRuleZone.Name &&
+                        natRuleInterface2 != CiscoCommand.Any && natRuleInterface2 != parentLayerRuleZone.Name)
                     {
                         continue;
                     }
@@ -3968,7 +3968,7 @@ namespace CiscoMigration
                             if (cpRule.Destination.Count == 1)
                             {
                                 string destinationName = cpRule.Destination[0].Name;
-                                if (destinationName == "any")
+                                if (destinationName == CheckPointObject.Any)
                                 {
                                     continue;
                                 }
@@ -4055,8 +4055,8 @@ namespace CiscoMigration
             serviceMatchedToo = false;
 
             // If NAT rule interface is "any", it should match on EVERY firewall rule interface (zone)
-            string natRuleInterface1 = (natRule.Interface1 != "any") ? (CiscoCommand.InterfacePrefix + natRule.Interface1) : parentLayerRuleZone.Name;
-            string natRuleInterface2 = (natRule.Interface2 != "any") ? (CiscoCommand.InterfacePrefix + natRule.Interface2) : parentLayerRuleZone.Name;
+            string natRuleInterface1 = (natRule.Interface1 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + natRule.Interface1) : parentLayerRuleZone.Name;
+            string natRuleInterface2 = (natRule.Interface2 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + natRule.Interface2) : parentLayerRuleZone.Name;
 
             // Static NAT rule matching (no mirrors!!!)
             if (natRule.Method == CheckPoint_NAT_Rule.NatMethod.Static)
@@ -4071,7 +4071,7 @@ namespace CiscoMigration
 
                         if (fwRuleDestRanges.Overlaps(natSourceRanges))
                         {
-                            newFwRuleDest = natRule.TranslatedSource ?? _cpObjects.GetObject("any");
+                            newFwRuleDest = natRule.TranslatedSource ?? _cpObjects.GetObject(CheckPointObject.Any);
                         }
                     }
                 }
@@ -4103,7 +4103,7 @@ namespace CiscoMigration
 
                             if (fwRuleDestRanges.Overlaps(natTranslatedDestRanges) && fwRuleSourceRanges.Overlaps(natTranslatedSourceRanges))
                             {
-                                newFwRuleDest = natRule.Destination ?? _cpObjects.GetObject("any");
+                                newFwRuleDest = natRule.Destination ?? _cpObjects.GetObject(CheckPointObject.Any);
                             }
                         }
                     }
@@ -4125,7 +4125,7 @@ namespace CiscoMigration
 
                             if (fwRuleDestRanges.Overlaps(natTranslatedDestRanges) && fwRuleSourceRanges.Overlaps(natSourceRanges))
                             {
-                                newFwRuleDest = natRule.Destination ?? _cpObjects.GetObject("any");
+                                newFwRuleDest = natRule.Destination ?? _cpObjects.GetObject(CheckPointObject.Any);
                             }
                         }
                     }
@@ -4165,7 +4165,7 @@ namespace CiscoMigration
                 {
                     // TODO: ???
                 }
-                else if (fwRule.Service.Count == 1 && fwRule.Service[0].Name == "any")
+                else if (fwRule.Service.Count == 1 && fwRule.Service[0].Name == CheckPointObject.Any)
                 {
                     // There is only one service in FW rule and it is "any", no matter what NAT rule service is...
                     serviceMatchedToo = true;
@@ -4186,9 +4186,9 @@ namespace CiscoMigration
 
         private IPRanges GetRanges(CheckPointObject cpObject)
         {
-            if (cpObject == null || cpObject.Name == "any")
+            if (cpObject == null || cpObject.Name == CheckPointObject.Any)
             {
-                return new IPRanges(new IPRange("any"));
+                return new IPRanges(new IPRange(IPRange.Any));
             }
 
             if (cpObject.GetType().ToString().EndsWith("_NetworkGroup"))
@@ -4225,7 +4225,7 @@ namespace CiscoMigration
             var ciscoInterface = (Cisco_Interface)_ciscoParser.GetCommandByCiscoId(cpZone.Name);
             if (ciscoInterface != null && (ciscoInterface.LeadsToInternet || ciscoInterface.SecurityLevel == 0))
             {
-                return new IPRanges(new IPRange("any"));
+                return new IPRanges(new IPRange(IPRange.Any));
             }
 
             string ifcSubnetsName = cpZone.Name + "_subnets";
@@ -5218,11 +5218,11 @@ namespace CiscoMigration
                             file.WriteLine("      <td class='rule_number'>" + HtmlDisabledImageTag + ruleNumber + "</td>");
                         }
                         file.WriteLine("      <td>" + rule.Name + "</td>");
-                        file.WriteLine("      <td>" + RuleItemsList2Html(rule.Source, rule.SourceNegated, "any", ref dummy) + "</td>");
-                        file.WriteLine("      <td>" + RuleItemsList2Html(rule.Destination, rule.DestinationNegated, "any", ref dummy) + "</td>");
-                        file.WriteLine("      <td>" + RuleItemsList2Html(rule.Service, false, "any", ref dummy) + "</td>");
+                        file.WriteLine("      <td>" + RuleItemsList2Html(rule.Source, rule.SourceNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                        file.WriteLine("      <td>" + RuleItemsList2Html(rule.Destination, rule.DestinationNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                        file.WriteLine("      <td>" + RuleItemsList2Html(rule.Service, false, CheckPointObject.Any, ref dummy) + "</td>");
                         file.WriteLine("      <td class='" + actionStyle + "'>" + action + "</td>");
-                        file.WriteLine("      <td>" + RuleItemsList2Html(rule.Time, false, "any", ref dummy) + "</td>");
+                        file.WriteLine("      <td>" + RuleItemsList2Html(rule.Time, false, CheckPointObject.Any, ref dummy) + "</td>");
                         file.WriteLine("      <td>" + rule.Track.ToString() + "</td>");
                         file.WriteLine("      <td>" + rule.Comments + "</td>");
                         file.WriteLine("      <td>" + rule.ConversionComments + "</td>");
@@ -5271,11 +5271,11 @@ namespace CiscoMigration
                                         file.WriteLine(sbCurRuleNumberColumnTag.ToString());
 
                                         file.WriteLine("      <td>" + subRule.Name + "</td>");
-                                        file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Source, subRule.SourceNegated, "any", ref ruleConversionIncidentType) + "</td>");
-                                        file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Destination, subRule.DestinationNegated, "any", ref ruleConversionIncidentType) + "</td>");
-                                        file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Service, false, "any", ref ruleConversionIncidentType) + "</td>");
+                                        file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Source, subRule.SourceNegated, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
+                                        file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Destination, subRule.DestinationNegated, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
+                                        file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Service, false, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
                                         file.WriteLine("      <td class='" + subRule.Action.ToString().ToLower() + "'>" + subRule.Action.ToString() + "</td>");
-                                        file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Time, false, "any", ref ruleConversionIncidentType) + "</td>");
+                                        file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Time, false, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
                                         file.WriteLine("      <td>" + subRule.Track.ToString() + "</td>");
                                         file.WriteLine("      <td class='comments'>" + subRule.Comments + "</td>");
                                         file.WriteLine("      <td class='comments'>" + subRule.ConversionComments + "</td>");
@@ -5369,11 +5369,11 @@ namespace CiscoMigration
                             file.WriteLine(sbCurRuleNumberColumnTag.ToString());
 
                             file.WriteLine("      <td>" + ruleEntry.Value.Name + "</td>");
-                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Source, ruleEntry.Value.SourceNegated, "any", ref dummy) + "</td>");
-                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Destination, ruleEntry.Value.DestinationNegated, "any", ref dummy) + "</td>");
-                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Service, false, "any", ref dummy) + "</td>");
+                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Source, ruleEntry.Value.SourceNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Destination, ruleEntry.Value.DestinationNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Service, false, CheckPointObject.Any, ref dummy) + "</td>");
                             file.WriteLine("      <td class='" + ruleEntry.Value.Action.ToString().ToLower() + "'>" + ruleEntry.Value.Action.ToString() + "</td>");
-                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Time, false, "any", ref dummy) + "</td>");
+                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Time, false, CheckPointObject.Any, ref dummy) + "</td>");
                             file.WriteLine("      <td>" + ruleEntry.Value.Track.ToString() + "</td>");
                             file.WriteLine("      <td class='comments'>" + ruleEntry.Value.Comments + "</td>");
                             file.WriteLine("      <td class='comments'>" + ruleEntry.Value.ConversionComments + "</td>");
@@ -5433,11 +5433,11 @@ namespace CiscoMigration
                             file.WriteLine(sbCurRuleNumberColumnTag.ToString());
 
                             file.WriteLine("      <td>" + ruleEntry.Value.Name + "</td>");
-                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Source, ruleEntry.Value.SourceNegated, "any", ref dummy) + "</td>");
-                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Destination, ruleEntry.Value.DestinationNegated, "any", ref dummy) + "</td>");
-                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Service, false, "any", ref dummy) + "</td>");
+                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Source, ruleEntry.Value.SourceNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Destination, ruleEntry.Value.DestinationNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Service, false, CheckPointObject.Any, ref dummy) + "</td>");
                             file.WriteLine("      <td class='" + ruleEntry.Value.Action.ToString().ToLower() + "'>" + ruleEntry.Value.Action.ToString() + "</td>");
-                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Time, false, "any", ref dummy) + "</td>");
+                            file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Time, false, CheckPointObject.Any, ref dummy) + "</td>");
                             file.WriteLine("      <td>" + ruleEntry.Value.Track.ToString() + "</td>");
                             file.WriteLine("      <td class='comments'>" + ruleEntry.Value.Comments + "</td>");
                             file.WriteLine("      <td class='comments'>" + ruleEntry.Value.ConversionComments + "</td>");
@@ -5500,11 +5500,11 @@ namespace CiscoMigration
                                 file.WriteLine(sbRuleNumberColumnTag.ToString());
 
                                 file.WriteLine("      <td>" + ruleEntry.Name + "</td>");
-                                file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Source, ruleEntry.SourceNegated, "any", ref dummy) + "</td>");
-                                file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Destination, ruleEntry.DestinationNegated, "any", ref dummy) + "</td>");
-                                file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Service, false, "any", ref dummy) + "</td>");
+                                file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Source, ruleEntry.SourceNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                                file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Destination, ruleEntry.DestinationNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                                file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Service, false, CheckPointObject.Any, ref dummy) + "</td>");
                                 file.WriteLine("      <td class='" + ruleEntry.Action.ToString().ToLower() + "'>" + ruleEntry.Action.ToString() + "</td>");
-                                file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Time, false, "any", ref dummy) + "</td>");
+                                file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Time, false, CheckPointObject.Any, ref dummy) + "</td>");
                                 file.WriteLine("      <td>" + ruleEntry.Track.ToString() + "</td>");
                                 file.WriteLine("      <td class='comments'>" + ruleEntry.Comments + "</td>");
                                 file.WriteLine("      <td class='comments'>" + ruleEntry.ConversionComments + "</td>");
@@ -5609,9 +5609,9 @@ namespace CiscoMigration
 
                 foreach (CheckPoint_NAT_Rule rule in _cpNatRules)
                 {
-                    string source = (rule.Source == null) ? "any" : rule.Source.Name;
-                    string dest = (rule.Destination == null) ? "any" : rule.Destination.Name;
-                    string service = (rule.Service == null) ? "any" : rule.Service.Name;
+                    string source = (rule.Source == null) ? CheckPointObject.Any : rule.Source.Name;
+                    string dest = (rule.Destination == null) ? CheckPointObject.Any : rule.Destination.Name;
+                    string service = (rule.Service == null) ? CheckPointObject.Any : rule.Service.Name;
                     string xsource = (rule.TranslatedSource == null) ? "=orig" : rule.TranslatedSource.Name;
                     string xdest = (rule.TranslatedDestination == null) ? "=orig" : rule.TranslatedDestination.Name;
                     string xservice = (rule.TranslatedService == null) ? "=orig" : rule.TranslatedService.Name;
