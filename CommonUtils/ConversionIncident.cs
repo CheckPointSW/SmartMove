@@ -20,6 +20,11 @@ using System.Collections.Generic;
 
 namespace CommonUtils
 {
+    /// <summary>
+    /// Represents a conversion incident.
+    /// An incident may be detected during the parsing process of the configuration file, or 
+    /// during the conversion process itself.
+    /// </summary>
     public class ConversionIncident : IEquatable<ConversionIncident>, IEqualityComparer<ConversionIncident>
     {
         public int LineNumber { get; private set; }

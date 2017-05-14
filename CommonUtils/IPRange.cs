@@ -27,6 +27,12 @@ namespace CommonUtils
     /// </summary>
     public class IPRange
     {
+        #region Constants
+
+        public const string Any = "any";
+        
+        #endregion
+
         #region Private Members
 
         private IPAddress _fromIP;
@@ -78,7 +84,7 @@ namespace CommonUtils
             _minimum = 0;
             _maximum = 0;
 
-            if (any == "any")
+            if (any == Any)
             {
                 _toIP = IPAddress.Parse("255.255.255.255");
                 _maximum = UInt32.MaxValue;
@@ -215,7 +221,7 @@ namespace CommonUtils
 
         public static IPRanges Any()
         {
-            return new IPRanges(new IPRange("any"));
+            return new IPRanges(new IPRange(IPRange.Any));
         }
 
         public static IPRanges operator +(IPRanges r1, IPRanges r2)

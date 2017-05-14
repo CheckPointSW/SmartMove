@@ -21,9 +21,12 @@ using System.Net.Sockets;
 
 namespace CommonUtils
 {
-    static public class NetworkUtils
+    /// <summary>
+    /// Network stuff helper utilities
+    /// </summary>
+    public static class NetworkUtils
     {
-        static public bool IsValidIp(string sIp)
+        public static bool IsValidIp(string sIp)
         {
             IPAddress ip;
             if (IPAddress.TryParse(sIp, out ip) && (ip.AddressFamily == AddressFamily.InterNetwork))
@@ -34,7 +37,7 @@ namespace CommonUtils
             return false;
         }
 
-        static public int GetMaskLength(string sMask)
+        public static int GetMaskLength(string sMask)
         {
             UInt32 mansk = Ip2Number(sMask);
             if (mansk == 0)
@@ -54,7 +57,7 @@ namespace CommonUtils
             return length;
         }
 
-        static public string GetNetwork(string sIp, string sMask)
+        public static string GetNetwork(string sIp, string sMask)
         {
             UInt32 ip = Ip2Number(sIp);
             UInt32 mask = Ip2Number(sMask);
@@ -63,7 +66,7 @@ namespace CommonUtils
             return Number2Ip(network);
         }
 
-        static public UInt32 Ip2Number(IPAddress ip)
+        public static UInt32 Ip2Number(IPAddress ip)
         {
             byte[] octets = ip.GetAddressBytes();
             UInt32 number = 0;
@@ -76,7 +79,7 @@ namespace CommonUtils
             return number;
         }
 
-        static public UInt32 Ip2Number(string sIp)
+        public static UInt32 Ip2Number(string sIp)
         {
             IPAddress ip;
             if (!IPAddress.TryParse(sIp, out ip))
@@ -87,7 +90,7 @@ namespace CommonUtils
             return Ip2Number(ip);
         }
 
-        static public string Number2Ip(UInt32 number)
+        public static string Number2Ip(UInt32 number)
         {
             string oct1 = ((number & 0xff000000) >> 24).ToString();
             string oct2 = ((number & 0x00ff0000) >> 16).ToString();
@@ -97,7 +100,7 @@ namespace CommonUtils
             return oct1 + "." + oct2 + "." + oct3 + "." + oct4;
         }
 
-        static public uint[] GetNetworkRangeInNumbers(string sIp, string sMask)
+        public static uint[] GetNetworkRangeInNumbers(string sIp, string sMask)
         {
             uint ip = Ip2Number(sIp);
             uint mask = Ip2Number(sMask);
@@ -108,17 +111,17 @@ namespace CommonUtils
             return new uint[] { from, to };
         }
 
-        static public uint[] GetNetworkRangeInNumbers(string sIp, int maskLength)
+        public static uint[] GetNetworkRangeInNumbers(string sIp, int maskLength)
         {
             return GetNetworkRangeInNumbers(sIp, MaskLength2Netmask(maskLength));
         }
 
-        static private bool IsBitSet(UInt32 b, int pos)
+        private static bool IsBitSet(UInt32 b, int pos)
         {
             return ((b & (1 << pos)) != 0);
         }
 
-        static private string MaskLength2Netmask(int maskLength)
+        private static string MaskLength2Netmask(int maskLength)
         {
             UInt32 mask = 0;
             for (int i = 0; i < maskLength; i++)
