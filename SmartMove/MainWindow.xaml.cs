@@ -40,7 +40,7 @@ namespace SmartMove
         public const string DefaultSKLinkText = "sk115416";
         public const string DefaultSKLinkAddress = @"https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewsolutiondetails=&solutionid=sk115416";
         private const string DefaultPSText = "For the best results, please contact ";
-        private const string DefaultPSLinkText = "Check Point's Professional Services";
+        private const string DefaultPSLinkText = "Check Point's Professional Services or your local partner";
         private const string DefaultPSLinkAddress = @"https://www.checkpoint.com/support-services/design-deploy-operate-optimize";
         private const string SourceFolder = @"C:\";
         private const string TargetFolder = @"C:\";

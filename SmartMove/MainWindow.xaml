@@ -313,8 +313,8 @@
                     <StackPanel Grid.Row="0" Margin="20,10,20,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
                         <ContentControl Template="{StaticResource BulletTemplate}">
                             <StackPanel Orientation="Horizontal" Background="Transparent" Focusable="False">
-                                <TextBlock x:Name="SKTextDisplay" Style="{StaticResource NormalTextBloclStyle}"/>
-                                <TextBlock x:Name="SKLinkDisplay" Style="{StaticResource HyperLinkStyle}"
+                                <TextBlock x:Name="SKTextDisplay" Style="{StaticResource NormalTextBloclStyle}" FontSize="12"/>
+                                <TextBlock x:Name="SKLinkDisplay" Style="{StaticResource HyperLinkStyle}" FontSize="12"
                                            MouseUp="Link_OnClick"/>
                             </StackPanel>
                         </ContentControl>
@@ -322,8 +322,8 @@
                     <StackPanel Grid.Row="1" Margin="20,5,20,10" Orientation="Horizontal" Background="Transparent" Focusable="False">
                         <ContentControl Template="{StaticResource BulletTemplate}">
                             <StackPanel Orientation="Horizontal" Background="Transparent" Focusable="False">
-                                <TextBlock x:Name="PSTextDisplay" Style="{StaticResource NormalTextBloclStyle}"/>
-                                <TextBlock x:Name="PSLinkDisplay" Style="{StaticResource HyperLinkStyle}"
+                                <TextBlock x:Name="PSTextDisplay" Style="{StaticResource NormalTextBloclStyle}" FontSize="12"/>
+                                <TextBlock x:Name="PSLinkDisplay" Style="{StaticResource HyperLinkStyle}" FontSize="12"
                                            MouseUp="Link_OnClick"/>
                             </StackPanel>
                         </ContentControl>
