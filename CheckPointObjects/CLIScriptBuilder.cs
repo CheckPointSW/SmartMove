@@ -172,6 +172,22 @@ namespace CheckPointObjects
             return sb.ToString();
         }
 
+        public static string GenerateDiagnosticsCommandScript(string command)
+        {
+            if (string.IsNullOrEmpty(command))
+            {
+                return "";
+            }
+
+            var sb = new StringBuilder();
+
+            sb.Append("cmd='mgmt_cli ").Append(command).Append(" -s id.txt /dev/null 2>&1'")
+              .Append(Environment.NewLine)
+              .Append("run_command");
+
+            return sb.ToString();
+        }
+
         public static string GenerateRuleInstructionScript(string instruction)
         {
             var sb = new StringBuilder();
