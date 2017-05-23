@@ -4335,6 +4335,7 @@ namespace CiscoMigration
                 file.WriteLine(CLIScriptBuilder.GenerateScriptHeader(toolVersion, true));
                 file.WriteLine(CLIScriptBuilder.GenerateRunCommandScript("failed_objects.txt"));
                 file.WriteLine(CLIScriptBuilder.GenerateLoginScript(DomainName, "failed_objects.txt"));
+                file.WriteLine(CLIScriptBuilder.GenerateDiagnosticsCommandScript("SmartMove_Create_Objects"));
 
                 int totalObjectsCount = _cpDomains.Count +
                                         _cpHosts.Count +
@@ -4598,12 +4599,14 @@ namespace CiscoMigration
 
                 string filename = _targetFolder + "\\" + package.Name + ".sh";
                 string errorsReportFile = (packageNumber == 1) ? "failed_package.txt" : "failed_package_opt.txt";
+                string diagnosticsTarget = (packageNumber == 1) ? "SmartMove_Create_Policy" : "SmartMove_Create_Optimized_Policy";
 
                 using (var file = new StreamWriter(filename, false))
                 {
                     file.WriteLine(CLIScriptBuilder.GenerateScriptHeader(toolVersion, false));
                     file.WriteLine(CLIScriptBuilder.GenerateRunCommandScript(errorsReportFile));
                     file.WriteLine(CLIScriptBuilder.GenerateLoginScript(DomainName, errorsReportFile));
+                    file.WriteLine(CLIScriptBuilder.GenerateDiagnosticsCommandScript(diagnosticsTarget));
 
                     file.WriteLine(CLIScriptBuilder.GenerateObjectScript(package));
 
