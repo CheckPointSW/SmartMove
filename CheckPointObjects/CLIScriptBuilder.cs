@@ -149,7 +149,7 @@ namespace CheckPointObjects
                 sb.Append(GenerateInstructionScript(scriptInstruction)).Append(Environment.NewLine);
             }
 
-            sb.Append("cmd='mgmt_cli ").Append(cpObject.ToCLIScript()).Append(" ignore-warnings true -s id.txt'")
+            sb.Append("cmd='mgmt_cli ").Append(cpObject.ToCLIScript()).Append(" ignore-warnings true -s id.txt --user-agent mgmt_cli_smartmove'")
               .Append(Environment.NewLine)
               .Append("run_command");
 
@@ -165,7 +165,7 @@ namespace CheckPointObjects
 
             var sb = new StringBuilder();
 
-            sb.Append("cmd='mgmt_cli ").Append(command).Append(" -s id.txt'")
+            sb.Append("cmd='mgmt_cli ").Append(command).Append(" -s id.txt --user-agent mgmt_cli_smartmove'")
               .Append(Environment.NewLine)
               .Append("run_command");
 
@@ -181,9 +181,7 @@ namespace CheckPointObjects
 
             var sb = new StringBuilder();
 
-            sb.Append("cmd='mgmt_cli ").Append(command).Append(" -s id.txt /dev/null 2>&1'")
-              .Append(Environment.NewLine)
-              .Append("run_command");
+            sb.Append("mgmt_cli ").Append(command).Append(" -s id.txt > /dev/null 2>&1");
 
             return sb.ToString();
         }
