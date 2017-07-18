@@ -177,17 +177,17 @@ namespace CheckPointObjects
             return (from objectInfo in _repository where objectInfo.Value.IsPredefined select objectInfo.Value.Object).ToList();
         }
 
-        public string Port2KnownService(string port, out bool found)
+        public string GetKnownServiceName(string id, out bool found)
         {
             found = false;
 
-            if (_knownServices.ContainsKey(port))
+            if (_knownServices.ContainsKey(id))
             {
                 found = true;
-                return _knownServices[port];
+                return _knownServices[id];
             }
 
-            return port;
+            return id;
         }
 
         public bool IsKnownService(string serviceName)
