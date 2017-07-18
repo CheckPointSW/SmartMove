@@ -20,13 +20,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using CommonUtils;
 using Newtonsoft.Json;
+using CommonUtils;
 
 namespace CiscoMigration
 {
     /// <summary>
-    /// Parses the Cisco configuration file and creates corresponding Cisco Command objects repository.
+    /// Parses the Cisco ASA configuration file and creates corresponding Cisco Command objects repository.
     /// </summary>
     public class CiscoParser
     {
