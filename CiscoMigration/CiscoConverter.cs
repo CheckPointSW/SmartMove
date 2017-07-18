@@ -28,7 +28,7 @@ using CheckPointObjects;
 namespace CiscoMigration
 {
     /// <summary>
-    /// Converts Cisco commands repository into Check Point objects repository.
+    /// Converts Cisco ASA commands repository into Check Point objects repository.
     /// Generates conversion reports for objects and policy packages.
     /// Generates Check Point Management API command line scripts for converted objects and policy packages migration.
     /// </summary>
@@ -272,7 +272,7 @@ namespace CiscoMigration
 
                     case ProtocolType.Icmp:
                         name = "ICMP_" + CiscoKnownServices.ConvertIcmpServiceToType(sPort);
-                        name = cpObjects.Port2KnownService(name, out serviceFound);
+                        name = cpObjects.GetKnownServiceName(name, out serviceFound);
                         return serviceFound ? name : "icmp-proto";
 
                     case ProtocolType.Ip:
@@ -289,7 +289,7 @@ namespace CiscoMigration
 
                     case ProtocolType.KnownOtherIpProtocol:
                         name = "OTHER_" + CiscoKnownServices.ConvertServiceToPort(sPort);
-                        name = cpObjects.Port2KnownService(name, out serviceFound);
+                        name = cpObjects.GetKnownServiceName(name, out serviceFound);
                         return serviceFound ? name : sPort;
 
                     case ProtocolType.NA:
@@ -302,7 +302,7 @@ namespace CiscoMigration
                     name = name + "_SourcePort";
                 }
 
-                return cpObjects.Port2KnownService(name, out serviceFound);
+                return cpObjects.GetKnownServiceName(name, out serviceFound);
             }
 
             public static CheckPointObject CreateServiceObj(CheckPointObjectsRepository cpObjects, ProtocolType protocol, TcpUdpPortOperatorType portOperator, string sPort, ServiceDirection where, int ciscoCommandId)
@@ -779,9 +779,9 @@ namespace CiscoMigration
                     ciscoCommand.ConversionIncidentType = ConversionIncidentType.Informative;
                     cpObject.ConversionIncidentType = ConversionIncidentType.Informative;   // report on converted object as well!!!
 
-                    string errorDescription = string.Format("Network object name: {0}. FQDN name: {1}", originalName, cpDomain.Fqdn);
+                    string errorDescription = string.Format("Domain object name: {0}. FQDN name: {1}", originalName, cpDomain.Fqdn);
                     _conversionIncidents.Add(new ConversionIncident(ciscoCommand.Id,
-                                                                    "Cisco Network object name differs from FQDN name. Using FQDN name as converted Domain object name.",
+                                                                    "Cisco Domain object name differs from FQDN name. Using FQDN name as converted Domain object name.",
                                                                     errorDescription,
                                                                     ciscoCommand.ConversionIncidentType));
                 }
@@ -869,7 +869,6 @@ namespace CiscoMigration
                     if (pos != -1)
                     {
                         serviceGroup.Members[pos] = validName;
-                        break;
                     }
                 }
             }
@@ -896,7 +895,6 @@ namespace CiscoMigration
                     if (pos != -1)
                     {
                         networkGroup.Members[pos] = validName;
-                        break;
                     }
                 }
             }
@@ -909,28 +907,23 @@ namespace CiscoMigration
                 {
                     cpObject.Name = cpObject.SafeName();
 
-                    if (!cpObject.GetType().ToString().EndsWith("_NetworkGroup") || !cpObject.GetType().ToString().EndsWith("_ServiceGroup"))
+                    // Search references in service groups
+                    foreach (var serviceGroup in _cpServiceGroups)
                     {
-                        // Search references in service groups
-                        foreach (var serviceGroup in _cpServiceGroups)
+                        int pos = serviceGroup.Members.IndexOf(unsafeName);
+                        if (pos != -1)
                         {
-                            int pos = serviceGroup.Members.IndexOf(unsafeName);
-                            if (pos != -1)
-                            {
-                                serviceGroup.Members[pos] = cpObject.Name;
-                                break;
-                            }
+                            serviceGroup.Members[pos] = cpObject.Name;
                         }
+                    }
 
-                        // Search references in network groups
-                        foreach (var networkGroup in _cpNetworkGroups)
+                    // Search references in network groups
+                    foreach (var networkGroup in _cpNetworkGroups)
+                    {
+                        int pos = networkGroup.Members.IndexOf(unsafeName);
+                        if (pos != -1)
                         {
-                            int pos = networkGroup.Members.IndexOf(unsafeName);
-                            if (pos != -1)
-                            {
-                                networkGroup.Members[pos] = cpObject.Name;
-                                break;
-                            }
+                            networkGroup.Members[pos] = cpObject.Name;
                         }
                     }
                 }
@@ -4911,8 +4904,7 @@ namespace CiscoMigration
             RaiseConversionProgress(20, "Converting obects ...");
             _cpObjects.Initialize();   // must be first!!!
 
-            var predefined = _cpObjects.GetPredefinedObjects();
-            foreach (var cpObject in predefined)
+            foreach (var cpObject in _cpObjects.GetPredefinedObjects())
             {
                 _duplicateNamesLookup.Add(cpObject.Name, new DuplicateNameInfo(true));
             }
@@ -4941,6 +4933,7 @@ namespace CiscoMigration
                 MatchNATRulesIntoFirewallPolicy();
             }
 
+            // This should be done here, after all objects are converted!!!
             EnforceObjectNameValidity();
 
             RaiseConversionProgress(70, "Optimizing Firewall rulebase ...");
