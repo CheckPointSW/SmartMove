@@ -260,7 +260,7 @@ namespace SmartMove
 
             if (!Directory.Exists(TargetFolderPath.Text))
             {
-                ShowMessage("Cannot find target folder.", MessageTypes.Error);
+                ShowMessage("Cannot find target folder for conversion output.", MessageTypes.Error);
                 return;
             }
 
