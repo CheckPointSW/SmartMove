@@ -100,6 +100,16 @@ namespace CommonUtils
             return oct1 + "." + oct2 + "." + oct3 + "." + oct4;
         }
 
+        public static string MaskLength2Netmask(int maskLength)
+        {
+            UInt32 mask = 0;
+            for (int i = 0; i < maskLength; i++)
+            {
+                mask += (UInt32)Math.Pow(2, 31 - i);
+            }
+            return Number2Ip(mask);
+        }
+
         public static uint[] GetNetworkRangeInNumbers(string sIp, string sMask)
         {
             uint ip = Ip2Number(sIp);
@@ -119,16 +129,6 @@ namespace CommonUtils
         private static bool IsBitSet(UInt32 b, int pos)
         {
             return ((b & (1 << pos)) != 0);
-        }
-
-        private static string MaskLength2Netmask(int maskLength)
-        {
-            UInt32 mask = 0;
-            for (int i = 0; i < maskLength; i++)
-            {
-                mask += (UInt32)Math.Pow(2, 31 - i);
-            }
-            return Number2Ip(mask);
         }
     }
 }
