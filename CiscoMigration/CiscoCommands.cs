@@ -311,7 +311,7 @@ namespace CiscoMigration
             }
 
             commandParam = command.GetParam(2);
-            if (NetworkUtils.IsValidIp(commandParam))
+            if (NetworkUtils.IsValidNetmask(commandParam))
             {
                 Netmask = commandParam;
             }
@@ -534,7 +534,16 @@ namespace CiscoMigration
         public override void Parse(CiscoCommand command, CiscoCommand prevCommand, Dictionary<string, CiscoCommand> ciscoIds, Dictionary<string, string> aliases)
         {
             base.Parse(command, prevCommand, ciscoIds, aliases);
+
             HostAddress = command.GetParam(1);
+            if (!NetworkUtils.IsValidIp(HostAddress))
+            {
+                ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
+                ConversionIncidentMessage = "Invalid host IP address (" + HostAddress + "). Using IP 1.1.1.1.";
+                Console.WriteLine(ConversionIncidentMessage);
+
+                HostAddress = "1.1.1.1";
+            }
         }
     }
 
@@ -551,6 +560,16 @@ namespace CiscoMigration
 
             Network = command.GetParam(1);
             Netmask = command.GetParam(2);
+
+            if (!NetworkUtils.IsValidIp(Network) || !NetworkUtils.IsValidNetmask(Netmask))
+            {
+                ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
+                ConversionIncidentMessage = "Invalid IP subnet (" + Network + "/" + Netmask + "). Using IP subnet 1.1.1.0/255.255.255.0.";
+                Console.WriteLine(ConversionIncidentMessage);
+
+                Network = "1.1.1.0";
+                Netmask = "255.255.255.0";
+            }
         }
     }
     
@@ -566,7 +585,24 @@ namespace CiscoMigration
             base.Parse(command, prevCommand, ciscoIds, aliases);
 
             RangeFrom = command.GetParam(1);
+            if (!NetworkUtils.IsValidIp(RangeFrom))
+            {
+                ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
+                ConversionIncidentMessage = "Invalid range starting IP address (" + RangeFrom + "). Using IP 0.0.0.0.";
+                Console.WriteLine(ConversionIncidentMessage);
+
+                RangeFrom = "0.0.0.0";
+            }
+
             RangeTo = command.GetParam(2);
+            if (!NetworkUtils.IsValidIp(RangeTo))
+            {
+                ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
+                ConversionIncidentMessage = "Invalid range ending IP address (" + RangeTo + "). Using IP 255.255.255.255.";
+                Console.WriteLine(ConversionIncidentMessage);
+
+                RangeTo = "255.255.255.255";
+            }
         }
     }
 
@@ -707,6 +743,15 @@ namespace CiscoMigration
                     else
                     {
                         IpAddress = aliases.ContainsKey(ipAddressOrObjectName) ? aliases[ipAddressOrObjectName] : ipAddressOrObjectName;
+                        if (!NetworkUtils.IsValidIp(IpAddress))
+                        {
+                            ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
+                            ConversionIncidentMessage = "Invalid IP address (" + IpAddress + "). Using IP 1.1.1.1.";
+                            Console.WriteLine(ConversionIncidentMessage);
+
+                            IpAddress = "1.1.1.1";
+                        }
+
                         Netmask = "255.255.255.255";
                     }
                     break;
@@ -719,6 +764,16 @@ namespace CiscoMigration
                         IpAddress = aliases[IpAddress];
                     }
                     Netmask = command.GetParam(2);
+
+                    if (!NetworkUtils.IsValidIp(IpAddress) || !NetworkUtils.IsValidNetmask(Netmask))
+                    {
+                        ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
+                        ConversionIncidentMessage = "Invalid IP subnet (" + IpAddress + "/" + Netmask + "). Using IP subnet 1.1.1.0/255.255.255.0.";
+                        Console.WriteLine(ConversionIncidentMessage);
+
+                        IpAddress = "1.1.1.0";
+                        Netmask = "255.255.255.0";
+                    }
                     break;
             }
         }
@@ -1243,7 +1298,17 @@ namespace CiscoMigration
                     case "ip address":
                         IpAddress = ((Cisco_IP)child).IpAddress;
                         Netmask = ((Cisco_IP)child).Netmask;
-                        Topology.Add(new Subnet(NetworkUtils.GetNetwork(IpAddress, Netmask), Netmask));
+
+                        if (NetworkUtils.IsValidIp(IpAddress) && NetworkUtils.IsValidNetmask(Netmask))
+                        {
+                            Topology.Add(new Subnet(NetworkUtils.GetNetwork(IpAddress, Netmask), Netmask));
+                        }
+                        else
+                        {
+                            ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
+                            ConversionIncidentMessage = "Invalid IP subnet (" + IpAddress + "/" + Netmask + ").";
+                            Console.WriteLine(ConversionIncidentMessage);
+                        }
                         break;
                 }
             }
@@ -1251,7 +1316,7 @@ namespace CiscoMigration
 
         public bool HasValidIpAddress()
         {
-            return NetworkUtils.IsValidIp(IpAddress) && NetworkUtils.IsValidIp(Netmask);
+            return NetworkUtils.IsValidIp(IpAddress) && NetworkUtils.IsValidNetmask(Netmask);
         }
     }
 
@@ -1275,10 +1340,10 @@ namespace CiscoMigration
             DestinationNetmask = command.GetParam(3);
             Gateway = command.GetParam(4);
 
+            bool destinationIpResolved = false;
+
             if (ciscoIds.ContainsKey(DestinationIp))
             {
-                bool found = false;
-
                 var refObj = (Cisco_Object)ciscoIds[DestinationIp];
                 if (refObj != null)
                 {
@@ -1286,24 +1351,40 @@ namespace CiscoMigration
                     {
                         case Cisco_Object.ObjectTypes.Host:
                             DestinationIp = refObj.HostAddress;
-                            found = true;
+                            destinationIpResolved = true;
                             break;
 
                         case Cisco_Object.ObjectTypes.Network:
                             DestinationIp = refObj.Network;
-                            found = true;
+                            destinationIpResolved = true;
                             break;
                     }
                 }
+            }
+            else
+            {
+                DestinationIp = aliases.ContainsKey(DestinationIp) ? aliases[DestinationIp] : DestinationIp;
+                destinationIpResolved = true;
+            }
 
-                if (!found)
-                {
-                    DestinationIp = "1.1.1.1";
+            if (!destinationIpResolved)
+            {
+                ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
+                ConversionIncidentMessage = "Cannot resolve route destination IP address (" + command.GetParam(2) + "). Using IP 1.1.1.1.";
+                Console.WriteLine(ConversionIncidentMessage);
 
-                    ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
-                    ConversionIncidentMessage = "Cannot resolve route destination IP address (" + command.GetParam(2) + "). Using IP 1.1.1.1.";
-                    Console.WriteLine(ConversionIncidentMessage);
-                }
+                DestinationIp = "1.1.1.1";
+                DestinationNetmask = "255.255.255.255";
+            }
+
+            if (!NetworkUtils.IsValidIp(DestinationIp))
+            {
+                ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
+                ConversionIncidentMessage = "Invalid IP address (" + DestinationIp + "). Using IP 1.1.1.1.";
+                Console.WriteLine(ConversionIncidentMessage);
+
+                DestinationIp = "1.1.1.1";
+                DestinationNetmask = "255.255.255.255";
             }
 
             if (DestinationIp == "0.0.0.0" && DestinationNetmask == "0.0.0.0")
