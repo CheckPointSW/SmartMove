@@ -111,6 +111,65 @@ namespace CiscoMigration
 
         public void Parse(string filename)
         {
+            ParseCommands(filename);   // this must come first!!!
+            ParseVersion();
+            ParseInterfacesTopology();
+        }
+
+        public void Export(string filename)
+        {
+            File.WriteAllText(filename, JsonConvert.SerializeObject(_ciscoCommands, Formatting.Indented));
+        }
+
+        public List<CiscoCommand> Filter(string commandName = "")
+        {
+            var filter = new List<CiscoCommand>();
+
+            foreach (CiscoCommand command in _ciscoCommands)
+            {
+                if (commandName == "" || command.Name() == commandName)
+                {
+                    filter.Add(command);
+                }
+            }
+
+            return filter;
+        }
+
+        public List<CiscoCommand> Flatten()
+        {
+            var flatten = new List<CiscoCommand>();
+
+            foreach (CiscoCommand command in _ciscoCommands)
+            {
+                foreach (CiscoCommand flat in command.Flatten())
+                {
+                    flatten.Add(flat);
+                }
+            }
+
+            return flatten;
+        }
+
+        public CiscoCommand GetCommandByCiscoId(string ciscoId)
+        {
+            return (from kvp in _ciscoIds where kvp.Key == ciscoId select kvp.Value).FirstOrDefault();
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        private void ParseVersion()
+        {
+            foreach (Cisco_ASA asa in Filter("ASA"))
+            {
+                _version = asa.Version;
+            }
+        }
+
+        private void ParseCommands(string filename)
+        {
             string[] lines = File.ReadAllLines(filename);
             _lineCount = lines.Count();
 
@@ -161,7 +220,7 @@ namespace CiscoMigration
                 command.ParentId = (parents.Count > 0) ? parents.Peek().Id : null;
 
                 prevIndentationLevel = command.IndentationLevel;
-                flatList.Add(findCommand(command));
+                flatList.Add(FindCommand(command));
             }
 
             _ciscoCommands = flatList.BuildTree();
@@ -181,8 +240,11 @@ namespace CiscoMigration
                     _ciscoAliases.Remove(ciscoId.Key);
                 }
             }
+        }
 
-            // Add related routing information to interface topology
+        private void ParseInterfacesTopology()
+        {
+            // Add related static routing information to interface topology
             IEnumerable<CiscoCommand> ciscoInterfaceCommands = Filter("interface");
             IEnumerable<CiscoCommand> ciscoRouteCommands = Filter("route");
 
@@ -211,59 +273,9 @@ namespace CiscoMigration
                     }
                 }
             }
-
-            // Add version
-            foreach (Cisco_ASA asa in Filter("ASA"))
-            {
-                _version = asa.Version;
-            }
         }
 
-        public void Export(string filename)
-        {
-            File.WriteAllText(filename, JsonConvert.SerializeObject(_ciscoCommands, Formatting.Indented));
-        }
-
-        public List<CiscoCommand> Filter(string commandName = "")
-        {
-            var filter = new List<CiscoCommand>();
-
-            foreach (CiscoCommand command in _ciscoCommands)
-            {
-                if (commandName == "" || command.Name() == commandName)
-                {
-                    filter.Add(command);
-                }
-            }
-
-            return filter;
-        }
-
-        public List<CiscoCommand> Flatten()
-        {
-            var flatten = new List<CiscoCommand>();
-
-            foreach (CiscoCommand command in _ciscoCommands)
-            {
-                foreach (CiscoCommand flat in command.Flatten())
-                {
-                    flatten.Add(flat);
-                }
-            }
-
-            return flatten;
-        }
-
-        public CiscoCommand GetCommandByCiscoId(string ciscoId)
-        {
-            return (from kvp in _ciscoIds where kvp.Key == ciscoId select kvp.Value).FirstOrDefault();
-        }
-
-        #endregion
-
-        #region Private Methods
-
-        private CiscoCommand findCommand(CiscoCommand command)
+        private CiscoCommand FindCommand(CiscoCommand command)
         {
             string[] irrelevantCommands =
             {
