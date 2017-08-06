@@ -128,6 +128,25 @@ namespace CheckPointObjects
               .Append("  exit 1")
               .Append(Environment.NewLine)
               .Append("fi")
+              .Append(Environment.NewLine)
+              .Append(Environment.NewLine);
+
+            // Verify that the script is NOT executed on MDS
+            sb.Append("JQ=${CPDIR}/jq/jq")
+              .Append(Environment.NewLine)
+              .Append("mgmt_cli show mdss -s id.txt --format json > domains.json")
+              .Append(Environment.NewLine)
+              .Append("DOMAINS_COUNT=$($JQ -r \".total\" domains.json)")
+              .Append(Environment.NewLine)
+              .Append("if [ $DOMAINS_COUNT -ne 0 ]; then")
+              .Append(Environment.NewLine)
+              .Append("  echo 'This script cannot be executed on MDS. Please specify a domain name in SmartMove tool.'")
+              .Append(Environment.NewLine)
+              .Append("  mgmt_cli logout -s id.txt")
+              .Append(Environment.NewLine)
+              .Append("  exit 1")
+              .Append(Environment.NewLine)
+              .Append("fi")
               .Append(Environment.NewLine);
 
             return sb.ToString();
