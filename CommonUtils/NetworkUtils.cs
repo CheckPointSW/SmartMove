@@ -37,6 +37,17 @@ namespace CommonUtils
             return false;
         }
 
+        public static bool IsValidNetmask(string sNetmask)
+        {
+            IPAddress netmask;
+            if (IPAddress.TryParse(sNetmask, out netmask) && (netmask.AddressFamily == AddressFamily.InterNetwork))
+            {
+                return IPNetwork.ValidNetmask(netmask);
+            }
+
+            return false;
+        }
+
         public static int GetMaskLength(string sMask)
         {
             UInt32 mansk = Ip2Number(sMask);
