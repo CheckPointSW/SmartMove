@@ -434,7 +434,7 @@ namespace CheckPointObjects
                 + WriteParam("enabled", Enabled, true)
                 + WriteParam("source-negate", SourceNegated, false)
                 + WriteParam("destination-negate", DestinationNegated, false)
-                + WriteParam("position", "bottom", "")
+                + WriteParam("position", "top", "")
                 + WriteParam("inline-layer", SubPolicyName, "")
                 + WriteParam("name", Name, "")
                 + WriteParam("custom-fields.field-1", ConversionComments.Substring(0, Math.Min(ConversionComments.Length, 150)), "");
@@ -556,7 +556,7 @@ namespace CheckPointObjects
                 + WriteParam("comments", Comments, "")
                 + WriteParam("method", Method.ToString().ToLower(), "")
                 + WriteParam("enabled", Enabled, true)
-                + WriteParam("position", "bottom", "");
+                + WriteParam("position", "top", "");
         }
 
         public override string ToCLIScriptInstruction()
@@ -584,12 +584,6 @@ namespace CheckPointObjects
         public override string ToCLIScriptInstruction()
         {
             return "create package [" + Name + "]";
-        }
-
-        public string CLIDeleteAutomaticCleanupRule()
-        {
-            return "delete access-rule " + WriteParam("layer", NameOfAccessLayer, "")
-                + WriteParam("rule-number", "1", "");
         }
 
         public int TotalRules()
