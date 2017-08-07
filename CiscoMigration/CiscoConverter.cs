@@ -4610,10 +4610,13 @@ namespace CiscoMigration
                     {
                         file.WriteLine(CLIScriptBuilder.GenerateObjectScript(layer));
 
+                        // !!! Attention !!! -- the rules are created in the reverse order but will be inserted at the TOP (!!!) position,
+                        //                      so they are created in the correct order!
                         file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Add rules to layer {0}", layer.Name)));
                         int rulesCount = 0;
-                        foreach (CheckPoint_Rule rule in layer.Rules)
+                        for (int counter = layer.Rules.Count - 1; counter >= 0; counter--)
                         {
+                            CheckPoint_Rule rule = layer.Rules[counter];
                             file.WriteLine(CLIScriptBuilder.GenerateObjectScript(rule));
 
                             rulesCount++;
@@ -4628,10 +4631,14 @@ namespace CiscoMigration
                     }
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
 
+                    // !!! Attention !!! -- the rules are created in the reverse order but will be inserted at the TOP (!!!) position,
+                    //                      so they are created in the correct order!
                     file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Add rules to parent layer {0}", package.NameOfAccessLayer)));
                     int parentRulesCount = 0;
-                    foreach (CheckPoint_Rule parentRule in package.ParentLayer.Rules)
+                    // SKIP the creation of cleanup rule, it is automatically generated during package creation!!!
+                    for (int counter = package.ParentLayer.Rules.Count - 2; counter >= 0; counter--)
                     {
+                        CheckPoint_Rule parentRule = package.ParentLayer.Rules[counter];
                         file.WriteLine(CLIScriptBuilder.GenerateObjectScript(parentRule));
 
                         parentRulesCount++;
@@ -4640,20 +4647,18 @@ namespace CiscoMigration
                             file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
                             file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Add rules to parent layer {0}", package.NameOfAccessLayer)));
                         }
-                        file.WriteLine(CLIScriptBuilder.GenerateRuleInstructionScript(string.Format("rule {0}/{1}", parentRulesCount, package.ParentLayer.Rules.Count)));
+                        file.WriteLine(CLIScriptBuilder.GenerateRuleInstructionScript(string.Format("rule {0}/{1}", parentRulesCount, package.ParentLayer.Rules.Count - 1)));
                     }
 
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
 
-                    file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Delete package redundant automatic cleanup rule")));
-                    file.WriteLine(CLIScriptBuilder.GenerateGeneralCommandScript(package.CLIDeleteAutomaticCleanupRule()));
-
-                    file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
-
+                    // !!! Attention !!! -- the rules are created in the reverse order but will be inserted at the TOP (!!!) position,
+                    //                      so they are created in the correct order!
                     file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Add rules to NAT layer")));
                     int natRulesCount = 0;
-                    foreach (CheckPoint_NAT_Rule rule in _cpNatRules)
+                    for (int counter = _cpNatRules.Count - 1; counter >= 0; counter--)
                     {
+                        CheckPoint_NAT_Rule rule = _cpNatRules[counter];
                         rule.Package = package.Name;
                         file.WriteLine(CLIScriptBuilder.GenerateObjectScript(rule));
 
