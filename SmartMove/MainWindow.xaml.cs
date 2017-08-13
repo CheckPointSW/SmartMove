@@ -26,6 +26,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using CiscoMigration;
+using MigrationBase;
 
 namespace SmartMove
 {
@@ -47,6 +48,12 @@ namespace SmartMove
 
         #endregion
 
+        #region Private Members
+
+        private readonly SupportedVendors _supportedVendors = new SupportedVendors();
+        
+        #endregion
+
         #region Construction
 
         public MainWindow()
@@ -57,11 +64,27 @@ namespace SmartMove
 
             ConfigFilePath.Text = SourceFolder;
             TargetFolderPath.Text = TargetFolder;
+
+            _supportedVendors.SelectedVendor = Vendor.CiscoASA;
+            ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
         }
 
         #endregion
 
         #region Properties
+
+        #region ConfigurationFileLabel
+
+        public string ConfigurationFileLabel
+        {
+            get { return (string)GetValue(ConfigurationFileLabelProperty); }
+            set { SetValue(ConfigurationFileLabelProperty, value); }
+        }
+
+        public static readonly DependencyProperty ConfigurationFileLabelProperty =
+            DependencyProperty.Register("ConfigurationFileLabel", typeof(string), typeof(MainWindow), new PropertyMetadata(null));
+
+        #endregion
 
         #region ConvertNATConfiguration
 
@@ -74,19 +97,6 @@ namespace SmartMove
         public static readonly DependencyProperty ConvertNATConfigurationProperty =
             DependencyProperty.Register("ConvertNATConfiguration", typeof(bool), typeof(MainWindow), new PropertyMetadata(true));
 
-        #endregion
-
-        #region ConfigurationFileLinesCount
-
-        public string ConfigurationFileLinesCount
-        {
-            get { return (string)GetValue(ConfigurationFileLinesCountProperty); }
-            set { SetValue(ConfigurationFileLinesCountProperty, value); }
-        }
-
-        public static readonly DependencyProperty ConfigurationFileLinesCountProperty =
-            DependencyProperty.Register("ConfigurationFileLinesCount", typeof(string), typeof(MainWindow), new PropertyMetadata(null));
-        
         #endregion
 
         #region ConvertedPolicyRulesCount
@@ -141,6 +151,19 @@ namespace SmartMove
 
         #endregion
 
+        #region ConfigurationFileLinesCount
+
+        public string ConfigurationFileLinesCount
+        {
+            get { return (string)GetValue(ConfigurationFileLinesCountProperty); }
+            set { SetValue(ConfigurationFileLinesCountProperty, value); }
+        }
+
+        public static readonly DependencyProperty ConfigurationFileLinesCountProperty =
+            DependencyProperty.Register("ConfigurationFileLinesCount", typeof(string), typeof(MainWindow), new PropertyMetadata(null));
+
+        #endregion
+
         #region CLI
 
         public static string SKText { get; private set; }
@@ -165,7 +188,7 @@ namespace SmartMove
 
         private void HelpButton_OnClick(object sender, RoutedEventArgs e)
         {
-            var aboutWindow = new AboutWindow();
+            var aboutWindow = new AboutWindow(_supportedVendors.SelectedVendor);
             aboutWindow.ShowDialog();
         }
 
@@ -190,7 +213,16 @@ namespace SmartMove
                 openFileDialog.InitialDirectory = SourceFolder;
             }
 
-            openFileDialog.Filter = "conf files (*.conf, *.txt)|*.conf; *.txt|All files (*.*)|*.*";
+            string filter = "";
+
+            switch (_supportedVendors.SelectedVendor)
+            {
+                case Vendor.CiscoASA:
+                    filter = "conf files (*.conf, *.txt)|*.conf; *.txt|All files (*.*)|*.*";
+                    break;
+            }
+
+            openFileDialog.Filter = filter;
             openFileDialog.FilterIndex = 1;
             openFileDialog.RestoreDirectory = true;
 
@@ -242,19 +274,19 @@ namespace SmartMove
 
             if (string.IsNullOrEmpty(ConfigFilePath.Text) || string.IsNullOrEmpty(fileName))
             {
-                ShowMessage("Cisco configuration file is not selected.", MessageTypes.Error);
+                ShowMessage("Configuration file is not selected.", MessageTypes.Error);
                 return;
             }
 
             if (!File.Exists(ConfigFilePath.Text))
             {
-                ShowMessage("Cannot find Cisco configuration file.", MessageTypes.Error);
+                ShowMessage("Cannot find configuration file.", MessageTypes.Error);
                 return;
             }
 
             if (fileName.Length > 20)
             {
-                ShowMessage("Cisco configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
+                ShowMessage("Configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
                 return;
             }
 
@@ -264,81 +296,104 @@ namespace SmartMove
                 return;
             }
 
-            string ciscoFileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
-            string targetFolder = TargetFolderPath.Text + "\\";
-
             Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
             EnableDisableControls(false);
             ProgressPanel.Visibility = Visibility.Visible;
             ResultsPanel.Visibility = Visibility.Collapsed;
             OutputPanel.Visibility = Visibility.Visible;
 
-            UpdateProgress(10, "Loading Cisco configuration ...");
+            UpdateProgress(10, "Parsing configuration file ...");
 
-            var ciscoParser = new CiscoParser();
+            VendorParser vendorParser;
+
+            switch (_supportedVendors.SelectedVendor)
+            {
+                case Vendor.CiscoASA:
+                    vendorParser = new CiscoParser();
+                    break;
+                default:
+                    throw new InvalidDataException("Unexpected!!!");
+            }
 
             try
             {
                 string ciscoFile = ConfigFilePath.Text;
-                await Task.Run(() => ciscoParser.Parse(ciscoFile));
+                await Task.Run(() => vendorParser.Parse(ciscoFile));
             }
             catch (Exception ex)
             {
                 Mouse.OverrideCursor = null;
                 EnableDisableControls(true);
                 OutputPanel.Visibility = Visibility.Collapsed;
-                ShowMessage(string.Format("Could not parse Cisco configuration.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                ShowMessage(string.Format("Could not parse configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
                 return;
             }
 
-            if (string.IsNullOrEmpty(ciscoParser.Version))
+            switch (_supportedVendors.SelectedVendor)
             {
-                ShowMessage("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
-            }
-            else if (ciscoParser.MajorVersion < 8 || (ciscoParser.MajorVersion == 8 && ciscoParser.MinorVersion < 3))
-            {
-                ShowMessage("Unsupported ASA version (" + ciscoParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                case Vendor.CiscoASA:
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        ShowMessage("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                    }
+                    else if (vendorParser.MajorVersion < 8 || (vendorParser.MajorVersion == 8 && vendorParser.MinorVersion < 3))
+                    {
+                        ShowMessage("Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                    }
+                    break;
             }
 
-            ciscoParser.Export(targetFolder + ciscoFileName + ".json");
-
+            string vendorFileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
             string toolVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            string targetFolder = TargetFolderPath.Text + "\\";
+            bool convertNat = ConvertNATConfiguration;
 
-            var ciscoConverter = new CiscoConverter(ciscoParser, ciscoFileName, targetFolder);
-            ciscoConverter.DomainName = DomainName.Text;
-            ciscoConverter.ConvertNat = ConvertNATConfiguration;
-            ciscoConverter.ConversionProgress += OnConversionProgress;
+            vendorParser.Export(targetFolder + vendorFileName + ".json");
+
+            VendorConverter vendorConverter;
+
+            switch (_supportedVendors.SelectedVendor)
+            {
+                case Vendor.CiscoASA:
+                    vendorConverter = new CiscoConverter();
+                    break;
+                default:
+                    throw new InvalidDataException("Unexpected!!!");
+            }
+
+            vendorConverter.Initialize(vendorParser, ConfigFilePath.Text, toolVersion, targetFolder, DomainName.Text);
+            vendorConverter.ConversionProgress += OnConversionProgress;
 
             try
             {
-                await Task.Run(() => ciscoConverter.Convert(toolVersion));
+                await Task.Run(() => vendorConverter.Convert(convertNat));
             }
             catch (Exception ex)
             {
                 Mouse.OverrideCursor = null;
                 EnableDisableControls(true);
                 OutputPanel.Visibility = Visibility.Collapsed;
-                ShowMessage(string.Format("Could not convert Cisco configuration.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                ShowMessage(string.Format("Could not convert configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
                 return;
             }
 
             UpdateProgress(90, "Exporting Check Point configuration ...");
-            ciscoConverter.ExportCiscoConfigurationAsHtml();
-            ciscoConverter.ExportPolicyPackagesAsHtml(toolVersion);
+            vendorConverter.ExportConfigurationAsHtml();
+            vendorConverter.ExportPolicyPackagesAsHtml();
             if (ConvertNATConfiguration)
             {
-                ciscoConverter.ExportNATLayerAsHtml(toolVersion);
+                vendorConverter.ExportNatLayerAsHtml();
             }
             UpdateProgress(100, "");
 
-            ciscoConverter.ConversionProgress -= OnConversionProgress;
+            vendorConverter.ConversionProgress -= OnConversionProgress;
 
             Mouse.OverrideCursor = null;
             EnableDisableControls(true);
             ProgressPanel.Visibility = Visibility.Collapsed;
             ResultsPanel.Visibility = Visibility.Visible;
 
-            ShowResults(ciscoConverter, ciscoParser.LineCount);
+            ShowResults(vendorConverter, vendorParser.ParsedLines);
         }
 
         private void Link_OnClick(object sender, MouseButtonEventArgs e)
@@ -379,24 +434,24 @@ namespace SmartMove
             Go.IsEnabled = enable;
         }
 
-        private void ShowResults(CiscoConverter ciscoConverter, int ciscoTotalCommandsCount)
+        private void ShowResults(VendorConverter vendorConverter, int convertedLinesCount)
         {
-            ConversionIssuesPanel.Visibility = (ciscoConverter.ConversionIncidentCategoriesCount > 0) ? Visibility.Visible : Visibility.Collapsed;
+            ConversionIssuesPanel.Visibility = (vendorConverter.ConversionIncidentCategoriesCount > 0) ? Visibility.Visible : Visibility.Collapsed;
             ConvertedNatPolicyPanel.Visibility = ConvertNATConfiguration ? Visibility.Visible : Visibility.Collapsed;
 
-            ConfigurationFileLinesCount = string.Format(" ({0} lines)", ciscoTotalCommandsCount);
-            ConvertedPolicyRulesCount = string.Format(" ({0} rules)", ciscoConverter.RulesInConvertedPackage());
-            ConvertedOptimizedPolicyRulesCount = string.Format(" ({0} rules)", ciscoConverter.RulesInConvertedOptimizedPackage());
-            ConvertedNATPolicyRulesCount = string.Format(" ({0} rules)", ciscoConverter.RulesInNatLayer());
-            ConversionIssuesCount = string.Format("Found {0} conversion issues in {1} configuration lines", ciscoConverter.ConversionIncidentCategoriesCount, ciscoConverter.ConversionIncidentsCommandsCount);
+            ConfigurationFileLinesCount = string.Format(" ({0} lines)", convertedLinesCount);
+            ConvertedPolicyRulesCount = string.Format(" ({0} rules)", vendorConverter.RulesInConvertedPackage());
+            ConvertedOptimizedPolicyRulesCount = string.Format(" ({0} rules)", vendorConverter.RulesInConvertedOptimizedPackage());
+            ConvertedNATPolicyRulesCount = string.Format(" ({0} rules)", vendorConverter.RulesInNatLayer());
+            ConversionIssuesCount = string.Format("Found {0} conversion issues in {1} configuration lines", vendorConverter.ConversionIncidentCategoriesCount, vendorConverter.ConversionIncidentsCommandsCount);
 
-            OriginalFileLink.Tag = ciscoConverter.CiscoHtmlFile;
-            ConvertedPolicyLink.Tag = ciscoConverter.PolicyHtmlFile;
-            ConvertedOptimizedPolicyLink.Tag = ciscoConverter.PolicyOptimizedHtmlFile;
-            ConvertedNatPolicy.Tag = ciscoConverter.NatHtmlFile;
-            ObjectsScript.Tag = ciscoConverter.ObjectsScriptFile;
-            RulebaseScript.Tag = ciscoConverter.PolicyScriptFile;
-            RulebaseOptimizedScript.Tag = ciscoConverter.PolicyOptimizedScriptFile;
+            OriginalFileLink.Tag = vendorConverter.VendorHtmlFile;
+            ConvertedPolicyLink.Tag = vendorConverter.PolicyHtmlFile;
+            ConvertedOptimizedPolicyLink.Tag = vendorConverter.PolicyOptimizedHtmlFile;
+            ConvertedNatPolicy.Tag = vendorConverter.NatHtmlFile;
+            ObjectsScript.Tag = vendorConverter.ObjectsScriptFile;
+            RulebaseScript.Tag = vendorConverter.PolicyScriptFile;
+            RulebaseOptimizedScript.Tag = vendorConverter.PolicyOptimizedScriptFile;
         }
 
         private void ShowDisclaimer()

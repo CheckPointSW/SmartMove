@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckPointObjects", "CheckP
 		{9FF1087A-C314-4B6B-85B6-9BA5B4F14F48} = {9FF1087A-C314-4B6B-85B6-9BA5B4F14F48}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MigrationBase", "MigrationBase\MigrationBase.csproj", "{26E47C40-F380-494D-9009-33475261FCB2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +39,10 @@ Global
 		{D5C34605-141D-47F9-A838-C7B9470236A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5C34605-141D-47F9-A838-C7B9470236A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5C34605-141D-47F9-A838-C7B9470236A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26E47C40-F380-494D-9009-33475261FCB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26E47C40-F380-494D-9009-33475261FCB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26E47C40-F380-494D-9009-33475261FCB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26E47C40-F380-494D-9009-33475261FCB2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

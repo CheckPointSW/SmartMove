@@ -136,7 +136,8 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="Cisco Configuration file:" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <TextBlock Grid.Row="0" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConfigurationFileLabel}"
+                                       Style="{StaticResource NormalTextBloclStyle}"/>
                             <Grid Grid.Row="1" Margin="0,6,0,0" Background="Transparent" Focusable="False">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>

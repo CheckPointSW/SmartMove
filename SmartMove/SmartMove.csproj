@@ -136,6 +136,10 @@
       <Project>{2221dbe4-0775-4bbd-9cbc-33a20e0a09e7}</Project>
       <Name>CiscoMigration</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MigrationBase\MigrationBase.csproj">
+      <Project>{26e47c40-f380-494d-9009-33475261fcb2}</Project>
+      <Name>MigrationBase</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Conversion_Icon.ico" />

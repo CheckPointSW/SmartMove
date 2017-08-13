@@ -22,6 +22,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Reflection;
+using MigrationBase;
 
 namespace SmartMove
 {
@@ -32,23 +33,25 @@ namespace SmartMove
     {
         #region Construction
 
-        public AboutWindow()
+        public AboutWindow(Vendor vendor)
         {
             InitializeComponent();
 
-            object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyProductAttribute), false);
-            AssemblyProduct = (attributes.Length == 0) ? "" : ((AssemblyProductAttribute)attributes[0]).Product;
-
             AssemblyVersion = "Version " + Assembly.GetExecutingAssembly().GetName().Version;
 
-            attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
+            switch (vendor)
+            {
+                case Vendor.CiscoASA:
+                    AssemblyProduct = SupportedVendors.CiscoProduct;
+                    AssemblyDescription = SupportedVendors.CiscoProductDescription;
+                    break;
+            }
+
+            object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
             AssemblyCopyright = (attributes.Length == 0) ? "" : ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
 
             attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
             AssemblyCompany = (attributes.Length == 0) ? "" : ((AssemblyCompanyAttribute)attributes[0]).Company;
-
-            attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
-            AssemblyDescription = (attributes.Length == 0) ? "" : ((AssemblyDescriptionAttribute)attributes[0]).Description;
 
             SKTextDisplay.Text = MainWindow.SKText;
             SKLinkDisplay.Text = MainWindow.SKLinkText;

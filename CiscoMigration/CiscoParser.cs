@@ -22,13 +22,14 @@ using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
 using CommonUtils;
+using MigrationBase;
 
 namespace CiscoMigration
 {
     /// <summary>
     /// Parses the Cisco ASA configuration file and creates corresponding Cisco Command objects repository.
     /// </summary>
-    public class CiscoParser
+    public class CiscoParser : VendorParser
     {
         #region Helper Classes
 
@@ -48,75 +49,22 @@ namespace CiscoMigration
 
         #region Private Members
 
-        private int _lineCount = 0;
-        private string _version = "";
-
         private IList<CiscoCommand> _ciscoCommands = new List<CiscoCommand>();
         private Dictionary<string, CiscoCommand> _ciscoIds = new Dictionary<string, CiscoCommand>();
         private Dictionary<string, string> _ciscoAliases = new Dictionary<string, string>();
 
         #endregion
 
-        #region Properties
-
-        public int LineCount
-        {
-            get { return _lineCount; }
-        }
-
-        public string Version
-        {
-            get { return _version; }
-        }
-
-        public int MajorVersion
-        {
-            get 
-            {
-                int dotPos = _version.IndexOf('.');
-                if (dotPos > 0)
-                {
-                    string sMajorVersion = _version.Substring(0, dotPos);
-                    int nMajorVersion = 0;
-                    int.TryParse(sMajorVersion, out nMajorVersion);
-
-                    return nMajorVersion;
-                }
-
-                return 0;
-            }
-        }
-
-        public int MinorVersion
-        {
-            get
-            {
-                int dotPos = _version.IndexOf('.');
-                if (dotPos > 0)
-                {
-                    string sMinorVersion = _version.Substring(dotPos + 1, 1);
-                    int nMinorVersion = 0;
-                    int.TryParse(sMinorVersion, out nMinorVersion);
-
-                    return nMinorVersion;
-                }
-
-                return 0;
-            }
-        }
-
-        #endregion
-
         #region Public Methods
 
-        public void Parse(string filename)
+        public override void Parse(string filename)
         {
             ParseCommands(filename);   // this must come first!!!
-            ParseVersion();
+            ParseVersion(null);
             ParseInterfacesTopology();
         }
 
-        public void Export(string filename)
+        public override void Export(string filename)
         {
             File.WriteAllText(filename, JsonConvert.SerializeObject(_ciscoCommands, Formatting.Indented));
         }
@@ -160,18 +108,18 @@ namespace CiscoMigration
 
         #region Private Methods
 
-        private void ParseVersion()
+        protected override void ParseVersion(object versionProvider)
         {
             foreach (Cisco_ASA asa in Filter("ASA"))
             {
-                _version = asa.Version;
+                VendorVersion = asa.Version;
             }
         }
 
         private void ParseCommands(string filename)
         {
             string[] lines = File.ReadAllLines(filename);
-            _lineCount = lines.Count();
+            ParsedLines = lines.Count();
 
             var parents = new Stack<Indentation>();
             var flatList = new List<CiscoCommand>();
