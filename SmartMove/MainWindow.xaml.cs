@@ -287,7 +287,7 @@ namespace SmartMove
                 Mouse.OverrideCursor = null;
                 EnableDisableControls(true);
                 OutputPanel.Visibility = Visibility.Collapsed;
-                ShowMessage("Could not parse Cisco configuration.\nOriginal error: " + ex.Message, MessageTypes.Error);
+                ShowMessage(string.Format("Could not parse Cisco configuration.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
                 return;
             }
 
@@ -318,7 +318,7 @@ namespace SmartMove
                 Mouse.OverrideCursor = null;
                 EnableDisableControls(true);
                 OutputPanel.Visibility = Visibility.Collapsed;
-                ShowMessage("Could not convert Cisco configuration.\nOriginal error: " + ex.Message, MessageTypes.Error);
+                ShowMessage(string.Format("Could not convert Cisco configuration.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
                 return;
             }
 
