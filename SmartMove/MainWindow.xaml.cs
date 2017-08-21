@@ -448,10 +448,10 @@ namespace SmartMove
             OriginalFileLink.Tag = vendorConverter.VendorHtmlFile;
             ConvertedPolicyLink.Tag = vendorConverter.PolicyHtmlFile;
             ConvertedOptimizedPolicyLink.Tag = vendorConverter.PolicyOptimizedHtmlFile;
-            ConvertedNatPolicy.Tag = vendorConverter.NatHtmlFile;
-            ObjectsScript.Tag = vendorConverter.ObjectsScriptFile;
-            RulebaseScript.Tag = vendorConverter.PolicyScriptFile;
-            RulebaseOptimizedScript.Tag = vendorConverter.PolicyOptimizedScriptFile;
+            ConvertedNatPolicyLink.Tag = vendorConverter.NatHtmlFile;
+            ObjectsScriptLink.Tag = vendorConverter.ObjectsScriptFile;
+            RulebaseScriptLink.Tag = vendorConverter.PolicyScriptFile;
+            RulebaseOptimizedScriptLink.Tag = vendorConverter.PolicyOptimizedScriptFile;
         }
 
         private void ShowDisclaimer()

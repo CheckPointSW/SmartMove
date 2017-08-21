@@ -266,7 +266,7 @@
                                                    Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
                                                    Foreground="#A7A9AC" FontSize="12"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Row="1" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                    <StackPanel x:Name="ConvertedOptimizedPolicyPanel" Grid.Row="1" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
                                         <TextBlock x:Name="ConvertedOptimizedPolicyLink" Text="Converted optimized Policy" Style="{StaticResource HyperLinkStyle}"
                                                    MouseUp="Link_OnClick"/>
                                         <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertedOptimizedPolicyRulesCount}"
@@ -274,7 +274,7 @@
                                                    Foreground="#A7A9AC" FontSize="12"/>
                                     </StackPanel>
                                     <StackPanel x:Name="ConvertedNatPolicyPanel" Grid.Row="2" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
-                                        <TextBlock x:Name="ConvertedNatPolicy" Text="Converted NAT Policy" Style="{StaticResource HyperLinkStyle}"
+                                        <TextBlock x:Name="ConvertedNatPolicyLink" Text="Converted NAT Policy" Style="{StaticResource HyperLinkStyle}"
                                                    MouseUp="Link_OnClick"/>
                                         <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertedNATPolicyRulesCount}"
                                                    Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
@@ -295,11 +295,11 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock x:Name="ObjectsScript" Grid.Row="0" Text="bash script for creating objects" Style="{StaticResource HyperLinkStyle}" Margin="0,6,0,0"
+                                    <TextBlock x:Name="ObjectsScriptLink" Grid.Row="0" Text="bash script for creating objects" Style="{StaticResource HyperLinkStyle}" Margin="0,6,0,0"
                                                MouseUp="Link_OnClick"/>
-                                    <TextBlock x:Name="RulebaseScript" Grid.Row="1" Text="bash script for creating Policy package" Style="{StaticResource HyperLinkStyle}" Margin="0,6,0,0"
+                                    <TextBlock x:Name="RulebaseScriptLink" Grid.Row="1" Text="bash script for creating Policy package" Style="{StaticResource HyperLinkStyle}" Margin="0,6,0,0"
                                                MouseUp="Link_OnClick"/>
-                                    <TextBlock x:Name="RulebaseOptimizedScript" Grid.Row="2" Text="bash script for creating optimized Policy package" Style="{StaticResource HyperLinkStyle}" Margin="0,6,0,0"
+                                    <TextBlock x:Name="RulebaseOptimizedScriptLink" Grid.Row="2" Text="bash script for creating optimized Policy package" Style="{StaticResource HyperLinkStyle}" Margin="0,6,0,0"
                                                MouseUp="Link_OnClick"/>
                                 </Grid>
                             </Grid>
