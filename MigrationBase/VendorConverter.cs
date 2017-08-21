@@ -72,6 +72,10 @@ namespace MigrationBase
         protected List<CheckPoint_Zone> _cpZones = new List<CheckPoint_Zone>();
         protected List<CheckPoint_TcpService> _cpTcpServices = new List<CheckPoint_TcpService>();
         protected List<CheckPoint_UdpService> _cpUdpServices = new List<CheckPoint_UdpService>();
+        protected List<CheckPoint_SctpService> _cpSctpServices = new List<CheckPoint_SctpService>();
+        protected List<CheckPoint_IcmpService> _cpIcmpServices = new List<CheckPoint_IcmpService>();
+        protected List<CheckPoint_RpcService> _cpRpcServices = new List<CheckPoint_RpcService>();
+        protected List<CheckPoint_DceRpcService> _cpDceRpcServices = new List<CheckPoint_DceRpcService>();
         protected List<CheckPoint_OtherService> _cpOtherServices = new List<CheckPoint_OtherService>();
         protected List<CheckPoint_ServiceGroup> _cpServiceGroups = new List<CheckPoint_ServiceGroup>();
         protected List<CheckPoint_TimeGroup> _cpTimeGroups = new List<CheckPoint_TimeGroup>();
@@ -235,6 +239,30 @@ namespace MigrationBase
                 found = true;
             }
 
+            if (cpObject.GetType().ToString().EndsWith("_SctpService"))
+            {
+                _cpSctpServices.Add((CheckPoint_SctpService)cpObject);
+                found = true;
+            }
+
+            if (cpObject.GetType().ToString().EndsWith("_IcmpService"))
+            {
+                _cpIcmpServices.Add((CheckPoint_IcmpService)cpObject);
+                found = true;
+            }
+
+            if (cpObject.GetType().ToString().EndsWith("_RpcService"))
+            {
+                _cpRpcServices.Add((CheckPoint_RpcService)cpObject);
+                found = true;
+            }
+
+            if (cpObject.GetType().ToString().EndsWith("_DceRpcService"))
+            {
+                _cpDceRpcServices.Add((CheckPoint_DceRpcService)cpObject);
+                found = true;
+            }
+
             if (cpObject.GetType().ToString().EndsWith("_OtherService"))
             {
                 _cpOtherServices.Add((CheckPoint_OtherService)cpObject);
@@ -276,6 +304,98 @@ namespace MigrationBase
             return found;
         }
 
+        /// <summary>
+        /// It may happen that several interfaces have topology that overlap, and therefore the generated network groups will also overlap.
+        /// This will not work properly and may cause security issues when using these network groups in firewall and NAT rulebases.
+        /// To fix this, we should use network groups with exclusion to include/exclude the overlapping networks.
+        /// The networks to include/exclude are calculated based on network ranges.
+        /// </summary>
+        protected List<string> Add_or_Modify_InterfaceNetworkGroups(List<CheckPoint_NetworkGroup> interfaceNetworkGroups)
+        {
+            var excludeNetworksFromInterface = new Dictionary<string, List<CheckPoint_Network>>();
+
+            for (int i = 0; i < interfaceNetworkGroups.Count - 1; i++)
+            {
+                CheckPoint_NetworkGroup grp1 = interfaceNetworkGroups[i];
+
+                for (int j = i + 1; j < interfaceNetworkGroups.Count; j++)
+                {
+                    CheckPoint_NetworkGroup grp2 = interfaceNetworkGroups[j];
+
+                    for (int k = 0; k < grp1.Members.Count; k++)
+                    {
+                        string network1Name = grp1.Members[k];
+                        var network1 = (CheckPoint_Network)_cpObjects.GetObject(network1Name);
+                        UInt32[] range1 = NetworkUtils.GetNetworkRangeInNumbers(network1.Subnet, network1.Netmask);
+
+                        for (int m = 0; m < grp2.Members.Count; m++)
+                        {
+                            string network2Name = grp2.Members[m];
+                            var network2 = (CheckPoint_Network)_cpObjects.GetObject(network2Name);
+                            UInt32[] range2 = NetworkUtils.GetNetworkRangeInNumbers(network2.Subnet, network2.Netmask);
+
+                            // Check networks ranges overlap
+                            if (((range2[0] >= range1[0]) && (range2[0] <= range1[1])) || 
+                                ((range1[0] >= range2[0]) && (range1[0] <= range2[1])))
+                            {
+                                if (range1[1] - range1[0] > range2[1] - range2[0])
+                                {
+                                    if (excludeNetworksFromInterface.ContainsKey(grp1.Name))
+                                    {
+                                        excludeNetworksFromInterface[grp1.Name].Add(network2);
+                                    }
+                                    else
+                                    {
+                                        excludeNetworksFromInterface.Add(grp1.Name, new List<CheckPoint_Network> { network2 });
+                                    }
+                                }
+                                else
+                                {
+                                    if (excludeNetworksFromInterface.ContainsKey(grp2.Name))
+                                    {
+                                        excludeNetworksFromInterface[grp2.Name].Add(network1);
+                                    }
+                                    else
+                                    {
+                                        excludeNetworksFromInterface.Add(grp2.Name, new List<CheckPoint_Network> { network1 });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            var modifiedNetworkGroups = new List<string>();
+
+            foreach (KeyValuePair<string, List<CheckPoint_Network>> kvp in excludeNetworksFromInterface)
+            {
+                modifiedNetworkGroups.Add(kvp.Key);
+
+                // First, Rename original group name
+                var origGroup = (CheckPoint_NetworkGroup)_cpObjects.GetObject(kvp.Key);
+                _cpObjects.RemoveObject(origGroup.Name);
+                origGroup.Name = kvp.Key + "_include";
+                _cpObjects.AddObject(origGroup);
+
+                var cpExcludedGroup = new CheckPoint_NetworkGroup();
+                cpExcludedGroup.Name = kvp.Key + "_exclude";
+                foreach (CheckPoint_Network network in kvp.Value)
+                {
+                    cpExcludedGroup.Members.Add(network.Name);
+                }
+                AddCheckPointObject(cpExcludedGroup);
+
+                var cpGroupWithExclusion = new CheckPoint_GroupWithExclusion();
+                cpGroupWithExclusion.Name = kvp.Key;
+                cpGroupWithExclusion.Include = origGroup.Name;
+                cpGroupWithExclusion.Except = cpExcludedGroup.Name;
+                AddCheckPointObject(cpGroupWithExclusion);
+            }
+
+            return modifiedNetworkGroups;
+        }
+
         protected void CreateObjectsScript()
         {
             const int publishLatency = 100;
@@ -296,6 +416,10 @@ namespace MigrationBase
                                         _cpZones.Count +
                                         _cpTcpServices.Count +
                                         _cpUdpServices.Count +
+                                        _cpSctpServices.Count +
+                                        _cpIcmpServices.Count +
+                                        _cpRpcServices.Count +
+                                        _cpDceRpcServices.Count +
                                         _cpOtherServices.Count +
                                         _cpServiceGroups.Count +
                                         _cpTimeGroups.Count;
@@ -471,6 +595,74 @@ namespace MigrationBase
                     file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "UDP Service", _cpUdpServices.Count)));
                     int objectsCount = 0;
                     foreach (CheckPoint_UdpService obj in _cpUdpServices)
+                    {
+                        file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                        objectsCount++;
+                        if (objectsCount % publishLatency == 0)
+                        {
+                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                        }
+                    }
+                    file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                }
+
+                if (_cpSctpServices.Count > 0)
+                {
+                    file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "SCTP Service", _cpSctpServices.Count)));
+                    int objectsCount = 0;
+                    foreach (CheckPoint_SctpService obj in _cpSctpServices)
+                    {
+                        file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                        objectsCount++;
+                        if (objectsCount % publishLatency == 0)
+                        {
+                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                        }
+                    }
+                    file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                }
+
+                if (_cpIcmpServices.Count > 0)
+                {
+                    file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "ICMP Service", _cpIcmpServices.Count)));
+                    int objectsCount = 0;
+                    foreach (CheckPoint_IcmpService obj in _cpIcmpServices)
+                    {
+                        file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                        objectsCount++;
+                        if (objectsCount % publishLatency == 0)
+                        {
+                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                        }
+                    }
+                    file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                }
+
+                if (_cpRpcServices.Count > 0)
+                {
+                    file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "RPC Service", _cpRpcServices.Count)));
+                    int objectsCount = 0;
+                    foreach (CheckPoint_RpcService obj in _cpRpcServices)
+                    {
+                        file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                        objectsCount++;
+                        if (objectsCount % publishLatency == 0)
+                        {
+                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                        }
+                    }
+                    file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                }
+
+                if (_cpDceRpcServices.Count > 0)
+                {
+                    file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "DCE-RPC Service", _cpDceRpcServices.Count)));
+                    int objectsCount = 0;
+                    foreach (CheckPoint_DceRpcService obj in _cpDceRpcServices)
                     {
                         file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
 
@@ -711,6 +903,38 @@ namespace MigrationBase
 
                 file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "UDP Services", _cpUdpServices.Count());
                 foreach (CheckPoint_UdpService obj in _cpUdpServices)
+                {
+                    file.WriteLine("<div id=\"" + obj.Name + "\">");
+                    file.WriteLine(obj.ToCLIScript());
+                    file.WriteLine("</div>");
+                }
+
+                file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "SCTP Services", _cpSctpServices.Count());
+                foreach (CheckPoint_SctpService obj in _cpSctpServices)
+                {
+                    file.WriteLine("<div id=\"" + obj.Name + "\">");
+                    file.WriteLine(obj.ToCLIScript());
+                    file.WriteLine("</div>");
+                }
+
+                file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "ICMP Services", _cpIcmpServices.Count());
+                foreach (CheckPoint_IcmpService obj in _cpIcmpServices)
+                {
+                    file.WriteLine("<div id=\"" + obj.Name + "\">");
+                    file.WriteLine(obj.ToCLIScript());
+                    file.WriteLine("</div>");
+                }
+
+                file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "RPC Services", _cpRpcServices.Count());
+                foreach (CheckPoint_RpcService obj in _cpRpcServices)
+                {
+                    file.WriteLine("<div id=\"" + obj.Name + "\">");
+                    file.WriteLine(obj.ToCLIScript());
+                    file.WriteLine("</div>");
+                }
+
+                file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "DCE-RPC Services", _cpDceRpcServices.Count());
+                foreach (CheckPoint_DceRpcService obj in _cpDceRpcServices)
                 {
                     file.WriteLine("<div id=\"" + obj.Name + "\">");
                     file.WriteLine(obj.ToCLIScript());
