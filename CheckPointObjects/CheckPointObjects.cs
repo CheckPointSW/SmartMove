@@ -290,12 +290,14 @@ namespace CheckPointObjects
     {
         public string Port { get; set; }
         public string SourePort { get; set; }
+        public string SessionTimeout { get; set; }
 
         public override string ToCLIScript()
         {
             return "add service-udp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("port", Port, "")
-                + WriteParam("source-port", SourePort, "");
+                + WriteParam("source-port", SourePort, "")
+                + WriteParam("session-timeout", SessionTimeout, "0");
         }
 
         public override string ToCLIScriptInstruction()
@@ -308,17 +310,87 @@ namespace CheckPointObjects
     {
         public string Port { get; set; }
         public string SourePort { get; set; }
+        public string SessionTimeout { get; set; }
 
         public override string ToCLIScript()
         {
             return "add service-tcp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("port", Port, "")
-                + WriteParam("source-port", SourePort, "");
+                + WriteParam("source-port", SourePort, "")
+                + WriteParam("session-timeout", SessionTimeout, "0");
         }
 
         public override string ToCLIScriptInstruction()
         {
             return "create tcp service [" + Name + "]: port [" + Port + "]";
+        }
+    }
+
+    public class CheckPoint_SctpService : CheckPointObject
+    {
+        public string Port { get; set; }
+        public string SessionTimeout { get; set; }
+
+        public override string ToCLIScript()
+        {
+            return "add service-sctp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteParam("port", Port, "")
+                + WriteParam("session-timeout", SessionTimeout, "0");
+        }
+
+        public override string ToCLIScriptInstruction()
+        {
+            return "create sctp service [" + Name + "]: port [" + Port + "]";
+        }
+    }
+
+    public class CheckPoint_IcmpService : CheckPointObject
+    {
+        public string Type { get; set; }
+        public string Code { get; set; }
+
+        public override string ToCLIScript()
+        {
+            return "add service-icmp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteParam("icmp-type", Type, "0")
+                + WriteParam("icmp-code", Code, "0");
+        }
+
+        public override string ToCLIScriptInstruction()
+        {
+            return "create icmp service [" + Name + "]: type [" + Type + "] code [" + Code + "]";
+        }
+    }
+
+    public class CheckPoint_RpcService : CheckPointObject
+    {
+        public string ProgramNumber { get; set; }
+
+        public override string ToCLIScript()
+        {
+            return "add service-rpc " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteParam("program-number", ProgramNumber, "");
+        }
+
+        public override string ToCLIScriptInstruction()
+        {
+            return "create rpc service [" + Name + "]: program-number [" + ProgramNumber + "]";
+        }
+    }
+
+    public class CheckPoint_DceRpcService : CheckPointObject
+    {
+        public string InterfaceUuid { get; set; }
+
+        public override string ToCLIScript()
+        {
+            return "add service-dce-rpc " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteParam("interface-uuid", InterfaceUuid, "");
+        }
+
+        public override string ToCLIScriptInstruction()
+        {
+            return "create dce-rpc service [" + Name + "]: interface-uuid [" + InterfaceUuid + "]";
         }
     }
 

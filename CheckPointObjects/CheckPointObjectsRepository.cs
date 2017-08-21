@@ -78,6 +78,7 @@ namespace CheckPointObjects
                     _knownServices.Add(key, value);
                 }
             }
+            _knownServices.Add("TCP_0", CheckPointObject.Any);
 
             string[] knownUdpServices = File.ReadAllLines("CP_KnownUdpPorts.csv");
             foreach (string line in knownUdpServices)
@@ -96,6 +97,7 @@ namespace CheckPointObjects
                     _knownServices.Add(key, value);
                 }
             }
+            _knownServices.Add("UDP_0", CheckPointObject.Any);
 
             string[] knownOtherServices = File.ReadAllLines("CP_KnownOtherPorts.csv");
             foreach (string line in knownOtherServices)
@@ -132,6 +134,7 @@ namespace CheckPointObjects
                     _knownServices.Add(key, value);
                 }
             }
+            _knownServices.Add("ICMP_99", "icmp-proto");
 
             string[] knownServiceGroups = File.ReadAllLines("CP_KnownServiceGroups.csv");
             foreach (string knownServiceGroup in knownServiceGroups)
