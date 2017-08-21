@@ -829,6 +829,19 @@ namespace CiscoMigration
                             networkGroup.Members[pos] = cpObject.Name;
                         }
                     }
+
+                    // Search references in network groups with exclusion
+                    foreach (var networkGroup in _cpGroupsWithExclusion)
+                    {
+                        if (networkGroup.Include == unsafeName)
+                        {
+                            networkGroup.Include = cpObject.Name;
+                        }
+                        if (networkGroup.Except == unsafeName)
+                        {
+                            networkGroup.Except = cpObject.Name;
+                        }
+                    }
                 }
             }
         }
@@ -1176,7 +1189,7 @@ namespace CiscoMigration
             }
         }
 
-        private void Add_Interfaces_and_Routes()
+        private void Add_InterfacesAndRoutes()
         {
             // This interface is for the TOP rule for the Non-NAT rules section!!!
             var allInternal = new CheckPoint_NetworkGroup();
@@ -1278,7 +1291,7 @@ namespace CiscoMigration
             }
         }
 
-        private void Add_or_Modify_Interface_Groups()
+        private void Add_or_Modify_InterfaceNetworkGroups()
         {
             var interfaceGroupObjects = new List<CheckPoint_NetworkGroup>();
 
@@ -1293,84 +1306,20 @@ namespace CiscoMigration
                 }
             }
 
-            var excludeNetworksFromInterface = new Dictionary<string, List<CheckPoint_Network>>();
+            var modifiedNetworkGroups = Add_or_Modify_InterfaceNetworkGroups(interfaceGroupObjects);
 
-            for (int i = 0; i < interfaceGroupObjects.Count - 1; i++)
+            // Apply object name verification.
+            foreach (var modifiedNetworkGroup in modifiedNetworkGroups)
             {
-                CheckPoint_NetworkGroup grp1 = interfaceGroupObjects[i];
-
-                for (int j = i + 1; j < interfaceGroupObjects.Count; j++)
+                if (_cpUnsafeNames.Contains(modifiedNetworkGroup))
                 {
-                    CheckPoint_NetworkGroup grp2 = interfaceGroupObjects[j];
-
-                    for (int k = 0; k < grp1.Members.Count; k++)
-                    {
-                        string network1Name = grp1.Members[k];
-                        var network1 = (CheckPoint_Network)_cpObjects.GetObject(network1Name);
-                        UInt32[] range1 = NetworkUtils.GetNetworkRangeInNumbers(network1.Subnet, network1.Netmask);
-
-                        for (int m = 0; m < grp2.Members.Count; m++)
-                        {
-                            string network2Name = grp2.Members[m];
-                            var network2 = (CheckPoint_Network)_cpObjects.GetObject(network2Name);
-                            UInt32[] range2 = NetworkUtils.GetNetworkRangeInNumbers(network2.Subnet, network2.Netmask);
-
-                            // Check networks ranges overlap
-                            if (((range2[0] >= range1[0]) && (range2[0] <= range1[1])) || ((range1[0] >= range2[0]) && (range1[0] <= range2[1])))
-                            {
-                                if (range1[1] - range1[0] > range2[1] - range2[0])
-                                {
-                                    if (excludeNetworksFromInterface.ContainsKey(grp1.Name))
-                                    {
-                                        excludeNetworksFromInterface[grp1.Name].Add(network2);
-                                    }
-                                    else
-                                    {
-                                        excludeNetworksFromInterface.Add(grp1.Name, new List<CheckPoint_Network>() { network2 });
-                                    }
-                                }
-                                else
-                                {
-                                    if (excludeNetworksFromInterface.ContainsKey(grp2.Name))
-                                    {
-                                        excludeNetworksFromInterface[grp2.Name].Add(network1);
-                                    }
-                                    else
-                                    {
-                                        excludeNetworksFromInterface.Add(grp2.Name, new List<CheckPoint_Network>() { network1 });
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    _cpUnsafeNames.Add(modifiedNetworkGroup + "_include");
+                    _cpUnsafeNames.Add(modifiedNetworkGroup + "_exclude");
                 }
-            }
-
-            foreach (KeyValuePair<string, List<CheckPoint_Network>> kvp in excludeNetworksFromInterface)
-            {
-                // First, Rename original group name
-                var origGroup = (CheckPoint_NetworkGroup)_cpObjects.GetObject(kvp.Key);
-                _cpObjects.RemoveObject(origGroup.Name);
-                origGroup.Name = kvp.Key + "_include";
-                _cpObjects.AddObject(origGroup);
-
-                var cpExcludedGroup = new CheckPoint_NetworkGroup();
-                cpExcludedGroup.Name = kvp.Key + "_exclude";
-                foreach (CheckPoint_Network network in kvp.Value)
-                {
-                    cpExcludedGroup.Members.Add(network.Name);
-                }
-                AddCheckPointObject(cpExcludedGroup);
-
-                var cpGroupWithExclusion = new CheckPoint_GroupWithExclusion();
-                cpGroupWithExclusion.Name = kvp.Key;
-                cpGroupWithExclusion.Include = origGroup.Name;
-                cpGroupWithExclusion.Except = cpExcludedGroup.Name;
-                AddCheckPointObject(cpGroupWithExclusion);
             }
         }
 
-        private void Add_Services_and_ServiceGroups()
+        private void Add_ServicesAndServiceGroups()
         {
             foreach (CiscoCommand command in CiscoObjectGroupCommands)
             {
@@ -4155,10 +4104,10 @@ namespace CiscoMigration
             Add_Networks();
             Add_Objects();
             Add_NetworkGroups();
-            Add_Interfaces_and_Routes();
+            Add_InterfacesAndRoutes();
             Add_Zones();
-            Add_or_Modify_Interface_Groups();
-            Add_Services_and_ServiceGroups();
+            Add_or_Modify_InterfaceNetworkGroups();
+            Add_ServicesAndServiceGroups();
             RaiseConversionProgress(30, "Converting rules ...");
             Add_Package();
 
