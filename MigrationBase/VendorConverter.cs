@@ -59,6 +59,7 @@ namespace MigrationBase
         protected string _domainName;
         protected string _policyPackageName;
         protected string _policyPackageOptimizedName;
+        protected bool _hasNATConversionIncident = false;
 
         protected CheckPointObjectsRepository _cpObjects = new CheckPointObjectsRepository();
 
@@ -153,9 +154,320 @@ namespace MigrationBase
         public abstract int RulesInNatLayer();
         public abstract void ExportConfigurationAsHtml();
         public abstract void ExportPolicyPackagesAsHtml();
-        public abstract void ExportNatLayerAsHtml();
         
         #endregion
+
+        public void ExportNatLayerAsHtml()
+        {
+            using (var file = new StreamWriter(NatHtmlFile, false))
+            {
+                var rulesWithConversionErrors = new List<string>();
+                var rulesWithConversionInfos = new List<string>();
+                int errorsCount = 0;
+                int infosCount = 0;
+
+                file.WriteLine("<html>");
+                file.WriteLine("<head>");
+                file.WriteLine("<style>");
+                file.WriteLine("  body { font-family: Helvetica; margin-left: 0px; margin-right: 0px; margin-top: 0px; }");
+                file.WriteLine("  table { border-collapse: collapse; border: 1px solid gray; margin: 20px; }");
+                file.WriteLine("  td { vertical-align: text-top; padding: 6px; border: 1px solid gray; }");
+                file.WriteLine("  th { vertical-align: text-top; padding: 6px; border: 1px solid gray; background-color: rgb(87,99,114); font-weight: bold; color: white; }");
+                file.WriteLine("  .report_time { font-family: Segoe UI; font-size: 14px; font-weight: normal; border-left: 1px solid #c9c9c9; padding: 10px; } ");
+                file.WriteLine("  .rule_number { background-color: rgb(245,245,245); text-align: right; } ");
+                file.WriteLine("  .errors_header { background-color: rgb(213,51,30); } ");
+                file.WriteLine("  .disabled_rule { text-decoration: line-through; } ");
+                file.WriteLine("  .comments { font-family: Lucida Console; }");
+                file.WriteLine("</style>");
+                file.WriteLine("<script>");
+                file.WriteLine("   var errorsCounter = 0;");
+                file.WriteLine("   var infosCounter = 0;");
+                file.WriteLine("   function displayIncidentsCount() {");
+                file.WriteLine("      if (errorsCounter > 0) {");
+                file.WriteLine("         var elem1 = document.getElementById('errorsCountHost');");
+                file.WriteLine("         if (elem1 != null) {");
+                file.WriteLine("            elem1.style.display = 'inline';");
+                file.WriteLine("         }");
+                file.WriteLine("         var elem2 = document.getElementById('errorsCount');");
+                file.WriteLine("         if (elem2 != null) {");
+                file.WriteLine("            elem2.innerText = elem2.innerText + errorsCounter;");
+                file.WriteLine("         }");
+                file.WriteLine("      }");
+                file.WriteLine("      if (infosCounter > 0) {");
+                file.WriteLine("         var elem1 = document.getElementById('infosCountHost');");
+                file.WriteLine("         if (elem1 != null) {");
+                file.WriteLine("            elem1.style.display = 'inline';");
+                file.WriteLine("         }");
+                file.WriteLine("         var elem2 = document.getElementById('infosCount');");
+                file.WriteLine("         if (elem2 != null) {");
+                file.WriteLine("            elem2.innerText = elem2.innerText + infosCounter;");
+                file.WriteLine("         }");
+                file.WriteLine("      }");
+                file.WriteLine("   }");
+                file.WriteLine("</script>");
+                file.WriteLine("</head>");
+                file.WriteLine("<body onLoad='displayIncidentsCount()'>");
+
+                // Generate the report header
+                file.WriteLine("<div style='height: 70px; line-height: 70px; background-color: black; padding-left: 20px; margin-bottom: 35px; color: white; font-family: Segoe UI; font-size: 20px;'>");
+                file.WriteLine("   <img style='width: 33px; height: 32px; padding-top: 20;' " + HtmlToolLogoImageSource + "/>");
+                file.WriteLine("   <span style='font-weight: bold; vertical-align: top;'>SmartMove</span>");
+                file.WriteLine("   <span style='font-size: 10px; position: absolute; padding-top: 4px; margin-left: 10px;'>ver " + _toolVersion + "</span>");
+                file.WriteLine("   <img style='width: 118px; height: 20px; position: absolute; right: 20; padding-top: 25;' " + HtmlCPLogoImageSource + "/>");
+                file.WriteLine("</div>");
+                file.WriteLine("<div style='font-size: 30px; font-weight: lighter; margin-left: 20px; margin-bottom: 30px;'>CONVERSION REPORT  ");
+                file.WriteLine("   <span id='reportTime' class='report_time'>" + GeneratePackageHtmlReportDateTime() + "</span>");
+                file.WriteLine("</div>");
+                file.WriteLine("<div style='font-size: 16px; margin-left: 20px; margin-bottom: 15px;'>");
+                file.WriteLine("   <span style='font-weight: normal;'>NAT Layer</span>");
+                file.WriteLine("</div>");
+
+                if (_hasNATConversionIncident)
+                {
+                    file.WriteLine("<div style='margin-left: 20px;'>");
+                    file.WriteLine("   <span style='font-weight: bold;'>Found Conversion Issues:</span>");
+                    file.WriteLine("   <span id='errorsCountHost' style='display: none; margin-left: 10px; vertical-align: middle;'>" + string.Format(HtmlErrorImageTagFormat, "Conversion Errors"));
+                    file.WriteLine("      <a id='errorsCount' href='#PolicyConversionErrors' style='margin-left: 2px; vertical-align: top;'></a>");
+                    file.WriteLine("   </span>");
+                    file.WriteLine("   <span id='infosCountHost' style='display: none; margin-left: 10px; vertical-align: middle;'>" + string.Format(HtmlAlertImageTagFormat, "Conversion Notifications"));
+                    file.WriteLine("      <a id='infosCount' href='#PolicyConversionInfos' style='margin-left: 2px; vertical-align: top;'/></a>");
+                    file.WriteLine("   </span>");
+                    file.WriteLine("</div>");
+                }
+
+                // Generate the report body
+                file.WriteLine("<table>");
+                file.WriteLine("   <tr>");
+                file.WriteLine("      <th>No.</th> <th>Source</th> <th>Destination</th> <th>Service</th> <th>Translated-Source</th> <th>Translated-Destination</th> <th>Translated-Service</th> <th>Comments</th>");
+                file.WriteLine("   </tr>");
+
+                int ruleNumber = 1;
+
+                foreach (CheckPoint_NAT_Rule rule in _cpNatRules)
+                {
+                    string source = (rule.Source == null) ? CheckPointObject.Any : NatRuleItem2Html(rule.Source.Name);
+                    string dest = (rule.Destination == null) ? CheckPointObject.Any : NatRuleItem2Html(rule.Destination.Name);
+                    string service = (rule.Service == null) ? CheckPointObject.Any : NatRuleItem2Html(rule.Service.Name);
+                    string xsource = (rule.TranslatedSource == null) ? "=orig" : NatRuleItem2Html(rule.TranslatedSource.Name);
+                    string xdest = (rule.TranslatedDestination == null) ? "=orig" : NatRuleItem2Html(rule.TranslatedDestination.Name);
+                    string xservice = (rule.TranslatedService == null) ? "=orig" : NatRuleItem2Html(rule.TranslatedService.Name);
+
+                    if (xsource != "=orig")
+                    {
+                        xsource = ((rule.Method == CheckPoint_NAT_Rule.NatMethod.Static) ? "static: " : "hide: ") + xsource;
+                    }
+                    if (xdest != "=orig")
+                    {
+                        xdest = "static: " + xdest;
+                    }
+
+                    string curRuleHtmlPart;
+                    var curRuleHtmlFull = new List<string>();
+                    var ruleConversionIncidentType = ConversionIncidentType.None;
+
+                    if (rule.Enabled)
+                    {
+                        curRuleHtmlPart = "  <tr id=\"" + ruleNumber + "\">";
+                    }
+                    else
+                    {
+                        curRuleHtmlPart = "  <tr class='disabled_rule' id=\"" + ruleNumber + "\">";
+                    }
+                    file.WriteLine(curRuleHtmlPart);
+                    curRuleHtmlFull.Add(curRuleHtmlPart);
+
+                    var sbRuleNumberColumnTag = new StringBuilder();
+                    var sbRuleNumberColumnWithLinkBackTag = new StringBuilder();
+                    sbRuleNumberColumnTag.Append("      <td class='rule_number'>");
+                    if (rule.ConversionIncidentType != ConversionIncidentType.None)
+                    {
+                        sbRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(rule.ConvertedCommandId));
+                        ruleConversionIncidentType = rule.ConversionIncidentType;
+                    }
+                    if (!rule.Enabled)
+                    {
+                        sbRuleNumberColumnTag.Append(HtmlDisabledImageTag);
+                    }
+                    sbRuleNumberColumnWithLinkBackTag.Append(sbRuleNumberColumnTag);   // save this XML portion to be continued bellow
+                    sbRuleNumberColumnTag.Append(ruleNumber);
+                    sbRuleNumberColumnTag.Append("</td>");
+                    curRuleHtmlPart = sbRuleNumberColumnTag.ToString();
+                    file.WriteLine(curRuleHtmlPart);
+
+                    sbRuleNumberColumnWithLinkBackTag.Append("<a href=\"#");
+                    sbRuleNumberColumnWithLinkBackTag.Append(ruleNumber);
+                    sbRuleNumberColumnWithLinkBackTag.Append("\">");
+                    sbRuleNumberColumnWithLinkBackTag.Append(ruleNumber);
+                    sbRuleNumberColumnWithLinkBackTag.Append("</a></td>");
+                    curRuleHtmlFull.Add(sbRuleNumberColumnWithLinkBackTag.ToString());
+
+                    if (rule.Source != null && rule.Source.ConversionIncidentType != ConversionIncidentType.None)
+                    {
+                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.Source.ConvertedCommandId) + source + "</td>";
+                        if (rule.Source.ConversionIncidentType > ruleConversionIncidentType)
+                        {
+                            ruleConversionIncidentType = rule.Source.ConversionIncidentType;
+                        }
+                    }
+                    else
+                    {
+                        curRuleHtmlPart = "      <td>" + source + "</td>";
+                    }
+                    file.WriteLine(curRuleHtmlPart);
+                    curRuleHtmlFull.Add(curRuleHtmlPart);
+
+                    if (rule.Destination != null && rule.Destination.ConversionIncidentType != ConversionIncidentType.None)
+                    {
+                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.Destination.ConvertedCommandId) + dest + "</td>";
+                        if (rule.Destination.ConversionIncidentType > ruleConversionIncidentType)
+                        {
+                            ruleConversionIncidentType = rule.Destination.ConversionIncidentType;
+                        }
+                    }
+                    else
+                    {
+                        curRuleHtmlPart = "      <td>" + dest + "</td>";
+                    }
+                    file.WriteLine(curRuleHtmlPart);
+                    curRuleHtmlFull.Add(curRuleHtmlPart);
+
+                    if (rule.Service != null && rule.Service.ConversionIncidentType != ConversionIncidentType.None)
+                    {
+                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.Service.ConvertedCommandId) + service + "</td>";
+                        if (rule.Service.ConversionIncidentType > ruleConversionIncidentType)
+                        {
+                            ruleConversionIncidentType = rule.Service.ConversionIncidentType;
+                        }
+                    }
+                    else
+                    {
+                        curRuleHtmlPart = "      <td>" + service + "</td>";
+                    }
+                    file.WriteLine(curRuleHtmlPart);
+                    curRuleHtmlFull.Add(curRuleHtmlPart);
+
+                    if (rule.TranslatedSource != null && rule.TranslatedSource.ConversionIncidentType != ConversionIncidentType.None)
+                    {
+                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.TranslatedSource.ConvertedCommandId) + xsource + "</td>";
+                        if (rule.TranslatedSource.ConversionIncidentType > ruleConversionIncidentType)
+                        {
+                            ruleConversionIncidentType = rule.TranslatedSource.ConversionIncidentType;
+                        }
+                    }
+                    else
+                    {
+                        curRuleHtmlPart = "      <td>" + xsource + "</td>";
+                    }
+                    file.WriteLine(curRuleHtmlPart);
+                    curRuleHtmlFull.Add(curRuleHtmlPart);
+
+                    if (rule.TranslatedDestination != null && rule.TranslatedDestination.ConversionIncidentType != ConversionIncidentType.None)
+                    {
+                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.TranslatedDestination.ConvertedCommandId) + xdest + "</td>";
+                        if (rule.TranslatedDestination.ConversionIncidentType > ruleConversionIncidentType)
+                        {
+                            ruleConversionIncidentType = rule.TranslatedDestination.ConversionIncidentType;
+                        }
+                    }
+                    else
+                    {
+                        curRuleHtmlPart = "      <td>" + xdest + "</td>";
+                    }
+                    file.WriteLine(curRuleHtmlPart);
+                    curRuleHtmlFull.Add(curRuleHtmlPart);
+
+                    if (rule.TranslatedService != null && rule.TranslatedService.ConversionIncidentType != ConversionIncidentType.None)
+                    {
+                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.TranslatedService.ConvertedCommandId) + xservice + "</td>";
+                        if (rule.TranslatedService.ConversionIncidentType > ruleConversionIncidentType)
+                        {
+                            ruleConversionIncidentType = rule.TranslatedService.ConversionIncidentType;
+                        }
+                    }
+                    else
+                    {
+                        curRuleHtmlPart = "      <td>" + xservice + "</td>";
+                    }
+                    file.WriteLine(curRuleHtmlPart);
+                    curRuleHtmlFull.Add(curRuleHtmlPart);
+
+                    curRuleHtmlPart = "      <td class='comments'>" + rule.Comments + "</td>";
+                    file.WriteLine(curRuleHtmlPart);
+                    curRuleHtmlFull.Add(curRuleHtmlPart);
+
+                    file.WriteLine("  </tr>");
+                    curRuleHtmlFull.Add("  </tr>");
+
+                    if (_hasNATConversionIncident && ruleConversionIncidentType != ConversionIncidentType.None)
+                    {
+                        if (ruleConversionIncidentType == ConversionIncidentType.ManualActionRequired)
+                        {
+                            ++errorsCount;
+                            rulesWithConversionErrors.AddRange(curRuleHtmlFull);
+                        }
+                        else
+                        {
+                            ++infosCount;
+                            rulesWithConversionInfos.AddRange(curRuleHtmlFull);
+                        }
+                    }
+
+                    ruleNumber++;
+                }
+
+                file.WriteLine("</table>");
+
+                if (rulesWithConversionErrors.Count > 0 || rulesWithConversionInfos.Count > 0)
+                {
+                    file.WriteLine("<div id=\"PolicyConversionIncidents\" style='margin-left: 20px;'><h2>NAT Conversion Issues</h2></div>");
+                }
+
+                // Generate the errors report
+                if (rulesWithConversionErrors.Count > 0)
+                {
+                    file.WriteLine("<script>");
+                    file.WriteLine("   errorsCounter = " + errorsCount + ";");
+                    file.WriteLine("</script>");
+
+                    file.WriteLine("<div id=\"PolicyConversionErrors\" style='margin-left: 20px;'><h3>Conversion Errors</h3></div>");
+                    file.WriteLine("<table style='background-color: rgb(255,255,150);'>");
+                    file.WriteLine("   <tr>");
+                    file.WriteLine("      <th class='errors_header'>No.</th> <th class='errors_header'>Source</th> <th class='errors_header'>Destination</th> <th class='errors_header'>Service</th> <th class='errors_header'>Translated-Source</th> <th class='errors_header'>Translated-Destination</th> <th class='errors_header'>Translated-Service</th> <th class='errors_header'>Comments</th>");
+                    file.WriteLine("   </tr>");
+
+                    foreach (var ruleHtml in rulesWithConversionErrors)
+                    {
+                        file.WriteLine(ruleHtml);
+                    }
+
+                    file.WriteLine("</table>");
+                }
+
+                // Generate the information report
+                if (rulesWithConversionInfos.Count > 0)
+                {
+                    file.WriteLine("<script>");
+                    file.WriteLine("   infosCounter = " + infosCount + ";");
+                    file.WriteLine("</script>");
+
+                    file.WriteLine("<div id=\"PolicyConversionInfos\" style='margin-left: 20px;'><h3>Conversion Notifications</h3></div>");
+                    file.WriteLine("<table style='background-color: rgb(220,240,247);'>");
+                    file.WriteLine("   <tr>");
+                    file.WriteLine("      <th class='errors_header'>No.</th> <th class='errors_header'>Source</th> <th class='errors_header'>Destination</th> <th class='errors_header'>Service</th> <th class='errors_header'>Translated-Source</th> <th class='errors_header'>Translated-Destination</th> <th class='errors_header'>Translated-Service</th> <th class='errors_header'>Comments</th>");
+                    file.WriteLine("   </tr>");
+
+                    foreach (var ruleHtml in rulesWithConversionInfos)
+                    {
+                        file.WriteLine(ruleHtml);
+                    }
+
+                    file.WriteLine("</table>");
+                }
+
+                file.WriteLine("</body>");
+                file.WriteLine("</html>");
+            }
+        }
 
         protected virtual bool AddCheckPointObject(CheckPointObject cpObject)
         {
@@ -861,6 +1173,14 @@ namespace MigrationBase
                     file.WriteLine("</div>");
                 }
 
+                file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "Ranges", _cpRanges.Count());
+                foreach (CheckPoint_Range obj in _cpRanges)
+                {
+                    file.WriteLine("<div id=\"" + obj.Name + "\">");
+                    file.WriteLine(obj.ToCLIScript());
+                    file.WriteLine("</div>");
+                }
+
                 file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "Network Groups", _cpNetworkGroups.Count());
                 foreach (CheckPoint_NetworkGroup obj in _cpNetworkGroups)
                 {
@@ -1051,6 +1371,11 @@ namespace MigrationBase
             }
 
             return res;
+        }
+
+        protected string NatRuleItem2Html(string itemName)
+        {
+            return string.Format("<div><a href='./{0}#{1}' target='_blank'>{1}</a></div>", Path.GetFileName(ObjectsHtmlFile), itemName);
         }
 
         protected string GeneratePackageHtmlReportDateTime()
