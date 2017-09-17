@@ -575,8 +575,6 @@ namespace CheckPointObjects
     {
         public List<CheckPoint_Rule> Rules = new List<CheckPoint_Rule>();
 
-        public bool IsAssociatedInterfaceDisabled { get; set; }
-
         public override string ToCLIScript()
         {
             return "add access-layer " + WriteParam("name", Name, "") + WriteParam("comments", Comments, "")
@@ -594,15 +592,9 @@ namespace CheckPointObjects
         public enum NatMethod { Static, Hide };
 
         public bool Enabled { get; set; }
-        public string Interface1 { get; set; }
-        public string Interface2 { get; set; }
         public string Package { get; set; }
         public NatMethod Method { get; set; }
-        public bool IsStaticMirrorRule { get; set; }
-        public bool IsObjectNatRule { get; set; }
-        public bool IsNonNatRule { get; set; }
-        public bool IsAutoAfterSectionRule { get; set; }
-        public bool IsNonNatSectionRule { get; set; }
+        public object VendorCustomData { get; set; }
 
         public CheckPointObject Source;
         public CheckPointObject Destination;
