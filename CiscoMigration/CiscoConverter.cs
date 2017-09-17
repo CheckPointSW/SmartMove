@@ -126,6 +126,17 @@ namespace CiscoMigration
             }
         }
 
+        private class CiscoNatCustomData
+        {
+            public string Interface1 { get; set; }
+            public string Interface2 { get; set; }
+            public bool IsStaticMirrorRule { get; set; }
+            public bool IsObjectNatRule { get; set; }
+            public bool IsNonNatRule { get; set; }
+            public bool IsAutoAfterSectionRule { get; set; }
+            public bool IsNonNatSectionRule { get; set; }
+        }
+
         private static class CheckPointServiceObjectsFactory
         {
             public static ProtocolType ProtocolStringToProtocolType(ref string sProtocol)
@@ -504,7 +515,6 @@ namespace CiscoMigration
 
         private bool _isInterInterfaceTrafficAllowed = false;
         private bool _isIntraInterfaceTrafficAllowed = false;
-        private bool _hasNATConversionIncident = false;
 
         private enum CheckPointDummyObjectType { Host, NetworkGroup, ServiceGroup, OtherService, TimeGroup };
 
@@ -1944,7 +1954,11 @@ namespace CiscoMigration
                     var cpLayer = new CheckPoint_Layer();
                     cpLayer.Name = ciscoAccessGroup.AccessListName;
                     cpLayer.Comments = ciscoAccessGroup.Description;
-                    cpLayer.IsAssociatedInterfaceDisabled = ciscoInterface.Shutdown;
+
+                    if (ciscoInterface.Shutdown)
+                    {
+                        cpLayer.Tag = "InterfaceDisabled";
+                    }
 
                     // Automatic rule is added for management-only interface:
                     if (ciscoInterface.ManagementOnly && CiscoHostnameCommand != null)
@@ -2026,7 +2040,7 @@ namespace CiscoMigration
                                 var cpRule = Acl_To_CPRule(ciscoAcl);
                                 cpRule.Layer = subPolicy.Name;
 
-                                if (subPolicy.IsAssociatedInterfaceDisabled)
+                                if (!string.IsNullOrEmpty(subPolicy.Tag) && subPolicy.Tag == "InterfaceDisabled")
                                 {
                                     cpRule.Enabled = false;
                                 }
@@ -2722,7 +2736,11 @@ namespace CiscoMigration
                 {
                     var cpLayer = new CheckPoint_Layer();
                     cpLayer.Name = cpZone.Name + "_sub_policy";
-                    cpLayer.IsAssociatedInterfaceDisabled = ciscoInterface.Shutdown;
+
+                    if (ciscoInterface.Shutdown)
+                    {
+                        cpLayer.Tag = "InterfaceDisabled";
+                    }
 
                     if (_isIntraInterfaceTrafficAllowed)
                     {
@@ -2956,12 +2974,14 @@ namespace CiscoMigration
 
                         var cpNatRule = new CheckPoint_NAT_Rule();
                         cpNatRule.Enabled = !ciscoNat.Inactive;
-                        cpNatRule.Interface1 = ciscoNat.RealInterface;
-                        cpNatRule.Interface2 = ciscoNat.MappedInterface;
                         cpNatRule.Method = ciscoNat.IsStatic ? CheckPoint_NAT_Rule.NatMethod.Static : CheckPoint_NAT_Rule.NatMethod.Hide;
                         cpNatRule.Source = _cpObjects.GetObject(command.CiscoId);
                         cpNatRule.Comments = command.Id + ")" + (ciscoNat.IsStatic ? " Static " : " Dynamic ") + "object NAT for " + command.CiscoId;
-                        cpNatRule.IsObjectNatRule = true;
+
+                        cpNatRule.VendorCustomData = new CiscoNatCustomData();
+                        ((CiscoNatCustomData)cpNatRule.VendorCustomData).Interface1 = ciscoNat.RealInterface;
+                        ((CiscoNatCustomData)cpNatRule.VendorCustomData).Interface2 = ciscoNat.MappedInterface;
+                        ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsObjectNatRule = true;
 
                         ApplyConversionIncidentOnCheckPointObject(cpNatRule, ciscoNat);
 
@@ -3088,7 +3108,7 @@ namespace CiscoMigration
                             if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                             {
                                 cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
-                                cpNatRule.IsNonNatSectionRule = true;
+                                ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule = true;
                             }
                             else
                             {
@@ -3128,14 +3148,14 @@ namespace CiscoMigration
                             }
                         }
 
+                        _cpPreorderedNatRules.Add(cpNatRule);
+
                         bool natRuleObjectHasConversionIncident = (cpNatRule.Source != null && cpNatRule.Source.ConversionIncidentType != ConversionIncidentType.None) ||
                                                                   (cpNatRule.TranslatedSource != null && cpNatRule.TranslatedSource.ConversionIncidentType != ConversionIncidentType.None) ||
                                                                   (cpNatRule.Destination != null && cpNatRule.Destination.ConversionIncidentType != ConversionIncidentType.None) ||
                                                                   (cpNatRule.TranslatedDestination != null && cpNatRule.TranslatedDestination.ConversionIncidentType != ConversionIncidentType.None) ||
                                                                   (cpNatRule.Service != null && cpNatRule.Service.ConversionIncidentType != ConversionIncidentType.None) ||
                                                                   (cpNatRule.TranslatedService != null && cpNatRule.TranslatedService.ConversionIncidentType != ConversionIncidentType.None);
-
-                        _cpPreorderedNatRules.Add(cpNatRule);
 
                         if (cpNatRule.ConversionIncidentType != ConversionIncidentType.None || 
                             ciscoNat.ConversionIncidentType != ConversionIncidentType.None || 
@@ -3149,18 +3169,20 @@ namespace CiscoMigration
                         {
                             var cpNatMirrorRule = new CheckPoint_NAT_Rule();
                             cpNatMirrorRule.Enabled = cpNatRule.Enabled;
-                            cpNatMirrorRule.Interface1 = ciscoNat.MappedInterface;
-                            cpNatMirrorRule.Interface2 = ciscoNat.RealInterface;
                             cpNatMirrorRule.Method = CheckPoint_NAT_Rule.NatMethod.Static;
-                            cpNatMirrorRule.IsStaticMirrorRule = true;
                             cpNatMirrorRule.Source = cpNatRule.Destination;
                             cpNatMirrorRule.Destination = cpNatRule.TranslatedSource;
                             cpNatMirrorRule.Service = cpNatRule.TranslatedService ?? cpNatRule.Service;
                             cpNatMirrorRule.TranslatedDestination = _cpObjects.GetObject(command.CiscoId);
                             cpNatMirrorRule.TranslatedService = (cpNatRule.TranslatedService != null) ? cpNatRule.Service : cpNatRule.TranslatedService;
                             cpNatMirrorRule.Comments = "Mirror rule for object " + command.CiscoId;
-                            cpNatMirrorRule.IsObjectNatRule = true;
-                            cpNatMirrorRule.IsNonNatSectionRule = cpNatRule.IsNonNatSectionRule;
+
+                            cpNatMirrorRule.VendorCustomData = new CiscoNatCustomData();
+                            ((CiscoNatCustomData)cpNatMirrorRule.VendorCustomData).Interface1 = ciscoNat.MappedInterface;
+                            ((CiscoNatCustomData)cpNatMirrorRule.VendorCustomData).Interface2 = ciscoNat.RealInterface;
+                            ((CiscoNatCustomData)cpNatMirrorRule.VendorCustomData).IsStaticMirrorRule = true;
+                            ((CiscoNatCustomData)cpNatMirrorRule.VendorCustomData).IsObjectNatRule = true;
+                            ((CiscoNatCustomData)cpNatMirrorRule.VendorCustomData).IsNonNatSectionRule = ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule;
 
                             _cpPreorderedNatRules.Add(cpNatMirrorRule);
                         }
@@ -3189,15 +3211,17 @@ namespace CiscoMigration
                 // Original NAT rule
                 var cpNatRule = new CheckPoint_NAT_Rule();
                 cpNatRule.Enabled = !ciscoNat.Inactive;
-                cpNatRule.Interface1 = ciscoNat.RealInterface;
-                cpNatRule.Interface2 = ciscoNat.MappedInterface;
                 cpNatRule.Method = ciscoNat.IsStatic ? CheckPoint_NAT_Rule.NatMethod.Static : CheckPoint_NAT_Rule.NatMethod.Hide;
-                cpNatRule.IsAutoAfterSectionRule = ciscoNat.IsAutoAfter;
                 cpNatRule.Comments = ciscoNat.Id + ") " + ciscoNat.Text;
+
+                cpNatRule.VendorCustomData = new CiscoNatCustomData();
+                ((CiscoNatCustomData)cpNatRule.VendorCustomData).Interface1 = ciscoNat.RealInterface;
+                ((CiscoNatCustomData)cpNatRule.VendorCustomData).Interface2 = ciscoNat.MappedInterface;
+                ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsAutoAfterSectionRule = ciscoNat.IsAutoAfter;
 
                 if (ciscoNat.SourceId == ciscoNat.TranslatedSourceId && ciscoNat.DestinationId == ciscoNat.TranslatedDestinationId)
                 {
-                    cpNatRule.IsNonNatRule = true;
+                    ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatRule = true;
                 }
 
                 ApplyConversionIncidentOnCheckPointObject(cpNatRule, ciscoNat);
@@ -3226,7 +3250,7 @@ namespace CiscoMigration
                         }
                         else if (ciscoInterface.LeadsToInternet)
                         {
-                            cpNatRule.IsNonNatSectionRule = true;
+                            ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule = true;
                         }
                     }
                 }
@@ -3242,7 +3266,7 @@ namespace CiscoMigration
                         if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                         {
                             cpNatRule.Source = _cpObjects.GetObject(CheckPointObject.Any);
-                            cpNatRule.IsNonNatSectionRule = true;
+                            ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule = true;
                         }
                         else
                         {
@@ -3268,7 +3292,7 @@ namespace CiscoMigration
                         if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                         {
                             cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
-                            cpNatRule.IsNonNatSectionRule = true;
+                            ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule = true;
                         }
                         else
                         {
@@ -3305,7 +3329,7 @@ namespace CiscoMigration
                             }
                             else if (ciscoInterface.LeadsToInternet)
                             {
-                                cpNatRule.IsNonNatSectionRule = true;
+                                ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule = true;
                             }
                         }
                     }
@@ -3321,7 +3345,7 @@ namespace CiscoMigration
                             if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                             {
                                 cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
-                                cpNatRule.IsNonNatSectionRule = true;
+                                ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule = true;
                             }
                             else
                             {
@@ -3417,14 +3441,14 @@ namespace CiscoMigration
                     }
                 }
 
+                _cpPreorderedNatRules.Add(cpNatRule);
+
                 bool natRuleObjectHasConversionIncident = (cpNatRule.Source != null && cpNatRule.Source.ConversionIncidentType != ConversionIncidentType.None) ||
                                                           (cpNatRule.TranslatedSource != null && cpNatRule.TranslatedSource.ConversionIncidentType != ConversionIncidentType.None) ||
                                                           (cpNatRule.Destination != null && cpNatRule.Destination.ConversionIncidentType != ConversionIncidentType.None) ||
                                                           (cpNatRule.TranslatedDestination != null && cpNatRule.TranslatedDestination.ConversionIncidentType != ConversionIncidentType.None) ||
                                                           (cpNatRule.Service != null && cpNatRule.Service.ConversionIncidentType != ConversionIncidentType.None) ||
                                                           (cpNatRule.TranslatedService != null && cpNatRule.TranslatedService.ConversionIncidentType != ConversionIncidentType.None);
-
-                _cpPreorderedNatRules.Add(cpNatRule);
 
                 if (cpNatRule.ConversionIncidentType != ConversionIncidentType.None || 
                     ciscoNat.ConversionIncidentType != ConversionIncidentType.None || 
@@ -3438,12 +3462,9 @@ namespace CiscoMigration
                 {
                     var cpNatMirrorRule = new CheckPoint_NAT_Rule();
                     cpNatMirrorRule.Enabled = cpNatRule.Enabled;
-                    cpNatMirrorRule.Interface1 = ciscoNat.MappedInterface;
-                    cpNatMirrorRule.Interface2 = ciscoNat.RealInterface;
                     cpNatMirrorRule.Method = CheckPoint_NAT_Rule.NatMethod.Static;
-                    cpNatMirrorRule.IsStaticMirrorRule = true;
 
-                    if (cpNatRule.IsNonNatRule)
+                    if (((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatRule)
                     {
                         cpNatMirrorRule.Source = cpNatRule.Destination;
                         cpNatMirrorRule.Destination = cpNatRule.Source;
@@ -3480,8 +3501,13 @@ namespace CiscoMigration
                     cpNatMirrorRule.Service = cpNatRule.TranslatedService ?? cpNatRule.Service;
                     cpNatMirrorRule.TranslatedService = (cpNatRule.TranslatedService != null) ? cpNatRule.Service : cpNatRule.TranslatedService;
                     cpNatMirrorRule.Comments = string.Format("Mirror rule for {0}", ciscoNat.Id);
-                    cpNatMirrorRule.IsNonNatSectionRule = cpNatRule.IsNonNatSectionRule;
-                    cpNatMirrorRule.IsAutoAfterSectionRule = cpNatRule.IsAutoAfterSectionRule;
+
+                    cpNatMirrorRule.VendorCustomData = new CiscoNatCustomData();
+                    ((CiscoNatCustomData)cpNatMirrorRule.VendorCustomData).Interface1 = ciscoNat.MappedInterface;
+                    ((CiscoNatCustomData)cpNatMirrorRule.VendorCustomData).Interface2 = ciscoNat.RealInterface;
+                    ((CiscoNatCustomData)cpNatMirrorRule.VendorCustomData).IsStaticMirrorRule = true;
+                    ((CiscoNatCustomData)cpNatMirrorRule.VendorCustomData).IsNonNatSectionRule = ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule;
+                    ((CiscoNatCustomData)cpNatMirrorRule.VendorCustomData).IsAutoAfterSectionRule = ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsAutoAfterSectionRule;
 
                     _cpPreorderedNatRules.Add(cpNatMirrorRule);
 
@@ -3525,58 +3551,60 @@ namespace CiscoMigration
             // Create the NAT sections
             foreach (var cpNatRule in _cpPreorderedNatRules)
             {
+                var ciscoNatCustomData = ((CiscoNatCustomData)cpNatRule.VendorCustomData);
+
                 // Create section #1:
                 // Manual and twice NAT rules --> no Non-NAT and no auto-after and no object-NAT
-                if (!cpNatRule.IsNonNatSectionRule && !cpNatRule.IsAutoAfterSectionRule && !cpNatRule.IsObjectNatRule)
+                if (!ciscoNatCustomData.IsNonNatSectionRule && !ciscoNatCustomData.IsAutoAfterSectionRule && !ciscoNatCustomData.IsObjectNatRule)
                 {
                     section1.Add(cpNatRule);
                 }
 
                 // Create section #2.1:
                 // Object NAT rules - static --> no Non-NAT and no auto-after
-                if (!cpNatRule.IsNonNatSectionRule && !cpNatRule.IsAutoAfterSectionRule && cpNatRule.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Static)
+                if (!ciscoNatCustomData.IsNonNatSectionRule && !ciscoNatCustomData.IsAutoAfterSectionRule && ciscoNatCustomData.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Static)
                 {
                     section2Static.Add(cpNatRule);
                 }
 
                 // Create section #2.2:
                 // Object NAT rules - dynamic --> no Non-NAT and no auto-after
-                if (!cpNatRule.IsNonNatSectionRule && !cpNatRule.IsAutoAfterSectionRule && cpNatRule.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Hide)
+                if (!ciscoNatCustomData.IsNonNatSectionRule && !ciscoNatCustomData.IsAutoAfterSectionRule && ciscoNatCustomData.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Hide)
                 {
                     section2Dynamic.Add(cpNatRule);
                 }
 
                 // Create section #3:
                 // Auto-After manual and twice NAT rules --> no Non-NAT and no object-NAT
-                if (!cpNatRule.IsNonNatSectionRule && cpNatRule.IsAutoAfterSectionRule && !cpNatRule.IsObjectNatRule)
+                if (!ciscoNatCustomData.IsNonNatSectionRule && ciscoNatCustomData.IsAutoAfterSectionRule && !ciscoNatCustomData.IsObjectNatRule)
                 {
                     section3.Add(cpNatRule);
                 }
 
                 // Create section #5:
                 // Non-NAT manual and twice NAT rules --> no auto-after and no object-NAT
-                if (cpNatRule.IsNonNatSectionRule && !cpNatRule.IsAutoAfterSectionRule && !cpNatRule.IsObjectNatRule)
+                if (ciscoNatCustomData.IsNonNatSectionRule && !ciscoNatCustomData.IsAutoAfterSectionRule && !ciscoNatCustomData.IsObjectNatRule)
                 {
                     section5.Add(cpNatRule);
                 }
 
                 // Create section #6.1:
                 // Non-NAT object NAT rules - static --> no auto-after
-                if (cpNatRule.IsNonNatSectionRule && !cpNatRule.IsAutoAfterSectionRule && cpNatRule.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Static)
+                if (ciscoNatCustomData.IsNonNatSectionRule && !ciscoNatCustomData.IsAutoAfterSectionRule && ciscoNatCustomData.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Static)
                 {
                     section6Static.Add(cpNatRule);
                 }
 
                 // Create section #6.2:
                 // Non-NAT object NAT rules - dynamic --> no auto-after
-                if (cpNatRule.IsNonNatSectionRule && !cpNatRule.IsAutoAfterSectionRule && cpNatRule.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Hide)
+                if (ciscoNatCustomData.IsNonNatSectionRule && !ciscoNatCustomData.IsAutoAfterSectionRule && ciscoNatCustomData.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Hide)
                 {
                     section6Dynamic.Add(cpNatRule);
                 }
 
                 // Create section #7:
                 // Non-NAT auto-After manual and twice NAT rules --> no object-NAT
-                if (cpNatRule.IsNonNatSectionRule && cpNatRule.IsAutoAfterSectionRule && !cpNatRule.IsObjectNatRule)
+                if (ciscoNatCustomData.IsNonNatSectionRule && ciscoNatCustomData.IsAutoAfterSectionRule && !ciscoNatCustomData.IsObjectNatRule)
                 {
                     section7.Add(cpNatRule);
                 }
@@ -3618,6 +3646,8 @@ namespace CiscoMigration
                     continue;
                 }
 
+                var ciscoNatCustomData = ((CiscoNatCustomData)cpNatRule.VendorCustomData);
+
                 // For example, NAT section #4 rule...
                 if (cpNatRule.TranslatedSource == null && cpNatRule.TranslatedDestination == null)
                 {
@@ -3625,31 +3655,31 @@ namespace CiscoMigration
                 }
 
                 // Skip dynamic object-NAT rules
-                if (cpNatRule.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Hide)
+                if (ciscoNatCustomData.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Hide)
                 {
                     continue;
                 }
 
                 // Skip dynamic manual-NAT rules
-                if (!cpNatRule.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Hide && cpNatRule.TranslatedDestination == null)
+                if (!ciscoNatCustomData.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Hide && cpNatRule.TranslatedDestination == null)
                 {
                     continue;
                 }
 
                 // Skip static NAT mirrored rules
-                if (cpNatRule.IsStaticMirrorRule)
+                if (ciscoNatCustomData.IsStaticMirrorRule)
                 {
                     continue;
                 }
 
                 // Skip Non-NAT rules (only twice-NAT: SourceId == TranslatedSourceId && DestinationId == TranslatedDestinationId)
-                if (cpNatRule.IsNonNatRule)
+                if (ciscoNatCustomData.IsNonNatRule)
                 {
                     continue;
                 }
 
-                string natRuleInterface1 = (cpNatRule.Interface1 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + cpNatRule.Interface1) : cpNatRule.Interface1;
-                string natRuleInterface2 = (cpNatRule.Interface2 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + cpNatRule.Interface2) : cpNatRule.Interface2;
+                string natRuleInterface1 = (ciscoNatCustomData.Interface1 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + ciscoNatCustomData.Interface1) : ciscoNatCustomData.Interface1;
+                string natRuleInterface2 = (ciscoNatCustomData.Interface2 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + ciscoNatCustomData.Interface2) : ciscoNatCustomData.Interface2;
 
                 foreach (CheckPoint_Rule cpParentRule in cpPackage.ParentLayer.Rules)
                 {
@@ -3780,15 +3810,17 @@ namespace CiscoMigration
             newFwRuleDest = null;
             serviceMatchedToo = false;
 
+            var ciscoNatCustomData = ((CiscoNatCustomData)natRule.VendorCustomData);
+
             // If NAT rule interface is "any", it should match on EVERY firewall rule interface (zone)
-            string natRuleInterface1 = (natRule.Interface1 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + natRule.Interface1) : parentLayerRuleZone.Name;
-            string natRuleInterface2 = (natRule.Interface2 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + natRule.Interface2) : parentLayerRuleZone.Name;
+            string natRuleInterface1 = (ciscoNatCustomData.Interface1 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + ciscoNatCustomData.Interface1) : parentLayerRuleZone.Name;
+            string natRuleInterface2 = (ciscoNatCustomData.Interface2 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + ciscoNatCustomData.Interface2) : parentLayerRuleZone.Name;
 
             // Static NAT rule matching (no mirrors!!!)
             if (natRule.Method == CheckPoint_NAT_Rule.NatMethod.Static)
             {
                 // Object-NAT rule matching
-                if (natRule.IsObjectNatRule)
+                if (ciscoNatCustomData.IsObjectNatRule)
                 {
                     if (natRuleInterface2 == parentLayerRuleZone.Name)
                     {
@@ -4660,318 +4692,6 @@ namespace CiscoMigration
                     file.WriteLine("</body>");
                     file.WriteLine("</html>");
                 }
-            }
-        }
-
-        public override void ExportNatLayerAsHtml()
-        {
-            using (var file = new StreamWriter(NatHtmlFile, false))
-            {
-                var rulesWithConversionErrors = new List<string>();
-                var rulesWithConversionInfos = new List<string>();
-                int errorsCount = 0;
-                int infosCount = 0;
-
-                file.WriteLine("<html>");
-                file.WriteLine("<head>");
-                file.WriteLine("<style>");
-                file.WriteLine("  body { font-family: Helvetica; margin-left: 0px; margin-right: 0px; margin-top: 0px; }");
-                file.WriteLine("  table { border-collapse: collapse; border: 1px solid gray; margin: 20px; }");
-                file.WriteLine("  td { vertical-align: text-top; padding: 6px; border: 1px solid gray; }");
-                file.WriteLine("  th { vertical-align: text-top; padding: 6px; border: 1px solid gray; background-color: rgb(87,99,114); font-weight: bold; color: white; }");
-                file.WriteLine("  .report_time { font-family: Segoe UI; font-size: 14px; font-weight: normal; border-left: 1px solid #c9c9c9; padding: 10px; } ");
-                file.WriteLine("  .rule_number { background-color: rgb(245,245,245); text-align: right; } ");
-                file.WriteLine("  .errors_header { background-color: rgb(213,51,30); } ");
-                file.WriteLine("  .disabled_rule { text-decoration: line-through; } ");
-                file.WriteLine("  .comments { font-family: Lucida Console; }");
-                file.WriteLine("</style>");
-                file.WriteLine("<script>");
-                file.WriteLine("   var errorsCounter = 0;");
-                file.WriteLine("   var infosCounter = 0;");
-                file.WriteLine("   function displayIncidentsCount() {");
-                file.WriteLine("      if (errorsCounter > 0) {");
-                file.WriteLine("         var elem1 = document.getElementById('errorsCountHost');");
-                file.WriteLine("         if (elem1 != null) {");
-                file.WriteLine("            elem1.style.display = 'inline';");
-                file.WriteLine("         }");
-                file.WriteLine("         var elem2 = document.getElementById('errorsCount');");
-                file.WriteLine("         if (elem2 != null) {");
-                file.WriteLine("            elem2.innerText = elem2.innerText + errorsCounter;");
-                file.WriteLine("         }");
-                file.WriteLine("      }");
-                file.WriteLine("      if (infosCounter > 0) {");
-                file.WriteLine("         var elem1 = document.getElementById('infosCountHost');");
-                file.WriteLine("         if (elem1 != null) {");
-                file.WriteLine("            elem1.style.display = 'inline';");
-                file.WriteLine("         }");
-                file.WriteLine("         var elem2 = document.getElementById('infosCount');");
-                file.WriteLine("         if (elem2 != null) {");
-                file.WriteLine("            elem2.innerText = elem2.innerText + infosCounter;");
-                file.WriteLine("         }");
-                file.WriteLine("      }");
-                file.WriteLine("   }");
-                file.WriteLine("</script>");
-                file.WriteLine("</head>");
-                file.WriteLine("<body onLoad='displayIncidentsCount()'>");
-
-                // Generate the report header
-                file.WriteLine("<div style='height: 70px; line-height: 70px; background-color: black; padding-left: 20px; margin-bottom: 35px; color: white; font-family: Segoe UI; font-size: 20px;'>");
-                file.WriteLine("   <img style='width: 33px; height: 32px; padding-top: 20;' " + HtmlToolLogoImageSource + "/>");
-                file.WriteLine("   <span style='font-weight: bold; vertical-align: top;'>SmartMove</span>");
-                file.WriteLine("   <span style='font-size: 10px; position: absolute; padding-top: 4px; margin-left: 10px;'>ver " + _toolVersion + "</span>");
-                file.WriteLine("   <img style='width: 118px; height: 20px; position: absolute; right: 20; padding-top: 25;' " + HtmlCPLogoImageSource + "/>");
-                file.WriteLine("</div>");
-                file.WriteLine("<div style='font-size: 30px; font-weight: lighter; margin-left: 20px; margin-bottom: 30px;'>CONVERSION REPORT  ");
-                file.WriteLine("   <span id='reportTime' class='report_time'>" + GeneratePackageHtmlReportDateTime() + "</span>");
-                file.WriteLine("</div>");
-                file.WriteLine("<div style='font-size: 16px; margin-left: 20px; margin-bottom: 15px;'>");
-                file.WriteLine("   <span style='font-weight: normal;'>NAT Layer</span>");
-                file.WriteLine("</div>");
-
-                if (_hasNATConversionIncident)
-                {
-                    file.WriteLine("<div style='margin-left: 20px;'>");
-                    file.WriteLine("   <span style='font-weight: bold;'>Found Conversion Issues:</span>");
-                    file.WriteLine("   <span id='errorsCountHost' style='display: none; margin-left: 10px; vertical-align: middle;'>" + string.Format(HtmlErrorImageTagFormat, "Conversion Errors"));
-                    file.WriteLine("      <a id='errorsCount' href='#PolicyConversionErrors' style='margin-left: 2px; vertical-align: top;'></a>");
-                    file.WriteLine("   </span>");
-                    file.WriteLine("   <span id='infosCountHost' style='display: none; margin-left: 10px; vertical-align: middle;'>" + string.Format(HtmlAlertImageTagFormat, "Conversion Notifications"));
-                    file.WriteLine("      <a id='infosCount' href='#PolicyConversionInfos' style='margin-left: 2px; vertical-align: top;'/></a>");
-                    file.WriteLine("   </span>");
-                    file.WriteLine("</div>");
-                }
-
-                // Generate the report body
-                file.WriteLine("<table>");
-                file.WriteLine("   <tr>");
-                file.WriteLine("      <th>No.</th> <th>Source</th> <th>Destination</th> <th>Service</th> <th>Translated-Source</th> <th>Translated-Destination</th> <th>Translated-Service</th> <th>Comments</th>");
-                file.WriteLine("   </tr>");
-
-                int ruleNumber = 1;
-
-                foreach (CheckPoint_NAT_Rule rule in _cpNatRules)
-                {
-                    string source = (rule.Source == null) ? CheckPointObject.Any : rule.Source.Name;
-                    string dest = (rule.Destination == null) ? CheckPointObject.Any : rule.Destination.Name;
-                    string service = (rule.Service == null) ? CheckPointObject.Any : rule.Service.Name;
-                    string xsource = (rule.TranslatedSource == null) ? "=orig" : rule.TranslatedSource.Name;
-                    string xdest = (rule.TranslatedDestination == null) ? "=orig" : rule.TranslatedDestination.Name;
-                    string xservice = (rule.TranslatedService == null) ? "=orig" : rule.TranslatedService.Name;
-
-                    if (xsource != "=orig")
-                    {
-                        xsource = ((rule.Method == CheckPoint_NAT_Rule.NatMethod.Static) ? "static: " : "hide: ") + xsource;
-                    }
-                    if (xdest != "=orig")
-                    {
-                        xdest = "static: " + xdest;
-                    }
-
-                    string curRuleHtmlPart;
-                    var curRuleHtmlFull = new List<string>();
-                    var ruleConversionIncidentType = ConversionIncidentType.None;
-
-                    if (rule.Enabled)
-                    {
-                        curRuleHtmlPart = "  <tr id=\"" + ruleNumber + "\">";
-                    }
-                    else
-                    {
-                        curRuleHtmlPart = "  <tr class='disabled_rule' id=\"" + ruleNumber + "\">";
-                    }
-                    file.WriteLine(curRuleHtmlPart);
-                    curRuleHtmlFull.Add(curRuleHtmlPart);
-
-                    var sbRuleNumberColumnTag = new StringBuilder();
-                    var sbRuleNumberColumnWithLinkBackTag = new StringBuilder();
-                    sbRuleNumberColumnTag.Append("      <td class='rule_number'>");
-                    if (rule.ConversionIncidentType != ConversionIncidentType.None)
-                    {
-                        sbRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(rule.ConvertedCommandId));
-                        ruleConversionIncidentType = rule.ConversionIncidentType;
-                    }
-                    if (!rule.Enabled)
-                    {
-                        sbRuleNumberColumnTag.Append(HtmlDisabledImageTag);
-                    }
-                    sbRuleNumberColumnWithLinkBackTag.Append(sbRuleNumberColumnTag);   // save this XML portion to be continued bellow
-                    sbRuleNumberColumnTag.Append(ruleNumber);
-                    sbRuleNumberColumnTag.Append("</td>");
-                    curRuleHtmlPart = sbRuleNumberColumnTag.ToString();
-                    file.WriteLine(curRuleHtmlPart);
-
-                    sbRuleNumberColumnWithLinkBackTag.Append("<a href=\"#");
-                    sbRuleNumberColumnWithLinkBackTag.Append(ruleNumber);
-                    sbRuleNumberColumnWithLinkBackTag.Append("\">");
-                    sbRuleNumberColumnWithLinkBackTag.Append(ruleNumber);
-                    sbRuleNumberColumnWithLinkBackTag.Append("</a></td>");
-                    curRuleHtmlFull.Add(sbRuleNumberColumnWithLinkBackTag.ToString());
-
-                    if (rule.Source != null && rule.Source.ConversionIncidentType != ConversionIncidentType.None)
-                    {
-                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.Source.ConvertedCommandId) + source + "</td>";
-                        if (rule.Source.ConversionIncidentType > ruleConversionIncidentType)
-                        {
-                            ruleConversionIncidentType = rule.Source.ConversionIncidentType;
-                        }
-                    }
-                    else
-                    {
-                        curRuleHtmlPart = "      <td>" + source + "</td>";
-                    }
-                    file.WriteLine(curRuleHtmlPart);
-                    curRuleHtmlFull.Add(curRuleHtmlPart);
-
-                    if (rule.Destination != null && rule.Destination.ConversionIncidentType != ConversionIncidentType.None)
-                    {
-                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.Destination.ConvertedCommandId) + dest + "</td>";
-                        if (rule.Destination.ConversionIncidentType > ruleConversionIncidentType)
-                        {
-                            ruleConversionIncidentType = rule.Destination.ConversionIncidentType;
-                        }
-                    }
-                    else
-                    {
-                        curRuleHtmlPart = "      <td>" + dest + "</td>";
-                    }
-                    file.WriteLine(curRuleHtmlPart);
-                    curRuleHtmlFull.Add(curRuleHtmlPart);
-
-                    if (rule.Service != null && rule.Service.ConversionIncidentType != ConversionIncidentType.None)
-                    {
-                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.Service.ConvertedCommandId) + service + "</td>";
-                        if (rule.Service.ConversionIncidentType > ruleConversionIncidentType)
-                        {
-                            ruleConversionIncidentType = rule.Service.ConversionIncidentType;
-                        }
-                    }
-                    else
-                    {
-                        curRuleHtmlPart = "      <td>" + service + "</td>";
-                    }
-                    file.WriteLine(curRuleHtmlPart);
-                    curRuleHtmlFull.Add(curRuleHtmlPart);
-
-                    if (rule.TranslatedSource != null && rule.TranslatedSource.ConversionIncidentType != ConversionIncidentType.None)
-                    {
-                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.TranslatedSource.ConvertedCommandId) + xsource + "</td>";
-                        if (rule.TranslatedSource.ConversionIncidentType > ruleConversionIncidentType)
-                        {
-                            ruleConversionIncidentType = rule.TranslatedSource.ConversionIncidentType;
-                        }
-                    }
-                    else
-                    {
-                        curRuleHtmlPart = "      <td>" + xsource + "</td>";
-                    }
-                    file.WriteLine(curRuleHtmlPart);
-                    curRuleHtmlFull.Add(curRuleHtmlPart);
-
-                    if (rule.TranslatedDestination != null && rule.TranslatedDestination.ConversionIncidentType != ConversionIncidentType.None)
-                    {
-                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.TranslatedDestination.ConvertedCommandId) + xdest + "</td>";
-                        if (rule.TranslatedDestination.ConversionIncidentType > ruleConversionIncidentType)
-                        {
-                            ruleConversionIncidentType = rule.TranslatedDestination.ConversionIncidentType;
-                        }
-                    }
-                    else
-                    {
-                        curRuleHtmlPart = "      <td>" + xdest + "</td>";
-                    }
-                    file.WriteLine(curRuleHtmlPart);
-                    curRuleHtmlFull.Add(curRuleHtmlPart);
-
-                    if (rule.TranslatedService != null && rule.TranslatedService.ConversionIncidentType != ConversionIncidentType.None)
-                    {
-                        curRuleHtmlPart = "      <td>" + BuildConversionIncidentLinkTag(rule.TranslatedService.ConvertedCommandId) + xservice + "</td>";
-                        if (rule.TranslatedService.ConversionIncidentType > ruleConversionIncidentType)
-                        {
-                            ruleConversionIncidentType = rule.TranslatedService.ConversionIncidentType;
-                        }
-                    }
-                    else
-                    {
-                        curRuleHtmlPart = "      <td>" + xservice + "</td>";
-                    }
-                    file.WriteLine(curRuleHtmlPart);
-                    curRuleHtmlFull.Add(curRuleHtmlPart);
-
-                    curRuleHtmlPart = "      <td class='comments'>" + rule.Comments + "</td>";
-                    file.WriteLine(curRuleHtmlPart);
-                    curRuleHtmlFull.Add(curRuleHtmlPart);
-
-                    file.WriteLine("  </tr>");
-                    curRuleHtmlFull.Add("  </tr>");
-
-                    if (_hasNATConversionIncident && ruleConversionIncidentType != ConversionIncidentType.None)
-                    {
-                        if (ruleConversionIncidentType == ConversionIncidentType.ManualActionRequired)
-                        {
-                            ++errorsCount;
-                            rulesWithConversionErrors.AddRange(curRuleHtmlFull);
-                        }
-                        else
-                        {
-                            ++infosCount;
-                            rulesWithConversionInfos.AddRange(curRuleHtmlFull);
-                        }
-                    }
-
-                    ruleNumber++;
-                }
-
-                file.WriteLine("</table>");
-
-                if (rulesWithConversionErrors.Count > 0 || rulesWithConversionInfos.Count > 0)
-                {
-                    file.WriteLine("<div id=\"PolicyConversionIncidents\" style='margin-left: 20px;'><h2>NAT Conversion Issues</h2></div>");
-                }
-
-                // Generate the errors report
-                if (rulesWithConversionErrors.Count > 0)
-                {
-                    file.WriteLine("<script>");
-                    file.WriteLine("   errorsCounter = " + errorsCount + ";");
-                    file.WriteLine("</script>");
-
-                    file.WriteLine("<div id=\"PolicyConversionErrors\" style='margin-left: 20px;'><h3>Conversion Errors</h3></div>");
-                    file.WriteLine("<table style='background-color: rgb(255,255,150);'>");
-                    file.WriteLine("   <tr>");
-                    file.WriteLine("      <th class='errors_header'>No.</th> <th class='errors_header'>Source</th> <th class='errors_header'>Destination</th> <th class='errors_header'>Service</th> <th class='errors_header'>Translated-Source</th> <th class='errors_header'>Translated-Destination</th> <th class='errors_header'>Translated-Service</th> <th class='errors_header'>Comments</th>");
-                    file.WriteLine("   </tr>");
-
-                    foreach (var ruleHtml in rulesWithConversionErrors)
-                    {
-                        file.WriteLine(ruleHtml);
-                    }
-
-                    file.WriteLine("</table>");
-                }
-
-                // Generate the information report
-                if (rulesWithConversionInfos.Count > 0)
-                {
-                    file.WriteLine("<script>");
-                    file.WriteLine("   infosCounter = " + infosCount + ";");
-                    file.WriteLine("</script>");
-
-                    file.WriteLine("<div id=\"PolicyConversionInfos\" style='margin-left: 20px;'><h3>Conversion Notifications</h3></div>");
-                    file.WriteLine("<table style='background-color: rgb(220,240,247);'>");
-                    file.WriteLine("   <tr>");
-                    file.WriteLine("      <th class='errors_header'>No.</th> <th class='errors_header'>Source</th> <th class='errors_header'>Destination</th> <th class='errors_header'>Service</th> <th class='errors_header'>Translated-Source</th> <th class='errors_header'>Translated-Destination</th> <th class='errors_header'>Translated-Service</th> <th class='errors_header'>Comments</th>");
-                    file.WriteLine("   </tr>");
-
-                    foreach (var ruleHtml in rulesWithConversionInfos)
-                    {
-                        file.WriteLine(ruleHtml);
-                    }
-
-                    file.WriteLine("</table>");
-                }
-
-                file.WriteLine("</body>");
-                file.WriteLine("</html>");
             }
         }
 
