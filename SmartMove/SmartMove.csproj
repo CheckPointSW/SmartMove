@@ -136,9 +136,17 @@
       <Project>{2221dbe4-0775-4bbd-9cbc-33a20e0a09e7}</Project>
       <Name>CiscoMigration</Name>
     </ProjectReference>
+    <ProjectReference Include="..\JuniperMigration\JuniperMigration.csproj">
+      <Project>{490371b2-1b9c-4bd7-b2a7-e183817e3a37}</Project>
+      <Name>JuniperMigration</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MigrationBase\MigrationBase.csproj">
       <Project>{26e47c40-f380-494d-9009-33475261fcb2}</Project>
       <Name>MigrationBase</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NetScreenMigration\NetScreenMigration.csproj">
+      <Project>{f985894e-81cc-488c-876d-8436ae9c0cd7}</Project>
+      <Name>NetScreenMigration</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

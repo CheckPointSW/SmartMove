@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{26E47C40-F380-494D-9009-33475261FCB2}</ProjectGuid>
+    <ProjectGuid>{F985894E-81CC-488C-876D-8436AE9C0CD7}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MigrationBase</RootNamespace>
-    <AssemblyName>MigrationBase</AssemblyName>
+    <RootNamespace>NetScreenMigration</RootNamespace>
+    <AssemblyName>NetScreenMigration</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -30,8 +30,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Net.IPNetwork, Version=2.0.3.0, Culture=neutral, PublicKeyToken=764160545cf0d618, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\IPNetwork2.2.0.3\lib\net40\System.Net.IPNetwork.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -40,10 +48,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SupportedVendors.cs" />
-    <Compile Include="VendorConverter.cs" />
-    <Compile Include="VendorDescriptionConverter.cs" />
-    <Compile Include="VendorParser.cs" />
+    <Compile Include="ScreenOSCommands.cs" />
+    <Compile Include="ScreenOSConverter.cs" />
+    <Compile Include="ScreenOSKnownServices.cs" />
+    <Compile Include="ScreenOSParser.cs" />
+    <Compile Include="ScreenOSServiceObjects.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ScreenOSPredefinedGroupServiceCPMap.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ScreenOSPredefinedServiceGroups.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ScreenOSPredefinedServices.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CheckPointObjects\CheckPointObjects.csproj">
@@ -53,6 +73,10 @@
     <ProjectReference Include="..\CommonUtils\CommonUtils.csproj">
       <Project>{9ff1087a-c314-4b6b-85b6-9ba5b4f14f48}</Project>
       <Name>CommonUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MigrationBase\MigrationBase.csproj">
+      <Project>{26e47c40-f380-494d-9009-33475261fcb2}</Project>
+      <Name>MigrationBase</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -708,6 +708,44 @@ namespace MigrationBase
             return modifiedNetworkGroups;
         }
 
+        protected IPRanges GetGroupRanges(CheckPoint_NetworkGroup cpNetworkGroup)
+        {
+            var ranges = new IPRanges();
+
+            foreach (string memberName in cpNetworkGroup.Members)
+            {
+                var cpObject = _cpObjects.GetObject(memberName);
+                if (cpObject != null)
+                {
+                    if (cpObject.GetType().ToString().EndsWith("_NetworkGroup"))
+                    {
+                        ranges += GetGroupRanges((CheckPoint_NetworkGroup)cpObject);
+                    }
+                    else
+                    {
+                        ranges += cpObject.GetIPRanges();
+                    }
+                }
+            }
+
+            return ranges;
+        }
+
+        protected IPRanges GetGroupWithExclusionRanges(CheckPoint_NetworkGroup includeGroup, CheckPoint_NetworkGroup excludeGroup)
+        {
+            IPRanges includeRanges = IPRanges.Merge(GetGroupRanges(includeGroup));
+            IPRanges excludeRanges = IPRanges.Merge(GetGroupRanges(excludeGroup));
+
+            var ranges = new IPRanges();
+
+            foreach (IPRange range in includeRanges.Ranges)
+            {
+                ranges += IPRanges.Negate(range, excludeRanges);
+            }
+
+            return IPRanges.Merge(ranges);
+        }
+
         protected void CreateObjectsScript()
         {
             const int publishLatency = 100;
@@ -1407,6 +1445,7 @@ namespace MigrationBase
             reportFile.WriteLine("  .errors_header { background-color: rgb(213,51,30); } ");
             reportFile.WriteLine("  .accept { color: green; }");
             reportFile.WriteLine("  .drop { color: red; }");
+            reportFile.WriteLine("  .reject { color: red; }");
             reportFile.WriteLine("  .comments { font-family: Lucida Console; }");
             reportFile.WriteLine("</style>");
             reportFile.WriteLine("<script>");

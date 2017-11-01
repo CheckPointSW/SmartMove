@@ -50,8 +50,8 @@ namespace CommonUtils
 
         public static int GetMaskLength(string sMask)
         {
-            UInt32 mansk = Ip2Number(sMask);
-            if (mansk == 0)
+            UInt32 mask = Ip2Number(sMask);
+            if (mask == 0)
             {
                 return 0;
             }
@@ -59,13 +59,39 @@ namespace CommonUtils
             int length = 0;
             int pos = 32;
 
-            while (pos - 1 < 32 && length < 32 && IsBitSet(mansk, pos - 1))
+            while (pos - 1 < 32 && length < 32 && IsBitSet(mask, pos - 1))
             {
                 pos--;
                 length++;
             }
 
             return length;
+        }
+
+        public static bool IsWildCardNetmask(string sMask)
+        {
+            IPAddress netmask;
+            if (IPAddress.TryParse(sMask, out netmask) && (netmask.AddressFamily == AddressFamily.InterNetwork))
+            {
+                UInt32 maskInNumber = ~Ip2Number(sMask);
+                string wildcardMask = Number2Ip(maskInNumber);
+                IPAddress wildmask;
+                IPAddress.TryParse(wildcardMask, out wildmask);
+                return IPNetwork.ValidNetmask(wildmask);
+            }
+
+            return false;
+        }
+
+        public static string WildCardMask2Netmask(string sMask)
+        {
+            IPAddress netmask;
+            if (IPAddress.TryParse(sMask, out netmask) && (netmask.AddressFamily == AddressFamily.InterNetwork))
+            {
+                UInt32 maskInNumber = ~Ip2Number(sMask);
+                return Number2Ip(maskInNumber);
+            }
+            return sMask;
         }
 
         public static string GetNetwork(string sIp, string sMask)
@@ -75,6 +101,32 @@ namespace CommonUtils
             UInt32 network = ip & mask;
 
             return Number2Ip(network);
+        }
+
+        public static string NetworkRange2Netmask(string sFrom, string sTo)
+        {
+            UInt32 from = Ip2Number(sFrom);
+            UInt32 to = Ip2Number(sTo);
+
+            if (from > to)
+            {
+                UInt32 tmp = from;
+                from = to;
+                to = tmp;
+            }
+
+            UInt32 diffs = from ^ to;
+            int cidr = 32;
+
+            // Count the number of consecutive zero bits starting at the most significant bit.
+            // Keep shifting right until it's zero (all the non-zero bits are shifted off).
+            while (diffs != 0)
+            {
+                diffs >>= 1;
+                --cidr;   // every time we shift, that's one fewer consecutive zero bits in the prefix length
+            }
+
+            return MaskLength2Netmask(cidr);
         }
 
         public static UInt32 Ip2Number(IPAddress ip)

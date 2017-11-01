@@ -2,7 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:SmartMove"
+        xmlns:vendors="clr-namespace:MigrationBase;assembly=MigrationBase"
         Title="SmartMove"
         TextOptions.TextFormattingMode="Display"
         UseLayoutRounding="True"
@@ -14,7 +16,16 @@
         MinWidth="550" MaxWidth="550">
 
     <Window.Resources>
-        <ResourceDictionary Source="CommonResources.xaml"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <ObjectDataProvider x:Key="VendorsEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+                <ObjectDataProvider.MethodParameters>
+                    <x:Type TypeName="vendors:Vendor"/>
+                </ObjectDataProvider.MethodParameters>
+            </ObjectDataProvider>
+        </ResourceDictionary>
     </Window.Resources>
 
     <!-- Remove the default windows border and header-->
@@ -135,10 +146,19 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConfigurationFileLabel}"
+                            <TextBlock Grid.Row="0" Text="Select the vendor for conversion:" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <ComboBox x:Name="VendorSelector" Grid.Row="1" Margin="0,6,0,0"
+                                      Style="{StaticResource ComboBoxFlatStyle}"
+                                      Width="300" HorizontalAlignment="Left"
+                                      ItemsSource="{Binding Source={StaticResource VendorsEnum}}"
+                                      SelectedItem="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=SelectedVendor}"
+                                      SelectionChanged="VendorSelector_OnSelectionChanged"/>
+                            <TextBlock Grid.Row="2" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConfigurationFileLabel}"  Margin="0,15,0,0"
                                        Style="{StaticResource NormalTextBloclStyle}"/>
-                            <Grid Grid.Row="1" Margin="0,6,0,0" Background="Transparent" Focusable="False">
+                            <Grid Grid.Row="3" Margin="0,6,0,0" Background="Transparent" Focusable="False">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -151,8 +171,8 @@
                                 <Button x:Name="BrowseConfigFile" Grid.Column="1" Style="{StaticResource BrowseButtonControlStyle}" Margin="10,0,0,0"
                                         Click="BrowseConfigFile_OnClick"/>
                             </Grid>
-                            <TextBlock Grid.Row="2" Text="Target folder:" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
-                            <Grid Grid.Row="3" Margin="0,6,0,0" Background="Transparent" Focusable="False">
+                            <TextBlock Grid.Row="4" Text="Target folder:" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <Grid Grid.Row="5" Margin="0,6,0,0" Background="Transparent" Focusable="False">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -165,18 +185,18 @@
                                 <Button x:Name="BrowseTargetFolder" Grid.Column="1" Style="{StaticResource BrowseButtonControlStyle}" Margin="10,0,0,0"
                                         Click="BrowseTargetFolder_OnClick"/>
                             </Grid>
-                            <TextBlock Grid.Row="4" Text="Import to a domain (optional):" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
-                            <TextBox x:Name="DomainName" Grid.Row="5" Margin="0,6,0,0" Style="{StaticResource TextBoxWithWatermarkControlStyle}"
+                            <TextBlock Grid.Row="6" Text="Import to a domain (optional):" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <TextBox x:Name="DomainName" Grid.Row="7" Margin="0,6,0,0" Style="{StaticResource TextBoxWithWatermarkControlStyle}"
                                      Tag="domain name"
                                      Width="300" HorizontalAlignment="Left">
                                 <i:Interaction.Behaviors>
                                     <local:TripleClickSelectsAllTextBehavior/>
                                 </i:Interaction.Behaviors>
                             </TextBox>
-                            <CheckBox x:Name="ConvertNAT" Grid.Row="6" Content="Convert NAT configuration"
+                            <CheckBox x:Name="ConvertNAT" Grid.Row="8" Content="Convert NAT configuration"
                                       IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertNATConfiguration, Mode=TwoWay}"
                                       Margin="0,15,0,0" Background="Transparent" Focusable="False"/>
-                            <Grid Grid.Row="7" Margin="0,15,0,0" Background="Transparent" Focusable="False">
+                            <Grid Grid.Row="9" Margin="0,15,0,0" Background="Transparent" Focusable="False">
                                 <Button x:Name="Go" Style="{StaticResource GoButtonControlStyle}" HorizontalAlignment="Right"
                                         Click="Go_OnClick"/>
                             </Grid>

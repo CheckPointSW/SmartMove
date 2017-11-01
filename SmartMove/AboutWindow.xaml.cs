@@ -45,6 +45,14 @@ namespace SmartMove
                     AssemblyProduct = SupportedVendors.CiscoProduct;
                     AssemblyDescription = SupportedVendors.CiscoProductDescription;
                     break;
+                case Vendor.JuniperJunosOS:
+                    AssemblyProduct = SupportedVendors.JuniperProduct;
+                    AssemblyDescription = SupportedVendors.JuniperProductDescription;
+                    break;
+                case Vendor.JuniperScreenOS:
+                    AssemblyProduct = SupportedVendors.NetScreenProduct;
+                    AssemblyDescription = SupportedVendors.NetScreenProductDescription;
+                    break;
             }
 
             object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);

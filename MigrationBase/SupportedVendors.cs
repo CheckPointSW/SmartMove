@@ -16,6 +16,7 @@ limitations under the License.
 ********************************************************************/
 
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace MigrationBase
 {
@@ -26,12 +27,18 @@ namespace MigrationBase
         public const string CiscoConfigurationFileLabel = "Cisco configuration file:";
         public const string CiscoProduct = "Cisco to Check Point Migration Tool";
         public const string CiscoProductDescription = "This tool supports migration of Cisco ASA 8.3\nand above configuration files.";
+        public const string JuniperConfigurationFileLabel = "JunosOS XML configuration file:";
+        public const string JuniperProduct = "Juniper JunosOS to Check Point Migration Tool";
+        public const string JuniperProductDescription = "This tool supports migration of JunosOS SRX 12.1\nand above XML configuration files.";
+        public const string NetScreenConfigurationFileLabel = "ScreenOS configuration file:";
+        public const string NetScreenProduct = "Juniper ScreenOS to Check Point Migration Tool";
+        public const string NetScreenProductDescription = "This tool supports migration of ScreenOS SSG 6.3 (R19B/R22)\nand above configuration files.";
         
         #endregion
 
         #region Private Members
 
-        private readonly List<Vendor> _vendors = new List<Vendor> { Vendor.CiscoASA };
+        private readonly List<Vendor> _vendors = new List<Vendor> { Vendor.CiscoASA, Vendor.JuniperJunosOS, Vendor.JuniperScreenOS };
         
         #endregion
 
@@ -47,8 +54,14 @@ namespace MigrationBase
         #endregion
     }
 
+    [TypeConverter(typeof(VendorDescriptionConverter))]
     public enum Vendor
     {
-        CiscoASA
+        [Description("Cisco ASA")]
+        CiscoASA,
+        [Description("Juniper JunosOS SRX")]
+        JuniperJunosOS,
+        [Description("Juniper ScreenOS SSG/ISG/NS")]
+        JuniperScreenOS
     }
 }

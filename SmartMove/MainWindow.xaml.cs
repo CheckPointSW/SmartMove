@@ -26,7 +26,9 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using CiscoMigration;
+using JuniperMigration;
 using MigrationBase;
+using NetScreenMigration;
 
 namespace SmartMove
 {
@@ -58,20 +60,26 @@ namespace SmartMove
 
         public MainWindow()
         {
+            _supportedVendors.SelectedVendor = Vendor.CiscoASA;   // this is the default
+
             InitializeComponent();
             ShowDisclaimer();
             LoadContactInfo();
-
-            ConfigFilePath.Text = SourceFolder;
-            TargetFolderPath.Text = TargetFolder;
-
-            _supportedVendors.SelectedVendor = Vendor.CiscoASA;
-            ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
         }
 
         #endregion
 
         #region Properties
+
+        #region SelectedVendor
+
+        public Vendor SelectedVendor
+        {
+            get { return _supportedVendors.SelectedVendor; }
+            set { _supportedVendors.SelectedVendor = value; }
+        }
+        
+        #endregion
 
         #region ConfigurationFileLabel
 
@@ -200,6 +208,26 @@ namespace SmartMove
             }
         }
 
+        private void VendorSelector_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            switch (_supportedVendors.SelectedVendor)
+            {
+                case Vendor.CiscoASA:
+                    ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
+                    break;
+                case Vendor.JuniperJunosOS:
+                    ConfigurationFileLabel = SupportedVendors.JuniperConfigurationFileLabel;
+                    break;
+                case Vendor.JuniperScreenOS:
+                    ConfigurationFileLabel = SupportedVendors.NetScreenConfigurationFileLabel;
+                    break;
+            }
+
+            ConfigFilePath.Text = SourceFolder;
+            TargetFolderPath.Text = TargetFolder;
+            OutputPanel.Visibility = Visibility.Collapsed;
+        }
+
         private void BrowseConfigFile_OnClick(object sender, RoutedEventArgs e)
         {
             var openFileDialog = new OpenFileDialog();
@@ -219,6 +247,12 @@ namespace SmartMove
             {
                 case Vendor.CiscoASA:
                     filter = "conf files (*.conf, *.txt)|*.conf; *.txt|All files (*.*)|*.*";
+                    break;
+                case Vendor.JuniperJunosOS:
+                    filter = "xml files (*.xml)|*.xml";
+                    break;
+                case Vendor.JuniperScreenOS:
+                    filter = "conf files (*.txt)|*.txt|All files (*.*)|*.*";
                     break;
             }
 
@@ -311,6 +345,12 @@ namespace SmartMove
                 case Vendor.CiscoASA:
                     vendorParser = new CiscoParser();
                     break;
+                case Vendor.JuniperJunosOS:
+                    vendorParser = new JuniperParser();
+                    break;
+                case Vendor.JuniperScreenOS:
+                    vendorParser = new ScreenOSParser();
+                    break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
             }
@@ -341,6 +381,20 @@ namespace SmartMove
                         ShowMessage("Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                     }
                     break;
+
+                case Vendor.JuniperJunosOS:
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        ShowMessage("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                    }
+                    else if (vendorParser.MajorVersion < 12 || (vendorParser.MajorVersion == 12 && vendorParser.MinorVersion < 1))
+                    {
+                        ShowMessage("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                    }
+                    break;
+
+                case Vendor.JuniperScreenOS:
+                    break;
             }
 
             string vendorFileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
@@ -356,6 +410,12 @@ namespace SmartMove
             {
                 case Vendor.CiscoASA:
                     vendorConverter = new CiscoConverter();
+                    break;
+                case Vendor.JuniperJunosOS:
+                    vendorConverter = new JuniperConverter();
+                    break;
+                case Vendor.JuniperScreenOS:
+                    vendorConverter = new ScreenOSConverter();
                     break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
@@ -425,6 +485,7 @@ namespace SmartMove
 
         private void EnableDisableControls(bool enable)
         {
+            VendorSelector.IsEnabled = enable;
             ConfigFilePath.IsEnabled = enable;
             BrowseConfigFile.IsEnabled = enable;
             TargetFolderPath.IsEnabled = enable;
@@ -438,6 +499,18 @@ namespace SmartMove
         {
             ConversionIssuesPanel.Visibility = (vendorConverter.ConversionIncidentCategoriesCount > 0) ? Visibility.Visible : Visibility.Collapsed;
             ConvertedNatPolicyPanel.Visibility = ConvertNATConfiguration ? Visibility.Visible : Visibility.Collapsed;
+
+            switch (_supportedVendors.SelectedVendor)
+            {
+                case Vendor.CiscoASA:
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
+                    break;
+                default:
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+                    break;
+            }
 
             ConfigurationFileLinesCount = string.Format(" ({0} lines)", convertedLinesCount);
             ConvertedPolicyRulesCount = string.Format(" ({0} rules)", vendorConverter.RulesInConvertedPackage());

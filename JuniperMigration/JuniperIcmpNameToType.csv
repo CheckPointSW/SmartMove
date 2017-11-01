@@ -1,0 +1,16 @@
+Name,Type
+echo-reply,0
+unreachable,3
+source-quench,4
+redirect,5
+echo-request,8
+router-advertisement,9
+router-solicit,10
+time-exceeded,11
+parameter-problem,12
+timestamp,13
+timestamp-reply,14
+info-request,15
+info-reply,16
+mask-request,17
+mask-reply,18

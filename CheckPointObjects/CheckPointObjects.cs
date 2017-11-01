@@ -34,7 +34,7 @@ namespace CheckPointObjects
         /// <summary>
         /// Regex: replace any char that is NOT any of the following to "_" char
         /// </summary>
-        protected const string NameValidityRegex = @"[^A-Za-z0-9 _.-]";
+        protected const string NameValidityRegex = @"[^A-Za-z0-9_.-]";
 
         /// <summary>
         /// Regex: replace any char that is NOT any of the following to "_" char
@@ -442,7 +442,7 @@ namespace CheckPointObjects
 
     public class CheckPoint_Rule : CheckPointObject
     {
-        public enum ActionType { Accept, Drop, SubPolicy };
+        public enum ActionType { Accept, Drop, Reject, SubPolicy };
         public enum TrackTypes { None, Log };
 
         public const string SubPolicyCleanupRuleName = "Sub-Policy Cleanup rule";
@@ -490,6 +490,9 @@ namespace CheckPointObjects
                     break;
                 case ActionType.Drop:
                     actionName = "drop";
+                    break;
+                case ActionType.Reject:
+                    actionName = "reject";
                     break;
                 case ActionType.SubPolicy:
                     actionName = "apply layer";
@@ -552,6 +555,30 @@ namespace CheckPointObjects
             return newRule;
         }
 
+        public bool CompareTo(CheckPoint_Rule other)
+        {
+            if (Enabled != other.Enabled ||
+                Action != other.Action || 
+                Track != other.Track ||
+                SourceNegated != other.SourceNegated ||
+                DestinationNegated != other.DestinationNegated)
+            {
+                return false;
+            }
+
+            if ((Time.Count != other.Time.Count) ||
+                (Time.Count > 0 && other.Time.Count > 0 && Time[0].Name != other.Time[0].Name))
+            {
+                return false;
+            }
+
+            bool sourceMatch = CompareLists(Source, other.Source);
+            bool destMatch = CompareLists(Destination, other.Destination);
+            bool serviceMatch = CompareLists(Service, other.Service);
+
+            return sourceMatch && destMatch && serviceMatch;
+        }
+
         public bool IsCleanupRule()
         {
             if (!string.IsNullOrEmpty(Name) && Name == SubPolicyCleanupRuleName)
@@ -568,6 +595,17 @@ namespace CheckPointObjects
             }
 
             return false;
+        }
+
+        private static bool CompareLists(IEnumerable<CheckPointObject> items1, IEnumerable<CheckPointObject> items2)
+        {
+            var list1 = (from o in items1 select o.Name).ToList();
+            var list2 = (from o in items2 select o.Name).ToList();
+
+            var firstNotSecond = list1.Except(list2).ToList();
+            var secondNotFirst = list2.Except(list1).ToList();
+
+            return (!firstNotSecond.Any() && !secondNotFirst.Any());
         }
     }
 
@@ -626,6 +664,25 @@ namespace CheckPointObjects
         public override string ToCLIScriptInstruction()
         {
             return "";
+        }
+
+        public CheckPoint_NAT_Rule Clone()
+        {
+            var newRule = new CheckPoint_NAT_Rule();
+            newRule.Name = Name;
+            newRule.Comments = Comments;
+            newRule.Enabled = Enabled;
+            newRule.Method = Method;
+            newRule.Source = Source;
+            newRule.Destination = Destination;
+            newRule.Service = Service;
+            newRule.TranslatedSource = TranslatedSource;
+            newRule.TranslatedDestination = TranslatedDestination;
+            newRule.TranslatedService = TranslatedService;
+            newRule.ConvertedCommandId = ConvertedCommandId;
+            newRule.ConversionIncidentType = ConversionIncidentType;
+
+            return newRule;
         }
     }
 
