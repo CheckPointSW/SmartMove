@@ -854,6 +854,8 @@ namespace MigrationBase
 
                 CheckPoint_NetworkGroup allInternal = null;
 
+                bool splitNetworkGroupsCreation = (_cpNetworkGroups.Count > 0 && _cpGroupsWithExclusion.Count > 0);
+
                 if (_cpNetworkGroups.Count > 0)
                 {
                     file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "Network Group", _cpNetworkGroups.Count)));
@@ -863,6 +865,11 @@ namespace MigrationBase
                         if (obj.Name == AllInternalNetwotkGroupName)
                         {
                             allInternal = obj;
+                            continue;
+                        }
+
+                        if (splitNetworkGroupsCreation && obj.CreateAfterGroupsWithExclusion)
+                        {
                             continue;
                         }
 
@@ -883,6 +890,27 @@ namespace MigrationBase
                     int objectsCount = 0;
                     foreach (CheckPoint_GroupWithExclusion obj in _cpGroupsWithExclusion)
                     {
+                        file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                        objectsCount++;
+                        if (objectsCount % publishLatency == 0)
+                        {
+                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                        }
+                    }
+                    file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                }
+
+                if (splitNetworkGroupsCreation)
+                {
+                    int objectsCount = 0;
+                    foreach (CheckPoint_NetworkGroup obj in _cpNetworkGroups)
+                    {
+                        if (!obj.CreateAfterGroupsWithExclusion)
+                        {
+                            continue;
+                        }
+
                         file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
 
                         objectsCount++;
