@@ -354,6 +354,35 @@ namespace JuniperMigration
             }
         }
 
+        // This method resolves the interfaces subnets overlaping issue by creating 
+        // a new network group with excusion (CheckPoint_GroupWithExclusion).
+        private void Add_or_Modify_InterfaceNetworkGroups()
+        {
+            var interfaceGroupObjects = new List<CheckPoint_NetworkGroup>();
+
+            foreach (Juniper_Interface ifc in JuniperInterfaces)
+            {
+                string interfaceGroupName = ifc.Name + "_subnets";
+                var cpObject = _cpObjects.GetObject(interfaceGroupName);
+                if (cpObject != null)
+                {
+                    interfaceGroupObjects.Add((CheckPoint_NetworkGroup)cpObject);
+                }
+            }
+
+            var modifiedNetworkGroups = Add_or_Modify_InterfaceNetworkGroups(interfaceGroupObjects);
+
+            // Apply object name verification.
+            foreach (var modifiedNetworkGroup in modifiedNetworkGroups)
+            {
+                if (_cpUnsafeNames.Contains(modifiedNetworkGroup))
+                {
+                    _cpUnsafeNames.Add(modifiedNetworkGroup + "_include");
+                    _cpUnsafeNames.Add(modifiedNetworkGroup + "_exclude");
+                }
+            }
+        }
+
         private void Add_Zones()
         {
             foreach (Juniper_Zone zone in JuniperZones)
@@ -400,35 +429,9 @@ namespace JuniperMigration
                     var cpNetworkGroup = new CheckPoint_NetworkGroup();
                     cpNetworkGroup.Name = "zone_" + zone.Name + "_subnets";
                     cpNetworkGroup.Members.AddRange(members);
+                    cpNetworkGroup.CreateAfterGroupsWithExclusion = true;
                     CheckObjectNameValidity(cpNetworkGroup, zone);
                     AddCheckPointObject(cpNetworkGroup);
-                }
-            }
-        }
-
-        private void Add_or_Modify_InterfaceNetworkGroups()
-        {
-            var interfaceGroupObjects = new List<CheckPoint_NetworkGroup>();
-
-            foreach (Juniper_Interface ifc in JuniperInterfaces)
-            {
-                string interfaceGroupName = ifc.Name + "_subnets";
-                var cpObject = _cpObjects.GetObject(interfaceGroupName);
-                if (cpObject != null)
-                {
-                    interfaceGroupObjects.Add((CheckPoint_NetworkGroup)cpObject);
-                }
-            }
-
-            var modifiedNetworkGroups = Add_or_Modify_InterfaceNetworkGroups(interfaceGroupObjects);
-
-            // Apply object name verification.
-            foreach (var modifiedNetworkGroup in modifiedNetworkGroups)
-            {
-                if (_cpUnsafeNames.Contains(modifiedNetworkGroup))
-                {
-                    _cpUnsafeNames.Add(modifiedNetworkGroup + "_include");
-                    _cpUnsafeNames.Add(modifiedNetworkGroup + "_exclude");
                 }
             }
         }
