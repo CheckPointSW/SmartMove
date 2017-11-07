@@ -240,6 +240,12 @@ namespace CheckPointObjects
     {
         public List<string> Members = new List<string>();
 
+        /// <summary>
+        /// This property is used to overcome the problematic order of objects creation for 
+        /// GroupWithExclusion and NetworkGroup types cross-referencing each other.
+        /// </summary>
+        public bool CreateAfterGroupsWithExclusion { get; set; }
+
         public override string ToCLIScript()
         {
             return "add group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
