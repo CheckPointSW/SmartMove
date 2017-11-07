@@ -1047,6 +1047,58 @@ namespace NetScreenMigration
             return ifcCommand != null;
         }
 
+        private CheckPointObject GetNetworkGroupOfNameOrMembers(string groupName, List<string> members)
+        {
+            CheckPointObject existGroup = _cpObjects.GetObject(groupName);
+            if (existGroup != null)
+            {
+                return existGroup;
+            }
+
+            foreach (CheckPoint_NetworkGroup group in _cpNetworkGroups)
+            {
+                if (group.Members.Count == members.Count && group.Members.All(members.Contains))
+                {
+                    return group;
+                }
+            }
+
+            return null;
+        }
+
+        private CheckPointObject GetServiceGroupOfNameOrMembers(string groupName, List<string> members)
+        {
+            CheckPointObject existService = _cpObjects.GetObject(groupName);
+            if (existService != null)
+            {
+                return existService;
+            }
+
+            var serviceListByCheckPointName = new List<string>();
+
+            foreach (string service in members)
+            {
+                if (ScreenOS2CheckPointServicesNameDic.ContainsKey(service))
+                {
+                    serviceListByCheckPointName.Add(ScreenOS2CheckPointServicesNameDic[service]);
+                }
+                else
+                {
+                    serviceListByCheckPointName.Add(service);
+                }
+            }
+
+            foreach (CheckPoint_ServiceGroup group in _cpServiceGroups)
+            {
+                if (group.Members.Count == members.Count && group.Members.All(serviceListByCheckPointName.Contains))
+                {
+                    return group;
+                }
+            }
+
+            return null;
+        }
+
         private CheckPointObject GetCheckPointObjByIp(string ip, string mask)
         {
             /* Find Checkpoint Host/Network object by IP & Mask*/
@@ -1235,7 +1287,7 @@ namespace NetScreenMigration
             if (policy.SrcAddr.Count > 1)
             {
                 string groupName = "GRP_SM_SRC_RULE_" + policy.PolicyId.ToString();
-                srcOrig = _cpObjects.GetObject(groupName);
+                srcOrig = GetNetworkGroupOfNameOrMembers(groupName, policy.SrcAddr);
                 if (srcOrig == null)
                 {
                     /* Create group*/
@@ -1302,7 +1354,7 @@ namespace NetScreenMigration
             if (policy.DstAddr.Count > 1)
             {
                 string groupName = "GRP_SM_DST_RULE_" + policy.PolicyId.ToString();
-                dstOrig = _cpObjects.GetObject(groupName);
+                dstOrig = GetNetworkGroupOfNameOrMembers(groupName, policy.DstAddr);
                 if (dstOrig == null)
                 {
                     /* Create group*/
@@ -1354,7 +1406,7 @@ namespace NetScreenMigration
             if (policy.Services.Count > 1)
             {
                 string groupName = "GRP_SM_Service_RULE_" + policy.PolicyId.ToString();
-                serviceOrig = _cpObjects.GetObject(groupName);
+                serviceOrig = GetServiceGroupOfNameOrMembers(groupName, policy.Services);
                 if (serviceOrig == null)
                 {
                     /* Create group*/
@@ -2603,6 +2655,14 @@ namespace NetScreenMigration
                             }
                         }
 
+                        if (simpleMipPolicy.OrigPolicy.MixedNAT)
+                        {
+                            /* No relevant info in interface Vip command*/
+                            string errorTitle = string.Format("Complex ScreenOS NAT policy is not supported, only MIP NAT will be considered");
+                            string errorDescription = string.Format("Policy NAT object details: {0}.", simpleMipPolicy.OrigPolicy.Text);
+                            _conversionIncidents.Add(new ConversionIncident(simpleMipPolicy.OrigPolicy.Id, errorTitle, errorDescription, ConversionIncidentType.Informative));
+                        }
+
                         /* Create Nat rule*/
                         CheckPointObject srcOrig = GetSrcObjectFromPolicyForNAT(simpleMipPolicy);
                         CheckPointObject serviceOrig = GetServiceObjectFromPolicyForNAT(simpleMipPolicy);
@@ -2616,16 +2676,16 @@ namespace NetScreenMigration
                         _cpNatRules.Add(natRuleInDirection);
 
                         /* Nat out direction of MIP*/
+                        natRuleOutDirection.Source = mip2CheckpointObj[destObj][1];
+                        natRuleOutDirection.Destination = srcOrig;
                         natRuleOutDirection.Service = serviceOrig;
-                        natRuleOutDirection.Source = srcOrig;
-                        natRuleOutDirection.Destination = mip2CheckpointObj[destObj][1];
-                        natRuleOutDirection.TranslatedDestination = mip2CheckpointObj[destObj][0];
+                        natRuleOutDirection.TranslatedSource = mip2CheckpointObj[destObj][0];
                         natRuleOutDirection.Tag = "MIP";
                         _cpNatRules.Add(natRuleOutDirection);
-
-                        /* Create Policy*/
-                        CreateRuleFromNATPolicy(simpleMipPolicy);
                     }
+
+                    /* Create Policy*/
+                    CreateRuleFromNATPolicy(simpleMipPolicy);
                 }
             }
         }
@@ -2787,10 +2847,18 @@ namespace NetScreenMigration
                             _cpNatRules.Add(natRule);
 
                         }
-
-                        /* Create Policy*/
-                        CreateRuleFromNATPolicy(simpleVipPolicy);
                     }
+
+                    if (simpleVipPolicy.OrigPolicy.MixedNAT)
+                    {
+                        /* No relevant info in interface Vip command*/
+                        string errorTitle = string.Format("Complex ScreenOS NAT policy is not supported, only VIP NAT will be considered");
+                        string errorDescription = string.Format("Policy NAT object details: {0}.", simpleVipPolicy.OrigPolicy.Text);
+                        _conversionIncidents.Add(new ConversionIncident(simpleVipPolicy.OrigPolicy.Id, errorTitle, errorDescription, ConversionIncidentType.Informative));
+                    }
+
+                    /* Create Policy*/
+                    CreateRuleFromNATPolicy(simpleVipPolicy);
                 }
             }
         }
@@ -3239,7 +3307,7 @@ namespace NetScreenMigration
                 }
 
                 /* Get original source checkpoint object from policy*/
-                CheckPointObject cpDipOriginalObjTemp  = GetSrcObjectByNameFromPolicy(simplePolicy.SrcAddr.First(), simplePolicy,true);
+                CheckPointObject cpDipOriginalObjTemp = GetSrcObjectFromPolicyForNAT(simplePolicy);
 
                 /* For each interface attached to zone create a rule, if multiple put in disable*/
                 int interfaceWithHostObject = 0;
@@ -3260,14 +3328,14 @@ namespace NetScreenMigration
 
                 if (interfaceWithHostObject > 1)
                 {           
-                    string errorTitle = string.Format("ScreenOS NAT policy object does not contains dip-id. NAT rules will be created as much as the number of attached interfaces to destination zone with host IP. NAT rules will be in a disabled mode");
+                    string errorTitle = string.Format("ScreenOS NAT policy object does not contain dip-id. NAT rules will be created as much as the number of attached interfaces to destination zone with host IP. NAT rules will be in a disabled mode");
                     string errorDescription = string.Format("Policy DIP object details: {0}.", natPolicy.Text);
                     _conversionIncidents.Add(new ConversionIncident(natPolicy.Id, errorTitle, errorDescription, ConversionIncidentType.ManualActionRequired));
                     comments = errorTitle;
                 }
                 else
                 {   /* If only one rule was created, set the enabled value by the policy configuration*/
-                    comments = "ScreenOS NAT policy object does not contains dip-id. One NAT rule will be created according to attached interface to destination zone with host IP.";
+                    comments = "ScreenOS NAT policy object does not contain dip-id. One NAT rule will be created according to attached interface to destination zone with host IP.";
                     isEnabled[isEnabled.IndexOf(isEnabled.Last())] = simplePolicy.IsEnabled;
                 }      
             }
@@ -3301,11 +3369,14 @@ namespace NetScreenMigration
 
                     /* Translated ip range*/
                     cpDipTranslatedObj.Add(GetCheckPointObjByIpRange(dipObj.IpStart, dipObj.IpEnd, ObjectNameGenerator.DipTranslatedName(dipObj.DipId, "RANGE")));
+
+                    /* PAT is false in case of range*/
+                    isPATEnabled.Add(false);
                 }
                 else
                 {
                     /* Get original checkpoint object*/
-                    cpDipOriginalObj.Add(GetSrcObjectByNameFromPolicy(simplePolicy.SrcAddr.First(), simplePolicy,true));
+                    cpDipOriginalObj.Add(GetSrcObjectFromPolicyForNAT(simplePolicy));
 
                     /* Get translated ip*/
                     CheckPointObject cpDipTranslatedObjTemp = GetCheckPointObjByIp(dipObj.IpStart, ScreenOSNetworkUtil.HostMask());
@@ -3316,6 +3387,9 @@ namespace NetScreenMigration
                     }
                     cpDipTranslatedObj.Add(cpDipTranslatedObjTemp);
 
+                    /* PAT*/
+                    isPATEnabled.Add(dipObj.IsPATEnabled);
+
                     if (dipObj.IpStart != dipObj.IpEnd)
                     {
                         string errorTitle = string.Format("ScreenOS DIP object contains range of IPs. Modifying the range to only one IP by using the first IP of the range");
@@ -3324,7 +3398,6 @@ namespace NetScreenMigration
                     }
                 }
 
-                isPATEnabled.Add(dipObj.IsPATEnabled);
                 isEnabled.Add(simplePolicy.IsEnabled);
             }
             else

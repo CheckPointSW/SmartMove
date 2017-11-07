@@ -1090,6 +1090,7 @@ namespace NetScreenMigration
         public int DipId { get; set; }
         public List<string> DestNatIp { get; set; }
         public int DestNatPort;
+        public bool MixedNAT { get; set; }
 
         public ScreenOSCommand_Policy()
         {
@@ -1110,6 +1111,7 @@ namespace NetScreenMigration
             DestNatIp = null;
             DestNatPort = 0;
             KnownCommand = true;
+            MixedNAT = false;
         }
 
         public override string Name() { return "policy"; }
@@ -1194,7 +1196,15 @@ namespace NetScreenMigration
             commandString = command.GetParam(i++);
             if (commandString == "nat")
             {
-                ParseNatPart(command,ref i);
+                PolicyNatTypeEnum natType = ParseNatPart(command, ref i);
+                if (PolicyNatType != PolicyNatTypeEnum.Policy)
+                {
+                    MixedNAT = true;
+                }
+                else
+                {
+                    PolicyNatType = natType;
+                }
                 commandString = command.GetParam(i++);
             }
 
@@ -1277,14 +1287,15 @@ namespace NetScreenMigration
             return PolicyNatTypeEnum.Policy;
         }
 
-        private void  ParseNatPart(ScreenOSCommand command,ref int baseIndex)
-        {      
+        private PolicyNatTypeEnum ParseNatPart(ScreenOSCommand command, ref int baseIndex)
+        {
+            var policyNatType = PolicyNatTypeEnum.Na;
             string commandString = command.GetParam(baseIndex);
 
             // Source policy based nat
             if (commandString == "src")
             {
-                PolicyNatType = PolicyNatTypeEnum.Dip;
+                policyNatType = PolicyNatTypeEnum.Dip;
                 commandString = command.GetParam(++baseIndex);
                 if (commandString == "dip-id")
                 {
@@ -1297,13 +1308,13 @@ namespace NetScreenMigration
             // Destination policy based nat
             if (commandString == "dst")
             {
-                if (PolicyNatType == PolicyNatTypeEnum.Dip)
+                if (policyNatType == PolicyNatTypeEnum.Dip)
                 {
-                    PolicyNatType = PolicyNatTypeEnum.PolicyBaseSrcDest;
+                    policyNatType = PolicyNatTypeEnum.PolicyBaseSrcDest;
                 }
                 else
                 {
-                    PolicyNatType = PolicyNatTypeEnum.PolicyBaseDest;
+                    policyNatType = PolicyNatTypeEnum.PolicyBaseDest;
                 }
 
                 baseIndex++;
@@ -1327,6 +1338,8 @@ namespace NetScreenMigration
                     commandString = command.GetParam(++baseIndex);
                 }
             }
+
+            return policyNatType;
         }
     }
 
