@@ -1934,6 +1934,7 @@ namespace NetScreenMigration
         {
             foreach (KeyValuePair<string, CheckPoint_NetworkGroup> entry in _zonesNetworkGroups)
             {
+                entry.Value.CreateAfterGroupsWithExclusion = true;
                 CheckObjectNameValidity(entry.Value, new ScreenOSCommand());
                 AddCheckPointObject(entry.Value);
             }
