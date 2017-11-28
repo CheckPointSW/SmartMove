@@ -737,18 +737,6 @@ namespace NetScreenMigration
             if (originalName != cpObject.SafeName())
             {
                 _cpUnsafeNames.Add(originalName);
-
-                screenOSCommand.ConversionIncidentType = ConversionIncidentType.Informative;
-                cpObject.ConversionIncidentType = ConversionIncidentType.Informative;   // report on converted object as well!!!
-
-                string errorDescription = inMultipleZones
-                   ? string.Format("Object original name: {0}, attached to zone {1}. Modified name: {2}", originalName, cpObject.Tag, cpObject.SafeName())
-                   : string.Format("Object original name: {0}. Modified name: {1}", originalName, cpObject.SafeName());
-
-                _conversionIncidents.Add(new ConversionIncident(screenOSCommand.Id,
-                                                                "ScreenOS object name contains illegal character. Modifying the original name to a Check Point valid name.",
-                                                                errorDescription,
-                                                                screenOSCommand.ConversionIncidentType));
             }
 
             if (_objectNameGenerator.GetAppearanceCount(originalName) != 0)
@@ -3619,6 +3607,12 @@ namespace NetScreenMigration
                 file.WriteLine("   <tr><td style='font-size: 12px; color: Red;'>Commands with conversion error</td></tr>");
                 file.WriteLine("   <tr><td style='font-size: 12px; color: Blue;'>Commands with conversion notification</td></tr>");
                 file.WriteLine("</table>");
+
+                file.WriteLine("<div style='margin-bottom: 20px; font-size: 14px; color: Blue;'>");
+                file.WriteLine("   <span style='vertical-align: middle; font-size: 14px;'>" + HtmlAlertImageTag);
+                file.WriteLine("      <a> Valid Check Point object name consists of the following characters only - \"A-Za-z0-9_.-\". Any invalid character will be replaced with a \"_\" character.</a>");
+                file.WriteLine("   </span>");
+                file.WriteLine("</div>");
 
                 if (_conversionIncidents.Count > 0)
                 {
