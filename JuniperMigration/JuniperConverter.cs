@@ -2985,18 +2985,6 @@ namespace JuniperMigration
             {
                 string unsafeName = inMultipleZones ? (originalName + "_" + cpObject.Tag) : originalName;   // this is important!!!
                 _cpUnsafeNames.Add(unsafeName);
-
-                juniperObject.ConversionIncidentType = ConversionIncidentType.Informative;
-                cpObject.ConversionIncidentType = ConversionIncidentType.Informative;   // report on converted object as well!!!
-
-                string errorDescription = inMultipleZones 
-                    ? string.Format("Object original name: {0}, attached to zone {1}. Modified name: {2}", originalName, cpObject.Tag, cpObject.SafeName()) 
-                    : string.Format("Object original name: {0}. Modified name: {1}", originalName, cpObject.SafeName());
-
-                _conversionIncidents.Add(new ConversionIncident(juniperObject.LineNumber,
-                                                                "Juniper object name contains illegal character. Modifying the original name to a Check Point valid name.",
-                                                                errorDescription,
-                                                                juniperObject.ConversionIncidentType));
             }
 
             if (cpObject.GetType().ToString().EndsWith("_TcpService") || cpObject.GetType().ToString().EndsWith("_UdpService"))
@@ -3350,6 +3338,18 @@ namespace JuniperMigration
                 file.WriteLine("<body>");
                 file.WriteLine("<h2>Juniper config file</h2>");
 
+                file.WriteLine("<table style='margin-bottom: 20px; background: rgb(250,250,250);'>");
+                file.WriteLine("   <tr><td style='font-size: 14px; text-decoration: underline;'>Colors Legend</td></tr>");
+                file.WriteLine("   <tr><td style='font-size: 12px; color: Red;'>Commands with conversion error</td></tr>");
+                file.WriteLine("   <tr><td style='font-size: 12px; color: Blue;'>Commands with conversion notification</td></tr>");
+                file.WriteLine("</table>");
+
+                file.WriteLine("<div style='margin-bottom: 20px; font-size: 14px; color: Blue;'>");
+                file.WriteLine("   <span style='vertical-align: middle; font-size: 14px;'>" + HtmlAlertImageTag);
+                file.WriteLine("      <a> Valid Check Point object name consists of the following characters only - \"A-Za-z0-9_.-\". Any invalid character will be replaced with a \"_\" character.</a>");
+                file.WriteLine("   </span>");
+                file.WriteLine("</div>");
+
                 if (_conversionIncidents.Count > 0)
                 {
                     file.WriteLine("<div style='margin-bottom: 20px;'>");
@@ -3398,7 +3398,7 @@ namespace JuniperMigration
                     file.WriteLine("<h2 id=\"ConversionIncidents\">Conversion Issues</h2>");
 
                     bool first = true;
-                    string prevTitle = "";
+                    ConversionIncident prevErr = null;
 
                     foreach (ConversionIncident err in _conversionIncidents.OrderByDescending(item => item.IncidentType).ThenBy(item => item.Title).ThenBy(item => item.LineNumber).ToList())
                     {
@@ -3415,7 +3415,7 @@ namespace JuniperMigration
                             file.WriteLine("<table class=\"report_table\">");
                         }
 
-                        if (!first && prevTitle != err.Title)
+                        if (!first && prevErr.Title != err.Title)
                         {
                             file.WriteLine("</table>");
 
@@ -3430,13 +3430,17 @@ namespace JuniperMigration
                             file.WriteLine("<table class=\"report_table\">");
                         }
 
-                        file.WriteLine("  <tr>");
-                        file.WriteLine("    <td class=\"line_number\" style=\"text-align: right;\"> <a href=\"#line_" + err.LineNumber + "\">" + err.LineNumber + "</a></td>");
-                        file.WriteLine("    <td>" + err.Description + "</td>");
-                        file.WriteLine("  </tr>");
+                        // Do not display the same description for the same line...
+                        if (prevErr == null || prevErr.LineNumber != err.LineNumber || prevErr.Description != err.Description)
+                        {
+                            file.WriteLine("  <tr>");
+                            file.WriteLine("    <td class=\"line_number\" style=\"text-align: right;\"> <a href=\"#line_" + err.LineNumber + "\">" + err.LineNumber + "</a></td>");
+                            file.WriteLine("    <td>" + err.Description + "</td>");
+                            file.WriteLine("  </tr>");
+                        }
 
                         first = false;
-                        prevTitle = err.Title;
+                        prevErr = err;
                     }
                 }
 
