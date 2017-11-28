@@ -649,15 +649,6 @@ namespace CiscoMigration
             if (originalName != cpObject.SafeName())
             {
                 _cpUnsafeNames.Add(originalName);
-
-                ciscoCommand.ConversionIncidentType = ConversionIncidentType.Informative;
-                cpObject.ConversionIncidentType = ConversionIncidentType.Informative;   // report on converted object as well!!!
-
-                string errorDescription = string.Format("Object original name: {0}. Modified name: {1}", originalName, cpObject.SafeName());
-                _conversionIncidents.Add(new ConversionIncident(ciscoCommand.Id,
-                                                                "Cisco object name contains illegal character. Modifying the original name to a Check Point valid name.",
-                                                                errorDescription,
-                                                                ciscoCommand.ConversionIncidentType));
             }
 
             if (cpObject.GetType().ToString().EndsWith("_TcpService") || cpObject.GetType().ToString().EndsWith("_UdpService"))
@@ -2232,7 +2223,7 @@ namespace CiscoMigration
                     {
                         CiscoCommand ciscoPortReferenceCommand = _ciscoParser.GetCommandByCiscoId(ciscoAcl.DestinationProperties.TcpUdpPortValue);
 
-                        if (ciscoPortReferenceCommand.Name() == "object-group")
+                        if (ciscoPortReferenceCommand != null && ciscoPortReferenceCommand.Name() == "object-group")
                         {
                             var ciscoGroupReferenceObject = (Cisco_GroupObject)ciscoPortReferenceCommand;
 
@@ -2294,7 +2285,7 @@ namespace CiscoMigration
             {
                 CiscoCommand ciscoProtocolReferenceCommand = _ciscoParser.GetCommandByCiscoId(ciscoAcl.ProtocolReference);
 
-                if (ciscoProtocolReferenceCommand.Name() == "object-group")   // services group or protocols group
+                if (ciscoProtocolReferenceCommand != null && ciscoProtocolReferenceCommand.Name() == "object-group")   // services group or protocols group
                 {
                     var ciscoGroupReferenceObject = (Cisco_GroupObject)ciscoProtocolReferenceCommand;
 
@@ -2307,7 +2298,7 @@ namespace CiscoMigration
                         Add_AclProtocols_To_CPRule(ciscoAcl, ciscoGroupReferenceObject, cpRule);
                     }
                 }
-                else if (ciscoProtocolReferenceCommand.Name() == "object")   // service object
+                else if (ciscoProtocolReferenceCommand != null && ciscoProtocolReferenceCommand.Name() == "object")   // service object
                 {
                     var ciscoReferenceObject = (Cisco_Object)ciscoProtocolReferenceCommand;
 
@@ -2371,7 +2362,7 @@ namespace CiscoMigration
 
                     _conversionIncidents.Add(new ConversionIncident(ciscoAcl.Id,
                                                                     "Error creating a rule, missing information for Cisco ACL protocol",
-                                                                    "ACL Protocol details: " + ciscoProtocolReferenceCommand.CiscoId + ".",
+                                                                    "ACL Protocol details: " + ciscoAcl.ProtocolReference + ".",
                                                                     ciscoAcl.ConversionIncidentType));
                 }
             }
@@ -2601,7 +2592,7 @@ namespace CiscoMigration
                     // specific protocol with a service group of ports
                     CiscoCommand ciscoPortReferenceCommand = _ciscoParser.GetCommandByCiscoId(ciscoAcl.DestinationProperties.TcpUdpPortValue);
 
-                    if (ciscoPortReferenceCommand.Name() == "object-group")
+                    if (ciscoPortReferenceCommand != null && ciscoPortReferenceCommand.Name() == "object-group")
                     {
                         var ciscoGroupReferenceObject = (Cisco_GroupObject)ciscoPortReferenceCommand;
 
@@ -4182,6 +4173,12 @@ namespace CiscoMigration
                 file.WriteLine("   <tr><td style='font-size: 12px; color: Blue;'>Commands with conversion notification</td></tr>");
                 file.WriteLine("</table>");
 
+                file.WriteLine("<div style='margin-bottom: 20px; font-size: 14px; color: Blue;'>");
+                file.WriteLine("   <span style='vertical-align: middle; font-size: 14px;'>" + HtmlAlertImageTag);
+                file.WriteLine("      <a> Valid Check Point object name consists of the following characters only - \"A-Za-z0-9_.-\". Any invalid character will be replaced with a \"_\" character.</a>");
+                file.WriteLine("   </span>");
+                file.WriteLine("</div>");
+
                 if (_conversionIncidents.Count > 0)
                 {
                     file.WriteLine("<div style='margin-bottom: 20px;'>");
@@ -4227,7 +4224,7 @@ namespace CiscoMigration
                     file.WriteLine("<h2 id=\"ConversionIncidents\">Conversion Issues</h2>");
 
                     bool first = true;
-                    string prevTitle = "";
+                    ConversionIncident prevErr = null;
 
                     foreach (ConversionIncident err in _conversionIncidents.OrderByDescending(item => item.IncidentType).ThenBy(item => item.Title).ThenBy(item => item.LineNumber).ToList())
                     {
@@ -4244,7 +4241,7 @@ namespace CiscoMigration
                             file.WriteLine("<table class=\"report_table\">");
                         }
 
-                        if (!first && prevTitle != err.Title)
+                        if (!first && prevErr.Title != err.Title)
                         {
                             file.WriteLine("</table>");
 
@@ -4259,13 +4256,17 @@ namespace CiscoMigration
                             file.WriteLine("<table class=\"report_table\">");
                         }
 
-                        file.WriteLine("  <tr>");
-                        file.WriteLine("    <td class=\"line_number\" style=\"text-align: right;\"> <a href=\"#line_" + err.LineNumber + "\">" + err.LineNumber + "</a></td>");
-                        file.WriteLine("    <td>" + err.Description + "</td>");
-                        file.WriteLine("  </tr>");
+                        // Do not display the same description for the same line...
+                        if (prevErr == null || prevErr.LineNumber != err.LineNumber || prevErr.Description != err.Description)
+                        {
+                            file.WriteLine("  <tr>");
+                            file.WriteLine("    <td class=\"line_number\" style=\"text-align: right;\"> <a href=\"#line_" + err.LineNumber + "\">" + err.LineNumber + "</a></td>");
+                            file.WriteLine("    <td>" + err.Description + "</td>");
+                            file.WriteLine("  </tr>");
+                        }
 
                         first = false;
-                        prevTitle = err.Title;
+                        prevErr = err;
                     }
                 }
 
