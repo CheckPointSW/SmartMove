@@ -9,6 +9,7 @@ rsvp,46
 gre,47
 esp,50
 ah,51
+skip,57
 icmp6,58
 ospf,89
 ipip,94
