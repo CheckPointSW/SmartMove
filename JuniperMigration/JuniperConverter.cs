@@ -35,6 +35,18 @@ namespace JuniperMigration
     {
         #region Helper Classes
 
+        private class DuplicateNameInfo
+        {
+            public bool IsCPPredefinedName { get; private set; }
+            public List<string> Zones { get; private set; }
+
+            public DuplicateNameInfo(bool isCPPredefinedName)
+            {
+                IsCPPredefinedName = isCPPredefinedName;
+                Zones = new List<string>();
+            }
+        }
+
         private static class NetworkObjectNameGenerator
         {
             private static int _networkGroupNamecounter;
@@ -144,9 +156,9 @@ namespace JuniperMigration
 
         private JuniperParser _juniperParser;
 
+        private Dictionary<string, DuplicateNameInfo> _duplicateNamesLookup = new Dictionary<string, DuplicateNameInfo>(StringComparer.InvariantCultureIgnoreCase);
         private Dictionary<string, string> _juniper2CheckpointServiceDuplicates = new Dictionary<string, string>();
         private Dictionary<string, string> _juniperInvalidApplicationsReferences = new Dictionary<string, string>();
-        private Dictionary<string, int> _juniperDuplicateNamesLookup = new Dictionary<string, int>();
         private Dictionary<string, List<IPNetwork>> _juniperInterfacesTopology = new Dictionary<string, List<IPNetwork>>();
         private List<string> _cpUnsafeNames = new List<string>();
         private List<string> _cpServiceInvalidNames = new List<string>();
@@ -1402,7 +1414,7 @@ namespace JuniperMigration
                                         if (translatedDestination != null)
                                         {
                                             translatedDestination.Name = pool.Name;
-                                            CheckObjectNameValidity(translatedDestination, pool);
+                                            CheckObjectNameValidity(translatedDestination, pool, false, true);
                                             AddCheckPointObject(translatedDestination);
                                         }
                                     }
@@ -2148,7 +2160,7 @@ namespace JuniperMigration
                         if (translatedSource != null)
                         {
                             translatedSource.Name = pool.Name;
-                            CheckObjectNameValidity(translatedSource, pool);
+                            CheckObjectNameValidity(translatedSource, pool, false, true);
                             AddCheckPointObject(translatedSource);
 
                             if (!string.IsNullOrEmpty(pool.HostAddressBase))
@@ -2351,9 +2363,20 @@ namespace JuniperMigration
             }
             else
             {
-                cpObject = new CheckPoint_Network();
-                ((CheckPoint_Network)cpObject).Subnet = address.IpAddress;
-                ((CheckPoint_Network)cpObject).Netmask = address.Netmask;
+                // This is very important, as SRX seems to have such Subnet usages...
+                if (address.Netmask == "0.0.0.0")
+                {
+                    cpObject = new CheckPoint_Range();
+                    cpObject.Tag = "ANY_NETWORK";   // !!!
+                    ((CheckPoint_Range)cpObject).RangeFrom = "0.0.0.0";
+                    ((CheckPoint_Range)cpObject).RangeTo = "255.255.255.255";
+                }
+                else
+                {
+                    cpObject = new CheckPoint_Network();
+                    ((CheckPoint_Network)cpObject).Subnet = address.IpAddress;
+                    ((CheckPoint_Network)cpObject).Netmask = address.Netmask;
+                }
             }
 
             cpObject.Name = addressAutoName;
@@ -2861,7 +2884,7 @@ namespace JuniperMigration
 
         private bool IsNetworkObjectReachableFromInterface(CheckPointObject cpObject, Juniper_Interface juniperInterface)
         {
-            if (cpObject.Name == CheckPointObject.Any)
+            if (cpObject.Name == CheckPointObject.Any || cpObject.Tag == "ANY_NETWORK")   // !!!
             {
                 return true;
             }
@@ -2977,7 +3000,7 @@ namespace JuniperMigration
             return interfaceTopology;
         }
 
-        private void CheckObjectNameValidity(CheckPointObject cpObject, JuniperObject juniperObject, bool inMultipleZones = false)
+        private void CheckObjectNameValidity(CheckPointObject cpObject, JuniperObject juniperObject, bool inMultipleZones = false, bool safeNameOnly = false)
         {
             string originalName = cpObject.Name;
 
@@ -2985,6 +3008,11 @@ namespace JuniperMigration
             {
                 string unsafeName = inMultipleZones ? (originalName + "_" + cpObject.Tag) : originalName;   // this is important!!!
                 _cpUnsafeNames.Add(unsafeName);
+            }
+
+            if (safeNameOnly)
+            {
+                return;
             }
 
             if (cpObject.GetType().ToString().EndsWith("_TcpService") || cpObject.GetType().ToString().EndsWith("_UdpService"))
@@ -3005,24 +3033,38 @@ namespace JuniperMigration
                 }
             }
 
-            // Check if Juniper object name matches Check Point predefined service/service group name.
-            int duplicatesCounter;
-            if (_juniperDuplicateNamesLookup.TryGetValue(originalName, out duplicatesCounter))
+            DuplicateNameInfo duplicateNameInfo;
+            if (_duplicateNamesLookup.TryGetValue(originalName, out duplicateNameInfo))
             {
-                ++duplicatesCounter;
-                _juniperDuplicateNamesLookup[originalName] = duplicatesCounter;
-
-                string uniqueName = string.Format("{0}_{1}", originalName, duplicatesCounter);
-                cpObject.Name = uniqueName;
+                if (inMultipleZones)
+                {
+                    if (!duplicateNameInfo.Zones.Contains(cpObject.Tag))
+                    {
+                        duplicateNameInfo.Zones.Add(cpObject.Tag);
+                        _duplicateNamesLookup[originalName] = duplicateNameInfo;
+                        return;
+                    }
+                }
 
                 juniperObject.ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
 
-                string errorDescription = string.Format("Original name: {0}. Using unique name: {1}.", originalName, uniqueName);
+                string errorTitle = duplicateNameInfo.IsCPPredefinedName
+                                        ? "Detected an object with a same name in Check Point's predefined service objects repository."
+                                        : "Detected an object with a non unique name. Check Point names should be case insensitive.";
+                errorTitle += " Please review for further possible modifications to object configuration before the final migration.";
 
-                _conversionIncidents.Add(new ConversionIncident(juniperObject.LineNumber,
-                                                                "Detected an object with a same name in Check Point's predefined service objects repository. Please review for further possible modifications to objects before migration.",
-                                                                errorDescription,
-                                                                juniperObject.ConversionIncidentType));
+                string errorDescription = string.Format("Object details: {0} [{1}].", originalName, juniperObject.GetType().ToString().Split('_')[1]);
+
+                _conversionIncidents.Add(new ConversionIncident(juniperObject.LineNumber, errorTitle, errorDescription, juniperObject.ConversionIncidentType));
+            }
+            else
+            {
+                duplicateNameInfo = new DuplicateNameInfo(false);
+                if (inMultipleZones)
+                {
+                    duplicateNameInfo.Zones.Add(cpObject.Tag);
+                }
+                _duplicateNamesLookup.Add(originalName, duplicateNameInfo);
             }
         }
 
@@ -3217,7 +3259,7 @@ namespace JuniperMigration
                         }
                     }
 
-                    cpDummyObject = new CheckPoint_NetworkGroup { Name = "_Err_in_service-line_" + juniperObject.LineNumber };
+                    cpDummyObject = new CheckPoint_ServiceGroup { Name = "_Err_in_service-line_" + juniperObject.LineNumber };
                     break;
             }
 
@@ -3258,7 +3300,7 @@ namespace JuniperMigration
 
             foreach (var cpObject in _cpObjects.GetPredefinedObjects())
             {
-                _juniperDuplicateNamesLookup.Add(cpObject.Name, 0);
+                _duplicateNamesLookup.Add(cpObject.Name, new DuplicateNameInfo(true));
             }
 
             Add_NetworkObjects();
