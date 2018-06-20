@@ -483,6 +483,7 @@ namespace JuniperMigration
         public const string TemporaryTermName = "_APPLICATION_TERM_";
 
         public bool IsJunosDefault { get; set; }
+        public bool IsFromTerm { get; set; }
         public string Protocol { get; set; }
         public string Port { get; set; }
         public string IcmpType { get; set; }
@@ -516,6 +517,7 @@ namespace JuniperMigration
 
             if (autoGenerateName)
             {
+                IsFromTerm = true;
                 Name = TemporaryTermName + LineNumber;
             }
 
