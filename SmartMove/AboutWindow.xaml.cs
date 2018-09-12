@@ -53,6 +53,10 @@ namespace SmartMove
                     AssemblyProduct = SupportedVendors.NetScreenProduct;
                     AssemblyDescription = SupportedVendors.NetScreenProductDescription;
                     break;
+                case Vendor.FortiGate:
+                    AssemblyProduct = SupportedVendors.FortiGateProduct;
+                    AssemblyDescription = SupportedVendors.FortiGateProductDescription;
+                    break;
             }
 
             object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);

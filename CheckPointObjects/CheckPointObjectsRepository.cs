@@ -175,6 +175,12 @@ namespace CheckPointObjects
             }
         }
 
+        public void ClearRepository()
+        {
+            _repository.Clear();
+            _knownServices.Clear();
+        }
+
         public List<CheckPointObject> GetPredefinedObjects()
         {
             return (from objectInfo in _repository where objectInfo.Value.IsPredefined select objectInfo.Value.Object).ToList();

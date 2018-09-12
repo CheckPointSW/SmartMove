@@ -125,6 +125,31 @@ namespace CheckPointObjects
 
             return str;
         }
+
+        protected static string WriteListParamWithIndexes(string paramName, List<string> paramValues, bool useSafeNames)
+        {
+            if (paramValues.Count == 0)
+            {
+                return "";
+            }
+
+            string str = "";
+            int i = 0;
+
+            foreach (string paramValue in paramValues)
+            {
+                string val = paramValue;
+                if (useSafeNames)
+                {
+                    val = GetSafeName(paramValue);
+                }
+
+                str += string.Format("{0}.{1} \"{2}\" ", paramName, i, val);
+                i++;
+            }
+
+            return str;
+        }
     }
 
     public class CheckPoint_PredifinedObject : CheckPointObject
@@ -156,11 +181,12 @@ namespace CheckPointObjects
     public class CheckPoint_Domain : CheckPointObject
     {
         public string Fqdn { get; set; }
+        public bool IsSubDomain { get; set; }
 
         public override string ToCLIScript()
         {
             return "add dns-domain " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("is-sub-domain", false, true);
+                + WriteParam("is-sub-domain", IsSubDomain, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -295,14 +321,14 @@ namespace CheckPointObjects
     public class CheckPoint_UdpService : CheckPointObject
     {
         public string Port { get; set; }
-        public string SourePort { get; set; }
+        public string SourcePort { get; set; }
         public string SessionTimeout { get; set; }
 
         public override string ToCLIScript()
         {
             return "add service-udp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("port", Port, "")
-                + WriteParam("source-port", SourePort, "")
+                + WriteParam("source-port", SourcePort, "")
                 + WriteParam("session-timeout", SessionTimeout, "0");
         }
 
@@ -315,14 +341,14 @@ namespace CheckPointObjects
     public class CheckPoint_TcpService : CheckPointObject
     {
         public string Port { get; set; }
-        public string SourePort { get; set; }
+        public string SourcePort { get; set; }
         public string SessionTimeout { get; set; }
 
         public override string ToCLIScript()
         {
             return "add service-tcp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("port", Port, "")
-                + WriteParam("source-port", SourePort, "")
+                + WriteParam("source-port", SourcePort, "")
                 + WriteParam("session-timeout", SessionTimeout, "0");
         }
 
@@ -335,12 +361,14 @@ namespace CheckPointObjects
     public class CheckPoint_SctpService : CheckPointObject
     {
         public string Port { get; set; }
+        public string SourcePort { get; set; }
         public string SessionTimeout { get; set; }
 
         public override string ToCLIScript()
         {
             return "add service-sctp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("port", Port, "")
+                + WriteParam("source-port", SourcePort, "")
                 + WriteParam("session-timeout", SessionTimeout, "0");
         }
 
@@ -433,16 +461,90 @@ namespace CheckPointObjects
         }
     }
 
-    public class CheckPoint_TimeGroup : CheckPointObject
+    public class CheckPoint_Time : CheckPointObject
     {
+        public enum Weekdays { Sun, Mon, Tue, Wed, Thu, Fri, Sat };
+
+        public bool StartNow { get; set; }
+        public string StartDate { get; set; }
+        public string StartTime { get; set; }
+        public double StartPosix { get; set; }
+
+        public bool EndNever { get; set; }
+        public string EndDate { get; set; }
+        public string EndTime { get; set; }
+        public double EndPosix { get; set; }
+        
+        public bool HoursRangesEnabled_1 { get; set; }
+        public string HoursRangesFrom_1 { get; set; }
+        public string HoursRangesTo_1 { get; set; }
+
+        public bool HoursRangesEnabled_2 { get; set; }
+        public string HoursRangesFrom_2 { get; set; }
+        public string HoursRangesTo_2 { get; set; }
+
+        public List<Weekdays> RecurrenceWeekdays = new List<Weekdays>();
+
         public override string ToCLIScript()
         {
-            return "add time-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "");
+            return "add time " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                
+                + WriteParam("start-now", StartNow.ToString().ToLower(), "") 
+                + WriteParam("start.date", StartDate, "") 
+                + WriteParam("start.time", StartTime, "")
+                + WriteParam("start.posix", (StartPosix > 0 ? "" + StartPosix : ""), "")
+
+                + WriteParam("end-never", EndNever.ToString().ToLower(), "") 
+                + WriteParam("end.date", EndDate, "") 
+                + WriteParam("end.time", EndTime, "")
+                + WriteParam("end.posix", (EndPosix > 0 ? "" + EndPosix : ""), "")
+
+                + WriteParam("hours-ranges.1.enabled", (HoursRangesEnabled_1 ? HoursRangesEnabled_1.ToString().ToLower() : ""), "") 
+                + WriteParam("hours-ranges.1.from", HoursRangesFrom_1, "") 
+                + WriteParam("hours-ranges.1.to", HoursRangesTo_1, "")
+
+                + WriteParam("hours-ranges.2.enabled", (HoursRangesEnabled_2 ? HoursRangesEnabled_2.ToString().ToLower() : ""), "")
+                + WriteParam("hours-ranges.2.from", HoursRangesFrom_2, "")
+                + WriteParam("hours-ranges.2.to", HoursRangesTo_2, "") 
+                
+                + WriteParam("recurrence.pattern", (RecurrenceWeekdays.Count > 0 ? "Weekly" : ""), "")
+                + WriteListParamWithIndexes("recurrence.weekdays", (from o in RecurrenceWeekdays select o.ToString()).ToList(), true);
         }
 
         public override string ToCLIScriptInstruction()
         {
-            return "create time group [" + Name + "]";
+            return "create time [" + Name + "]";
+        }
+    }
+
+    public class CheckPoint_TimeGroup : CheckPointObject
+    {
+        public List<string> Members = new List<string>();
+
+        public override string ToCLIScript()
+        {
+            return "add time-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteListParam("members", Members, true);
+        }
+
+        public override string ToCLIScriptInstruction()
+        {
+            return "create time group [" + Name + "]: " + Members.Count + " members";
+        }
+    }
+
+    public class CheckPoint_AccessRole : CheckPointObject
+    {
+        public List<string> Users = new List<string>();
+
+        public override string ToCLIScript()
+        {
+            return "add access-role " + WriteParam("name", SafeName(), "") + "networks \"any\"";
+        }
+
+        public override string ToCLIScriptInstruction()
+        {
+            return "create access role [" + Name + "]: " + Users.Count + " users";
         }
     }
 
@@ -658,7 +760,7 @@ namespace CheckPointObjects
                 + WriteParam("original-source", (Source != null) ? Source.Name : "", "")
                 + WriteParam("original-destination", (Destination != null) ? Destination.Name : "", "")
                 + WriteParam("original-service", (Service != null) ? Service.Name : "", "")
-                + WriteParam("translated-source", (TranslatedSource != null) ? TranslatedSource.Name :"", "")
+                + WriteParam("translated-source", (TranslatedSource != null) ? TranslatedSource.Name : "", "")
                 + WriteParam("translated-destination", (TranslatedDestination != null) ? TranslatedDestination.Name : "", "")
                 + WriteParam("translated-service", (TranslatedService != null) ? TranslatedService.Name : "", "")
                 + WriteParam("comments", Comments, "")

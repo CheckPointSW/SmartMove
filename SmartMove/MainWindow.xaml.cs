@@ -29,6 +29,7 @@ using CiscoMigration;
 using JuniperMigration;
 using MigrationBase;
 using NetScreenMigration;
+using FortiGateMigration;
 
 namespace SmartMove
 {
@@ -104,6 +105,58 @@ namespace SmartMove
 
         public static readonly DependencyProperty ConvertNATConfigurationProperty =
             DependencyProperty.Register("ConvertNATConfiguration", typeof(bool), typeof(MainWindow), new PropertyMetadata(true));
+
+        #endregion
+
+        #region SkipUnusedObjectsConversion
+
+        public bool SkipUnusedObjectsConversion
+        {
+            get { return (bool)GetValue(SkipUnusedObjectsConversionProperty); }
+            set { SetValue(SkipUnusedObjectsConversionProperty, value); }
+        }
+
+        public static readonly DependencyProperty SkipUnusedObjectsConversionProperty =
+            DependencyProperty.Register("SkipUnusedObjectsConversion", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+
+        #endregion
+
+        #region ConvertUserConfiguration
+
+        public bool ConvertUserConfiguration
+        {
+            get { return (bool)GetValue(ConvertUserConfigurationProperty); }
+            set { SetValue(ConvertUserConfigurationProperty, value); }
+        }
+
+        public static readonly DependencyProperty ConvertUserConfigurationProperty =
+            DependencyProperty.Register("ConvertUserConfiguration", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+
+        #endregion
+
+        #region ConvertingWarningsCount
+
+        public string ConvertingWarningsCount
+        {
+            get { return (string)GetValue(ConvertingWarningsCountProperty); }
+            set { SetValue(ConvertingWarningsCountProperty, value); }
+        }
+
+        public static readonly DependencyProperty ConvertingWarningsCountProperty =
+            DependencyProperty.Register("ConvertingWarningsCount", typeof(string), typeof(MainWindow), new PropertyMetadata(null));
+
+        #endregion
+
+        #region ConvertingErrorsCount
+
+        public string ConvertingErrorsCount
+        {
+            get { return (string)GetValue(ConvertingErrorsCountProperty); }
+            set { SetValue(ConvertingErrorsCountProperty, value); }
+        }
+
+        public static readonly DependencyProperty ConvertingErrorsCountProperty =
+            DependencyProperty.Register("ConvertingErrorsCount", typeof(string), typeof(MainWindow), new PropertyMetadata(null));
 
         #endregion
 
@@ -210,6 +263,15 @@ namespace SmartMove
 
         private void VendorSelector_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            DomainNameTB.Visibility = Visibility.Visible;
+            DomainName.Visibility = Visibility.Visible;
+
+            ConvertUserConf.Visibility = Visibility.Collapsed;
+            LDAPAccountUnitTB.Visibility = Visibility.Collapsed;
+            LDAPAccountUnitBlock.Visibility = Visibility.Collapsed;
+            SkipUnusedObjects.Visibility = Visibility.Collapsed;
+            ConvertUserConfiguration = false;
+
             switch (_supportedVendors.SelectedVendor)
             {
                 case Vendor.CiscoASA:
@@ -220,6 +282,13 @@ namespace SmartMove
                     break;
                 case Vendor.JuniperScreenOS:
                     ConfigurationFileLabel = SupportedVendors.NetScreenConfigurationFileLabel;
+                    break;
+                case Vendor.FortiGate:
+                    ConfigurationFileLabel = SupportedVendors.FortiGateConfigurationFileLabel;
+                    DomainNameTB.Visibility = Visibility.Collapsed;
+                    DomainName.Visibility = Visibility.Collapsed;
+                    SkipUnusedObjects.Visibility = Visibility.Visible;
+                    ConvertUserConf.Visibility = Visibility.Visible;
                     break;
             }
 
@@ -253,6 +322,9 @@ namespace SmartMove
                     break;
                 case Vendor.JuniperScreenOS:
                     filter = "conf files (*.txt)|*.txt|All files (*.*)|*.*";
+                    break;
+                case Vendor.FortiGate:
+                    filter = "conf files (*.conf)|*.conf";
                     break;
             }
 
@@ -330,6 +402,15 @@ namespace SmartMove
                 return;
             }
 
+            if (_supportedVendors.SelectedVendor.Equals(Vendor.FortiGate) && ConvertUserConfiguration)
+            {
+                if (LDAPAccountUnit.Text.Trim().Equals("") || LDAPAccountUnit.Text.Trim().Contains(" "))
+                {
+                    ShowMessage("LDAP Account Unit field cannot be empty or containt space(s).", MessageTypes.Error);
+                    return;
+                }
+            }
+
             Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
             EnableDisableControls(false);
             ProgressPanel.Visibility = Visibility.Visible;
@@ -350,6 +431,9 @@ namespace SmartMove
                     break;
                 case Vendor.JuniperScreenOS:
                     vendorParser = new ScreenOSParser();
+                    break;
+                case Vendor.FortiGate:
+                    vendorParser = new FortiGateParser();
                     break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
@@ -395,12 +479,24 @@ namespace SmartMove
 
                 case Vendor.JuniperScreenOS:
                     break;
+
+                case Vendor.FortiGate:
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        ShowMessage("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                    }
+                    else if(vendorParser.MajorVersion < 5)
+                    {
+                        ShowMessage("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                    }
+                    break;
             }
 
             string vendorFileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
             string toolVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             string targetFolder = TargetFolderPath.Text + "\\";
             bool convertNat = ConvertNATConfiguration;
+            string ldapAccountUnit = LDAPAccountUnit.Text.Trim();
 
             vendorParser.Export(targetFolder + vendorFileName + ".json");
 
@@ -416,6 +512,13 @@ namespace SmartMove
                     break;
                 case Vendor.JuniperScreenOS:
                     vendorConverter = new ScreenOSConverter();
+                    break;
+                case Vendor.FortiGate:
+                    FortiGateConverter fgConverter = new FortiGateConverter();
+                    fgConverter.OptimizeConf = SkipUnusedObjectsConversion;
+                    fgConverter.ConvertUserConf = ConvertUserConfiguration;
+                    fgConverter.LDAPAccoutUnit = ldapAccountUnit.Trim();
+                    vendorConverter = fgConverter;
                     break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
@@ -454,6 +557,20 @@ namespace SmartMove
             ResultsPanel.Visibility = Visibility.Visible;
 
             ShowResults(vendorConverter, vendorParser.ParsedLines);
+        }
+
+        private void ConvertUserConf_Checked(object sender, RoutedEventArgs e)
+        {
+            if (ConvertUserConfiguration)
+            {
+                LDAPAccountUnitTB.Visibility = Visibility.Visible;
+                LDAPAccountUnitBlock.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                LDAPAccountUnitTB.Visibility = Visibility.Collapsed;
+                LDAPAccountUnitBlock.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void Link_OnClick(object sender, MouseButtonEventArgs e)
@@ -500,25 +617,44 @@ namespace SmartMove
             ConversionIssuesPanel.Visibility = (vendorConverter.ConversionIncidentCategoriesCount > 0) ? Visibility.Visible : Visibility.Collapsed;
             ConvertedNatPolicyPanel.Visibility = ConvertNATConfiguration ? Visibility.Visible : Visibility.Collapsed;
 
-            switch (_supportedVendors.SelectedVendor)
-            {
-                case Vendor.CiscoASA:
-                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
-                    break;
-                default:
-                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
-                    break;
-            }
-
             ConfigurationFileLinesCount = string.Format(" ({0} lines)", convertedLinesCount);
             ConvertedPolicyRulesCount = string.Format(" ({0} rules)", vendorConverter.RulesInConvertedPackage());
             ConvertedOptimizedPolicyRulesCount = string.Format(" ({0} rules)", vendorConverter.RulesInConvertedOptimizedPackage());
             ConvertedNATPolicyRulesCount = string.Format(" ({0} rules)", vendorConverter.RulesInNatLayer());
             ConversionIssuesCount = string.Format("Found {0} conversion issues in {1} configuration lines", vendorConverter.ConversionIncidentCategoriesCount, vendorConverter.ConversionIncidentsCommandsCount);
+            ConvertingWarningsCount = "";
+            ConvertingErrorsCount = "";
+
+            switch (_supportedVendors.SelectedVendor)
+            {
+                case Vendor.CiscoASA:
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Collapsed;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
+                    break;
+
+                case Vendor.FortiGate:
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+
+                    FortiGateConverter fgConverter = (FortiGateConverter)vendorConverter;
+                    ConvertedPolicyRulesCount = (fgConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInConvertedPackage()) : " Check report.";
+                    ConvertedNATPolicyRulesCount = (fgConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInNatLayer()) : " Check report.";
+                    ConvertingWarningsCount = (fgConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", fgConverter.WarningsInConvertedPackage()) : " Check report.";
+                    ConvertingErrorsCount = (fgConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", fgConverter.ErrorsInConvertedPackage()) : " Check report.";
+                    break;
+
+                default:
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Collapsed;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+                    break;
+            }
 
             OriginalFileLink.Tag = vendorConverter.VendorHtmlFile;
+            ConvertingWarningsLink.Tag = vendorConverter.WarningsHtmlFile;
+            ConvertingErrorsLink.Tag = vendorConverter.ErrorsHtmlFile;
             ConvertedPolicyLink.Tag = vendorConverter.PolicyHtmlFile;
             ConvertedOptimizedPolicyLink.Tag = vendorConverter.PolicyOptimizedHtmlFile;
             ConvertedNatPolicyLink.Tag = vendorConverter.NatHtmlFile;

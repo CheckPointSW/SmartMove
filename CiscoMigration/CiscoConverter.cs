@@ -355,7 +355,7 @@ namespace CiscoMigration
                             }
                             if (where == ServiceDirection.Source)
                             {
-                                tcp.SourePort = sPort;
+                                tcp.SourcePort = sPort;
                                 tcp.Port = "1-65535";
                             }
                             tcp.Name = objName;
@@ -398,7 +398,7 @@ namespace CiscoMigration
                             }
                             if (where == ServiceDirection.Source)
                             {
-                                udp.SourePort = sPort;
+                                udp.SourcePort = sPort;
                                 udp.Port = "1-65535";
                             }
                             udp.Name = objName;

@@ -136,6 +136,10 @@
       <Project>{2221dbe4-0775-4bbd-9cbc-33a20e0a09e7}</Project>
       <Name>CiscoMigration</Name>
     </ProjectReference>
+    <ProjectReference Include="..\FortinetMigration\FortiGateMigration.csproj">
+      <Project>{3fa93a97-b484-48ca-a9ea-89fa2e3a6ae3}</Project>
+      <Name>FortiGateMigration</Name>
+    </ProjectReference>
     <ProjectReference Include="..\JuniperMigration\JuniperMigration.csproj">
       <Project>{490371b2-1b9c-4bd7-b2a7-e183817e3a37}</Project>
       <Name>JuniperMigration</Name>

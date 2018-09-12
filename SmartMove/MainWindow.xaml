@@ -13,7 +13,7 @@
         WindowStyle="None"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        MinWidth="550" MaxWidth="550">
+        MinWidth="550" MaxWidth="550" Height="auto">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -148,6 +148,10 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0" Text="Select the vendor for conversion:" Style="{StaticResource NormalTextBloclStyle}"/>
                             <ComboBox x:Name="VendorSelector" Grid.Row="1" Margin="0,6,0,0"
@@ -185,7 +189,7 @@
                                 <Button x:Name="BrowseTargetFolder" Grid.Column="1" Style="{StaticResource BrowseButtonControlStyle}" Margin="10,0,0,0"
                                         Click="BrowseTargetFolder_OnClick"/>
                             </Grid>
-                            <TextBlock Grid.Row="6" Text="Import to a domain (optional):" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <TextBlock x:Name="DomainNameTB" Grid.Row="6" Text="Import to a domain (optional):" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
                             <TextBox x:Name="DomainName" Grid.Row="7" Margin="0,6,0,0" Style="{StaticResource TextBoxWithWatermarkControlStyle}"
                                      Tag="domain name"
                                      Width="300" HorizontalAlignment="Left">
@@ -196,7 +200,29 @@
                             <CheckBox x:Name="ConvertNAT" Grid.Row="8" Content="Convert NAT configuration"
                                       IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertNATConfiguration, Mode=TwoWay}"
                                       Margin="0,15,0,0" Background="Transparent" Focusable="False"/>
-                            <Grid Grid.Row="9" Margin="0,15,0,0" Background="Transparent" Focusable="False">
+                            <CheckBox x:Name="ConvertUserConf" Grid.Row="9" Content="Convert user configuration"
+                                      IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertUserConfiguration, Mode=TwoWay}"
+                                      Margin="0,15,0,0" Background="Transparent" Focusable="False" Checked="ConvertUserConf_Checked" Unchecked="ConvertUserConf_Checked"/>
+                            <TextBlock x:Name="LDAPAccountUnitTB" Grid.Row="10" Text="LDAP Account Unit (used only for user configuration):"
+                                       Margin="30,10,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <Grid Grid.Row="11" Margin="30,5,0,0" Background="Transparent" x:Name="LDAPAccountUnitBlock">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="LDAPAccountUnit" Grid.Column="0" Style="{StaticResource TextBoxWithWatermarkControlStyle}"
+                                         Tag="LDAP Account Unit"
+                                         Width="300" HorizontalAlignment="Left">
+                                    <i:Interaction.Behaviors>
+                                        <local:TripleClickSelectsAllTextBehavior/>
+                                    </i:Interaction.Behaviors>
+                                </TextBox>
+                                <TextBlock Grid.Column="1" Text="*" FontSize="20" FontWeight="Bold" Foreground="#FFFF1700" Margin="5,0,0,0"/>
+                            </Grid>
+                            <CheckBox x:Name="SkipUnusedObjects" Grid.Row="12" Content="Do not import unused objects"
+                                      IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=SkipUnusedObjectsConversion, Mode=TwoWay}"
+                                      Margin="0,15,0,0" Background="Transparent" Focusable="False"/>
+                            <Grid Grid.Row="13" Margin="0,15,0,0" Background="Transparent" Focusable="False">
                                 <Button x:Name="Go" Style="{StaticResource GoButtonControlStyle}" HorizontalAlignment="Right"
                                         Click="Go_OnClick"/>
                             </Grid>
@@ -228,6 +254,7 @@
                         </Grid>
                         <Grid x:Name="ResultsPanel" Margin="20,0,20,20" VerticalAlignment="Top" Background="Transparent" Focusable="False">
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
@@ -266,7 +293,35 @@
                                     </StackPanel>
                                 </StackPanel>
                             </Grid>
-                            <Grid x:Name="ConvertedPolicyPreviewPanel" Grid.Row="2" Background="Transparent" Focusable="False">
+                            <Grid x:Name="CoversionIssuesPreviewPanel" Grid.Row="2" Background="Transparent" Focusable="False">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Conversion Issues" Margin="10,6,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                           Foreground="#2E3F58" FontWeight="SemiBold"/>
+                                <Grid Grid.Row="1" Margin="20,0,0,0" Background="Transparent" Focusable="False">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <StackPanel Grid.Row="0" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                        <TextBlock x:Name="ConvertingWarningsLink" Text="Conversion Warnings" Style="{StaticResource HyperLinkStyle}"
+                                                   MouseUp="Link_OnClick"/>
+                                        <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertingWarningsCount}"
+                                                   Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                                   Foreground="#A7A9AC" FontSize="12"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                        <TextBlock x:Name="ConvertingErrorsLink" Text="Conversion Errors" Style="{StaticResource HyperLinkStyle}"
+                                                   MouseUp="Link_OnClick"/>
+                                        <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertingErrorsCount}"
+                                                   Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
+                                                   Foreground="#A7A9AC" FontSize="12"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                            <Grid x:Name="ConvertedPolicyPreviewPanel" Grid.Row="3" Background="Transparent" Focusable="False">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
@@ -302,7 +357,7 @@
                                     </StackPanel>
                                 </Grid>
                             </Grid>
-                            <Grid x:Name="BashScriptsPanel" Grid.Row="3" Background="Transparent" Focusable="False">
+                            <Grid x:Name="BashScriptsPanel" Grid.Row="4" Background="Transparent" Focusable="False">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>

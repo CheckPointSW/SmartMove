@@ -53,6 +53,7 @@ namespace MigrationBase
 
         #region Members
 
+        protected string _vendorFileName;
         protected string _vendorFilePath;
         protected string _toolVersion;
         protected string _targetFolder;
@@ -79,12 +80,16 @@ namespace MigrationBase
         protected List<CheckPoint_DceRpcService> _cpDceRpcServices = new List<CheckPoint_DceRpcService>();
         protected List<CheckPoint_OtherService> _cpOtherServices = new List<CheckPoint_OtherService>();
         protected List<CheckPoint_ServiceGroup> _cpServiceGroups = new List<CheckPoint_ServiceGroup>();
+        protected List<CheckPoint_Time> _cpTimes = new List<CheckPoint_Time>();
         protected List<CheckPoint_TimeGroup> _cpTimeGroups = new List<CheckPoint_TimeGroup>();
+        protected List<CheckPoint_AccessRole> _cpAccessRoles = new List<CheckPoint_AccessRole>();
         protected List<CheckPoint_Package> _cpPackages = new List<CheckPoint_Package>();
         protected List<CheckPoint_NAT_Rule> _cpNatRules = new List<CheckPoint_NAT_Rule>();
 
         protected List<ConversionIncident> _conversionIncidents = new List<ConversionIncident>();
         protected Dictionary<int, List<ConversionIncident>> _conversionIncidentsByLineNumber = null;   // must be generated at the end of Convert() method!!!
+
+        protected string LDAP_Account_Unit = null;
 
         #endregion
 
@@ -98,6 +103,8 @@ namespace MigrationBase
         public string PolicyOptimizedHtmlFile { get; set; }
         public string NatHtmlFile { get; set; }
         public string VendorHtmlFile { get; set; }
+        public string WarningsHtmlFile { get; set; }
+        public string ErrorsHtmlFile { get; set; }
         public int ConversionIncidentCategoriesCount { get; set; }
         public int ConversionIncidentsCommandsCount { get; set; }
 
@@ -126,24 +133,76 @@ namespace MigrationBase
             _targetFolder = targetFolder;
             _domainName = domainName;
 
-            string vendorFileName = Path.GetFileNameWithoutExtension(vendorFilePath);
-            vendorFileName = !string.IsNullOrEmpty(vendorFileName) ? Regex.Replace(vendorFileName, @"\s+", "_") : "";
+            _vendorFileName = Path.GetFileNameWithoutExtension(vendorFilePath);
+            _vendorFileName = !string.IsNullOrEmpty(_vendorFileName) ? Regex.Replace(_vendorFileName, @"\s+", "_") : "";
 
             // policy package names
-            _policyPackageName = vendorFileName + "_policy";
-            _policyPackageOptimizedName = vendorFileName + "_policy_opt";
+            _policyPackageName = _vendorFileName + "_policy";
+            _policyPackageOptimizedName = _vendorFileName + "_policy_opt";
 
             // script files
-            ObjectsScriptFile = _targetFolder + "\\" + vendorFileName + "_objects.sh";
+            ObjectsScriptFile = _targetFolder + "\\" + _vendorFileName + "_objects.sh";
             PolicyScriptFile = _targetFolder + "\\" + _policyPackageName + ".sh";
             PolicyOptimizedScriptFile = _targetFolder + "\\" + _policyPackageOptimizedName + ".sh";
 
             // HTML files
-            VendorHtmlFile = _targetFolder + "\\" + vendorFileName + ".html";
-            ObjectsHtmlFile = _targetFolder + "\\" + vendorFileName + "_objects.html";
+            VendorHtmlFile = _targetFolder + "\\" + _vendorFileName + ".html";
+            WarningsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_warnings.html";
+            ErrorsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_errors.html";
+            ObjectsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_objects.html";
             PolicyHtmlFile = _targetFolder + "\\" + _policyPackageName + ".html";
             PolicyOptimizedHtmlFile = _targetFolder + "\\" + _policyPackageOptimizedName + ".html";
-            NatHtmlFile = _targetFolder + "\\" + vendorFileName + "_NAT.html";
+            NatHtmlFile = _targetFolder + "\\" + _vendorFileName + "_NAT.html";
+        }
+
+        public void ChangeTargetFolder(string targetFolderNew, string targetFileNameNew)
+        {
+            _targetFolder = targetFolderNew;
+            _vendorFileName = !string.IsNullOrEmpty(targetFileNameNew) ? Regex.Replace(targetFileNameNew, @"\s+", "_") : ""; ;
+
+            // policy package names
+            _policyPackageName = _vendorFileName + "_policy";
+            _policyPackageOptimizedName = _vendorFileName + "_policy_opt";
+
+            // script files
+            ObjectsScriptFile = _targetFolder + "\\" + _vendorFileName + "_objects.sh";
+            PolicyScriptFile = _targetFolder + "\\" + _policyPackageName + ".sh";
+            PolicyOptimizedScriptFile = _targetFolder + "\\" + _policyPackageOptimizedName + ".sh";
+
+            // HTML files
+            VendorHtmlFile = _targetFolder + "\\" + _vendorFileName + ".html";
+            WarningsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_warnings.html";
+            ErrorsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_errors.html";
+            ObjectsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_objects.html";
+            PolicyHtmlFile = _targetFolder + "\\" + _policyPackageName + ".html";
+            PolicyOptimizedHtmlFile = _targetFolder + "\\" + _policyPackageOptimizedName + ".html";
+            NatHtmlFile = _targetFolder + "\\" + _vendorFileName + "_NAT.html";
+        }
+
+        public void CleanCheckPointObjectsLists()
+        {
+            _hasNATConversionIncident = false;
+            _cpSimpleGateway = null;
+            _cpDomains.Clear();
+            _cpHosts.Clear();
+            _cpNetworks.Clear();
+            _cpRanges.Clear();
+            _cpNetworkGroups.Clear();
+            _cpGroupsWithExclusion.Clear();
+            _cpZones.Clear();
+            _cpTcpServices.Clear();
+            _cpUdpServices.Clear();
+            _cpSctpServices.Clear();
+            _cpIcmpServices.Clear();
+            _cpRpcServices.Clear();
+            _cpDceRpcServices.Clear();
+            _cpOtherServices.Clear();
+            _cpServiceGroups.Clear();
+            _cpTimes.Clear();
+            _cpTimeGroups.Clear();
+            _cpAccessRoles.Clear();
+            _cpPackages.Clear();
+            _cpNatRules.Clear();
         }
 
         #region Abstract
@@ -159,6 +218,11 @@ namespace MigrationBase
 
         public void ExportNatLayerAsHtml()
         {
+            if (_cpNatRules.Count == 0)
+            {
+                return;
+            }
+
             using (var file = new StreamWriter(NatHtmlFile, false))
             {
                 var rulesWithConversionErrors = new List<string>();
@@ -587,9 +651,21 @@ namespace MigrationBase
                 found = true;
             }
 
+            if (cpObject.GetType().ToString().EndsWith("_Time"))
+            {
+                _cpTimes.Add((CheckPoint_Time)cpObject);
+                found = true;
+            }
+
             if (cpObject.GetType().ToString().EndsWith("_TimeGroup"))
             {
                 _cpTimeGroups.Add((CheckPoint_TimeGroup)cpObject);
+                found = true;
+            }
+
+            if (cpObject.GetType().ToString().EndsWith("_AccessRole"))
+            {
+                _cpAccessRoles.Add((CheckPoint_AccessRole)cpObject);
                 found = true;
             }
 
@@ -755,6 +831,14 @@ namespace MigrationBase
                 file.WriteLine(CLIScriptBuilder.GenerateScriptHeader(_toolVersion, true));
                 file.WriteLine(CLIScriptBuilder.GenerateRunCommandScript("failed_objects.txt"));
                 file.WriteLine(CLIScriptBuilder.GenerateLoginScript(_domainName, "failed_objects.txt"));
+
+                if (LDAP_Account_Unit != null && !LDAP_Account_Unit.Trim().Equals(""))
+                {
+                    file.WriteLine("LDAPAU=" + LDAP_Account_Unit);
+                    file.WriteLine("NUSE=`mgmt_cli show generic-objects name $LDAPAU -s id.txt |grep \"total:\" | cut -f2 -d\":\" | cut -c 2,`");
+                    file.WriteLine(Environment.NewLine);
+                }
+
                 file.WriteLine(CLIScriptBuilder.GenerateDiagnosticsCommandScript("SmartMove_Create_Objects"));
 
                 int totalObjectsCount = _cpDomains.Count +
@@ -772,7 +856,9 @@ namespace MigrationBase
                                         _cpDceRpcServices.Count +
                                         _cpOtherServices.Count +
                                         _cpServiceGroups.Count +
-                                        _cpTimeGroups.Count;
+                                        _cpTimes.Count +
+                                        _cpTimeGroups.Count +
+                                        _cpAccessRoles.Count;
 
                 if (_cpSimpleGateway != null)
                 {
@@ -1087,6 +1173,23 @@ namespace MigrationBase
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
                 }
 
+                if (_cpTimes.Count > 0)
+                {
+                    file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "Time ", _cpTimes.Count)));
+                    int objectsCount = 0;
+                    foreach (CheckPoint_Time obj in _cpTimes)
+                    {
+                        file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                        objectsCount++;
+                        if (objectsCount % publishLatency == 0)
+                        {
+                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                        }
+                    }
+                    file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                }
+
                 if (_cpTimeGroups.Count > 0)
                 {
                     file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "Time Group", _cpTimeGroups.Count)));
@@ -1103,6 +1206,56 @@ namespace MigrationBase
                     }
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
                 }
+
+                if (_cpAccessRoles.Count > 0)
+                {
+                    file.WriteLine("if [ $NUSE -ne 0 ]; then");
+
+                    file.WriteLine("  " + CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "Access Role", _cpAccessRoles.Count)));
+                    int objectsCount = 0;
+                    foreach (CheckPoint_AccessRole obj in _cpAccessRoles)
+                    {
+                        string scriptInstruction = obj.ToCLIScriptInstruction();
+                        if (!string.IsNullOrEmpty(scriptInstruction))
+                        {
+                            file.WriteLine("  " + "echo '" + scriptInstruction + "'");
+                        }
+
+                        var sb_add = new StringBuilder();
+                        sb_add.Append("cmd='mgmt_cli ")
+                            .Append(obj.ToCLIScript())
+                            .Append(" ignore-warnings true -s id.txt --user-agent mgmt_cli_smartmove'");
+
+                        file.WriteLine("  " + sb_add.ToString());
+                        file.WriteLine("  " + "run_command");
+
+                        for (int i = 0; i < obj.Users.Count; i++)
+                        {
+                            var sb_set = new StringBuilder();
+                            
+                            sb_set.Append("cmd='mgmt_cli ")
+                                .Append("set access-role ")
+                                .Append("name " + "\"" + obj.SafeName() + "\" ")
+                                .Append("networks \"any\" ")
+                                .Append("users.add.source $LDAPAU ")
+                                .Append("users.add.selection." + i + " \"" + obj.Users[i] + "\" ")
+                                .Append(" ignore-warnings true -s id.txt --user-agent mgmt_cli_smartmove'");
+                            
+                            file.WriteLine("  " + sb_set.ToString());
+                            file.WriteLine("  " + "run_command");
+                        }
+
+                        objectsCount++;
+                        if (objectsCount % publishLatency == 0)
+                        {
+                            file.WriteLine("  " + CLIScriptBuilder.GeneratePublishScript());
+                        }
+                    }
+                    file.WriteLine("  " + CLIScriptBuilder.GeneratePublishScript());
+
+                    file.WriteLine("fi");
+                }
+
 
                 file.WriteLine(CLIScriptBuilder.GenerateScriptFooter("failed_objects.txt"));
             }
@@ -1343,12 +1496,55 @@ namespace MigrationBase
                     file.WriteLine("</div>");
                 }
 
+                file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "Times ", _cpTimes.Count());
+                foreach (CheckPoint_Time obj in _cpTimes)
+                {
+                    file.WriteLine("<div id=\"" + obj.Name + "\">");
+                    file.WriteLine(obj.ToCLIScript());
+                    file.WriteLine("</div>");
+                }
+
                 file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "Time Groups", _cpTimeGroups.Count());
                 foreach (CheckPoint_TimeGroup obj in _cpTimeGroups)
                 {
                     file.WriteLine("<div id=\"" + obj.Name + "\">");
                     file.WriteLine(obj.ToCLIScript());
                     file.WriteLine("</div>");
+                }
+
+                file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "Access Roles", _cpAccessRoles.Count());
+                foreach (CheckPoint_AccessRole obj in _cpAccessRoles)
+                {
+                    if (obj.Users.Count > 0)
+                    {
+                        file.WriteLine("<div id=\"" + obj.Name + "\">");
+
+                        var sb_add = new StringBuilder();
+                        sb_add.Append("add access-role ")
+                            .Append("name " + "\"" + obj.SafeName() + "\" ")
+                            .Append("networks \"any\" ")
+                            .Append("users.source " + LDAP_Account_Unit + " ");
+
+                        file.WriteLine(sb_add.ToString());
+
+                        file.WriteLine("</div>");
+
+                        for (int i = 0; i < obj.Users.Count; i++)
+                        {
+                            file.WriteLine("<div id=\"" + obj.Name + "_user_" + i + "\">");
+                            
+                            var sb_set = new StringBuilder();
+                            sb_set.Append("set access-role ")
+                                .Append("name " + "\"" + obj.SafeName() + "\" ")
+                                .Append("networks \"any\" ")
+                                .Append("users.source " + LDAP_Account_Unit + " ")
+                                .Append("users.selection." + i + " \"" + obj.Users[i] + "\" ");
+                            
+                            file.WriteLine(sb_set.ToString());
+                            
+                            file.WriteLine("</div>");
+                        }
+                    }
                 }
 
                 file.WriteLine("</body>");

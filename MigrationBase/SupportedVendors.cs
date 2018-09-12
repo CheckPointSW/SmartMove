@@ -33,12 +33,15 @@ namespace MigrationBase
         public const string NetScreenConfigurationFileLabel = "ScreenOS configuration file:";
         public const string NetScreenProduct = "Juniper ScreenOS to Check Point Migration Tool";
         public const string NetScreenProductDescription = "This tool supports migration of ScreenOS SSG 6.3 (R19B/R22)\nand above configuration files.";
+        public const string FortiGateConfigurationFileLabel = "FortiGate configuration file:";
+        public const string FortiGateProduct = "FortiGate to Check Point Migration Tool";
+        public const string FortiGateProductDescription = "This tool supports migration of FortiGate 5.x \nand above configuration files.";
         
         #endregion
 
         #region Private Members
 
-        private readonly List<Vendor> _vendors = new List<Vendor> { Vendor.CiscoASA, Vendor.JuniperJunosOS, Vendor.JuniperScreenOS };
+        private readonly List<Vendor> _vendors = new List<Vendor> { Vendor.CiscoASA, Vendor.JuniperJunosOS, Vendor.JuniperScreenOS, Vendor.FortiGate };
         
         #endregion
 
@@ -62,6 +65,8 @@ namespace MigrationBase
         [Description("Juniper JunosOS SRX")]
         JuniperJunosOS,
         [Description("Juniper ScreenOS SSG/ISG/NS")]
-        JuniperScreenOS
+        JuniperScreenOS,
+        [Description("Fortinet FortiGate")]
+        FortiGate
     }
 }
