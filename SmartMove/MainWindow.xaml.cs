@@ -66,6 +66,7 @@ namespace SmartMove
             InitializeComponent();
             ShowDisclaimer();
             LoadContactInfo();
+            HandleCommandLineArgs();
         }
 
         #endregion
@@ -717,6 +718,32 @@ namespace SmartMove
                 PSTextDisplay.Text = DefaultPSText;
                 PSLinkDisplay.Text = DefaultPSLinkText;
                 PSLinkDisplay.Tag = DefaultPSLinkAddress;
+            }
+        }
+
+        private void HandleCommandLineArgs()
+        {
+            try
+            {
+                string[] args = Environment.GetCommandLineArgs();
+                bool hasArgs = args.Length > 1;
+
+                foreach (var arg in args)
+                {
+                    if (arg.Equals("asa-spread-acl-remarks", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        CiscoParser.SpreadAclRemarks = true;
+                        break;
+                    }
+                }
+
+                if (hasArgs && !CiscoParser.SpreadAclRemarks)
+                {
+                    ShowMessage(string.Format("Unrecognized command line argument: {0}", args[1]), MessageTypes.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
             }
         }
 
