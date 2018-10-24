@@ -673,6 +673,20 @@ namespace NetScreenMigration
 
         #region Private Methods
 
+        protected override bool AddCheckPointObject(CheckPointObject cpObject)
+        {
+            if (base.AddCheckPointObject(cpObject))
+            {
+                string vendor = Vendor.JuniperScreenOS.ToString();
+                if (!cpObject.Tags.Contains(vendor))
+                {
+                    cpObject.Tags.Add(vendor);
+                }
+            }
+
+            return false;
+        }
+
         private CheckPointObject GetCheckPointObjectOrCreateDummy(string cpObjectName, CheckPointDummyObjectType dummyObjectType, ScreenOSCommand sosCommand, string errorTitle, string errorDescription)
         {
             var cpObject = _cpObjects.GetObject(cpObjectName);
