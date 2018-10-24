@@ -57,7 +57,13 @@ namespace CheckPointObjects
             set { _comments = value; }
         }
 
+        // The Tag property is used as a general data placeholder.
         public string Tag { get; set; }
+
+        /// <summary>
+        /// A collection of object tag names.
+        /// </summary>
+        public List<string> Tags = new List<string>();
 
         public int ConvertedCommandId { get; set; }
         public ConversionIncidentType ConversionIncidentType { get; set; }
@@ -169,7 +175,8 @@ namespace CheckPointObjects
     {
         public override string ToCLIScript()
         {
-            return "add security-zone " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "");
+            return "add security-zone " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -186,7 +193,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add dns-domain " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("is-sub-domain", IsSubDomain, true);
+                + WriteParam("is-sub-domain", IsSubDomain, true)
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -207,7 +215,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add host " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("ip-address", IpAddress, "");
+                + WriteParam("ip-address", IpAddress, "")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -230,7 +239,8 @@ namespace CheckPointObjects
         {
             return "add network " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("subnet", Subnet, "")
-                + WriteParam("subnet-mask", Netmask , "");
+                + WriteParam("subnet-mask", Netmask , "")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -253,7 +263,8 @@ namespace CheckPointObjects
         {
             return "add address-range " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("ipv4-address-first", RangeFrom, "")
-                + WriteParam("ipv4-address-last", RangeTo, "");
+                + WriteParam("ipv4-address-last", RangeTo, "")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -275,7 +286,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteListParam("members", Members, true);
+                + WriteListParam("members", Members, true)
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -293,7 +305,8 @@ namespace CheckPointObjects
         {
             return "add group-with-exclusion " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("include", Include, "")
-                + WriteParam("except", Except, "");
+                + WriteParam("except", Except, "")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -309,7 +322,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add simple-gateway " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("ip-address", IpAddress, "");
+                + WriteParam("ip-address", IpAddress, "")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -329,7 +343,8 @@ namespace CheckPointObjects
             return "add service-udp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("port", Port, "")
                 + WriteParam("source-port", SourcePort, "")
-                + WriteParam("session-timeout", SessionTimeout, "0");
+                + WriteParam("session-timeout", SessionTimeout, "0")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -349,7 +364,8 @@ namespace CheckPointObjects
             return "add service-tcp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("port", Port, "")
                 + WriteParam("source-port", SourcePort, "")
-                + WriteParam("session-timeout", SessionTimeout, "0");
+                + WriteParam("session-timeout", SessionTimeout, "0")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -369,7 +385,8 @@ namespace CheckPointObjects
             return "add service-sctp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("port", Port, "")
                 + WriteParam("source-port", SourcePort, "")
-                + WriteParam("session-timeout", SessionTimeout, "0");
+                + WriteParam("session-timeout", SessionTimeout, "0")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -387,7 +404,8 @@ namespace CheckPointObjects
         {
             return "add service-icmp " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("icmp-type", Type, "0")
-                + WriteParam("icmp-code", Code, "0");
+                + WriteParam("icmp-code", Code, "0")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -403,7 +421,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add service-rpc " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("program-number", ProgramNumber, "");
+                + WriteParam("program-number", ProgramNumber, "")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -419,7 +438,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add service-dce-rpc " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("interface-uuid", InterfaceUuid, "");
+                + WriteParam("interface-uuid", InterfaceUuid, "")
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -436,7 +456,8 @@ namespace CheckPointObjects
         {
             return "add service-other " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("ip-protocol", IpProtocol, "")
-                + WriteParam("match-for-any", true, false);
+                + WriteParam("match-for-any", true, false)
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -452,7 +473,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add service-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteListParam("members", Members, true);
+                + WriteListParam("members", Members, true)
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -508,7 +530,9 @@ namespace CheckPointObjects
                 + WriteParam("hours-ranges.2.to", HoursRangesTo_2, "") 
                 
                 + WriteParam("recurrence.pattern", (RecurrenceWeekdays.Count > 0 ? "Weekly" : ""), "")
-                + WriteListParamWithIndexes("recurrence.weekdays", (from o in RecurrenceWeekdays select o.ToString()).ToList(), true);
+                + WriteListParamWithIndexes("recurrence.weekdays", (from o in RecurrenceWeekdays select o.ToString()).ToList(), true)
+
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -524,7 +548,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add time-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteListParam("members", Members, true);
+                + WriteListParam("members", Members, true)
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -539,7 +564,8 @@ namespace CheckPointObjects
 
         public override string ToCLIScript()
         {
-            return "add access-role " + WriteParam("name", SafeName(), "") + "networks \"any\"";
+            return "add access-role " + WriteParam("name", SafeName(), "") + "networks \"any\" "
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -724,7 +750,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add access-layer " + WriteParam("name", Name, "") + WriteParam("comments", Comments, "")
-                + WriteParam("add-default-rule", false, true);
+                + WriteParam("add-default-rule", false, true)
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
@@ -807,7 +834,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add package " + WriteParam("name", Name, "")
-                + WriteParam("threat-prevention", false, true);
+                + WriteParam("threat-prevention", false, true)
+                + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
