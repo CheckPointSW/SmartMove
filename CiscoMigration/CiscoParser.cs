@@ -53,6 +53,8 @@ namespace CiscoMigration
         private Dictionary<string, CiscoCommand> _ciscoIds = new Dictionary<string, CiscoCommand>();
         private Dictionary<string, string> _ciscoAliases = new Dictionary<string, string>();
 
+        public static bool SpreadAclRemarks = false;
+
         #endregion
 
         #region Public Methods

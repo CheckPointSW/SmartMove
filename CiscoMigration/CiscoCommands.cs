@@ -2057,15 +2057,17 @@ namespace CiscoMigration
             IsRemark = false;
             IsTimeRangeSpecified = false;
 
+            var prevAclCommand = prevCommand as Cisco_AccessList;
+
             if (command.GetParam(2) == "remark")
             {
                 IsRemark = true;
 
                 // Note that there may be several consecutive remark lines, so we need to aggregate to a single remark
                 string dataForNextElement = "";
-                if (!string.IsNullOrEmpty(prevCommand.DataForNextElement))
+                if (prevAclCommand != null && prevAclCommand.IsRemark && !string.IsNullOrEmpty(prevAclCommand.DataForNextElement))
                 {
-                    dataForNextElement = prevCommand.DataForNextElement;
+                    dataForNextElement = prevAclCommand.DataForNextElement;
                 }
 
                 string text = command.Text.Trim();
@@ -2082,9 +2084,14 @@ namespace CiscoMigration
                 return;
             }
 
-            if (!string.IsNullOrEmpty(prevCommand.DataForNextElement))
+            if (prevAclCommand != null && ACLName.Equals(prevAclCommand.ACLName) && !string.IsNullOrEmpty(prevAclCommand.DataForNextElement))
             {
-                Remark = prevCommand.DataForNextElement;
+                Remark = prevAclCommand.DataForNextElement;
+
+                if (CiscoParser.SpreadAclRemarks)
+                {
+                    DataForNextElement = Remark;
+                }
             }
 
             int denyPosition = command.GetParamPosition("deny");
