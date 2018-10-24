@@ -608,6 +608,20 @@ namespace CiscoMigration
 
         #region Private Methods
 
+        protected override bool AddCheckPointObject(CheckPointObject cpObject)
+        {
+            if (base.AddCheckPointObject(cpObject))
+            {
+                string vendor = Vendor.CiscoASA.ToString();
+                if (!cpObject.Tags.Contains(vendor))
+                {
+                    cpObject.Tags.Add(vendor);
+                }
+            }
+
+            return false;
+        }
+
         private void ApplyConversionIncidentOnCheckPointObject(CheckPointObject cpObject, CiscoCommand ciscoCommand)
         {
             cpObject.ConvertedCommandId = ciscoCommand.Id;
