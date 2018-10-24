@@ -93,6 +93,20 @@ namespace FortiGateMigration
             base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName);
         }
 
+        protected override bool AddCheckPointObject(CheckPointObject cpObject)
+        {
+            if (base.AddCheckPointObject(cpObject))
+            {
+                string vendor = Vendor.FortiGate.ToString();
+                if (!cpObject.Tags.Contains(vendor))
+                {
+                    cpObject.Tags.Add(vendor);
+                }
+            }
+
+            return false;
+        }
+
         #region Methods are used for reports
 
         //count of converted rules.
