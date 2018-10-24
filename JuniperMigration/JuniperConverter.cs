@@ -191,6 +191,20 @@ namespace JuniperMigration
 
         #region Private Methods
 
+        protected override bool AddCheckPointObject(CheckPointObject cpObject)
+        {
+            if (base.AddCheckPointObject(cpObject))
+            {
+                string vendor = Vendor.JuniperJunosOS.ToString();
+                if (!cpObject.Tags.Contains(vendor))
+                {
+                    cpObject.Tags.Add(vendor);
+                }
+            }
+
+            return false;
+        }
+
         private void Add_NetworkObjects()
         {
             bool inMultipleZones = false;
