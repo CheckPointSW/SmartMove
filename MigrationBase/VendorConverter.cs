@@ -80,6 +80,7 @@ namespace MigrationBase
         protected List<CheckPoint_DceRpcService> _cpDceRpcServices = new List<CheckPoint_DceRpcService>();
         protected List<CheckPoint_OtherService> _cpOtherServices = new List<CheckPoint_OtherService>();
         protected List<CheckPoint_ServiceGroup> _cpServiceGroups = new List<CheckPoint_ServiceGroup>();
+        protected List<CheckPoint_ApplicationGroup> _cpApplicationGroups = new List<CheckPoint_ApplicationGroup>();
         protected List<CheckPoint_Time> _cpTimes = new List<CheckPoint_Time>();
         protected List<CheckPoint_TimeGroup> _cpTimeGroups = new List<CheckPoint_TimeGroup>();
         protected List<CheckPoint_AccessRole> _cpAccessRoles = new List<CheckPoint_AccessRole>();
@@ -198,6 +199,7 @@ namespace MigrationBase
             _cpDceRpcServices.Clear();
             _cpOtherServices.Clear();
             _cpServiceGroups.Clear();
+            _cpApplicationGroups.Clear();
             _cpTimes.Clear();
             _cpTimeGroups.Clear();
             _cpAccessRoles.Clear();
@@ -218,7 +220,7 @@ namespace MigrationBase
 
         public void ExportNatLayerAsHtml()
         {
-            if (_cpNatRules.Count == 0)
+            if (RulesInNatLayer() == 0)
             {
                 return;
             }
@@ -531,6 +533,7 @@ namespace MigrationBase
                 file.WriteLine("</body>");
                 file.WriteLine("</html>");
             }
+			
         }
 
         protected virtual bool AddCheckPointObject(CheckPointObject cpObject)
@@ -648,6 +651,12 @@ namespace MigrationBase
             if (cpObject.GetType().ToString().EndsWith("_ServiceGroup"))
             {
                 _cpServiceGroups.Add((CheckPoint_ServiceGroup)cpObject);
+                found = true;
+            }
+
+            if (cpObject.GetType().ToString().EndsWith("_ApplicationGroup"))
+            {
+                _cpApplicationGroups.Add((CheckPoint_ApplicationGroup)cpObject);
                 found = true;
             }
 
@@ -856,6 +865,7 @@ namespace MigrationBase
                                         _cpDceRpcServices.Count +
                                         _cpOtherServices.Count +
                                         _cpServiceGroups.Count +
+                                        _cpApplicationGroups.Count +
                                         _cpTimes.Count +
                                         _cpTimeGroups.Count +
                                         _cpAccessRoles.Count;
@@ -1173,6 +1183,23 @@ namespace MigrationBase
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
                 }
 
+                if (_cpApplicationGroups.Count > 0)
+                {
+                    file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "Application Group", _cpApplicationGroups.Count)));
+                    int objectsCount = 0;
+                    foreach (CheckPoint_ApplicationGroup obj in _cpApplicationGroups)
+                    {
+                        file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                        objectsCount++;
+                        if (objectsCount % publishLatency == 0)
+                        {
+                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                        }
+                    }
+                    file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                }
+
                 if (_cpTimes.Count > 0)
                 {
                     file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "Time ", _cpTimes.Count)));
@@ -1238,7 +1265,8 @@ namespace MigrationBase
                                 .Append("name " + "\"" + obj.SafeName() + "\" ")
                                 .Append("networks \"any\" ")
                                 .Append("users.add.source $LDAPAU ")
-                                .Append("users.add.selection." + i + " \"" + obj.Users[i] + "\" ")
+                                .Append("users.add.selection." + i + " \"" + obj.Users[i].Name + "\" ")
+                                .Append(!(string.IsNullOrWhiteSpace(obj.Users[i].BaseDn)) ? "users.add.base-dn \"" + obj.Users[i].BaseDn + "\"" : "")
                                 .Append(" ignore-warnings true -s id.txt --user-agent mgmt_cli_smartmove'");
                             
                             file.WriteLine("  " + sb_set.ToString());
@@ -1309,9 +1337,20 @@ namespace MigrationBase
                     }
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
 
+                    // Enabling Applications and URL Filtering in parent layer
+                    if(package.ParentLayer.ApplicationsAndUrlFiltering)
+                    {
+                        file.WriteLine("echo 'Enabling Applications and URL Filtering in parent layer vsys1_policy Network'");
+                        file.WriteLine("cmd='mgmt_cli set access-layer " + 
+                                        "name \"" + package.ParentLayer.Name + "\" " + 
+                                        "applications-and-url-filtering \"true\" " + 
+                                        "ignore-warnings true -s id.txt --user-agent mgmt_cli_smartmove'");
+                        file.WriteLine("run_command");
+                    }
+                    file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                    file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Add rules to parent layer {0}", package.NameOfAccessLayer)));
                     // !!! Attention !!! -- the rules are created in the reverse order but will be inserted at the TOP (!!!) position,
                     //                      so they are created in the correct order!
-                    file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Add rules to parent layer {0}", package.NameOfAccessLayer)));
                     int parentRulesCount = 0;
                     // SKIP the creation of cleanup rule, it is automatically generated during package creation!!!
                     for (int counter = package.ParentLayer.Rules.Count - 2; counter >= 0; counter--)
@@ -1496,6 +1535,14 @@ namespace MigrationBase
                     file.WriteLine("</div>");
                 }
 
+                file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "Application Groups", _cpApplicationGroups.Count());
+                foreach (CheckPoint_ApplicationGroup obj in _cpApplicationGroups)
+                {
+                    file.WriteLine("<div id=\"" + obj.Name + "\">");
+                    file.WriteLine(obj.ToCLIScript());
+                    file.WriteLine("</div>");
+                }
+
                 file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "Times ", _cpTimes.Count());
                 foreach (CheckPoint_Time obj in _cpTimes)
                 {
@@ -1538,7 +1585,9 @@ namespace MigrationBase
                                 .Append("name " + "\"" + obj.SafeName() + "\" ")
                                 .Append("networks \"any\" ")
                                 .Append("users.source " + LDAP_Account_Unit + " ")
-                                .Append("users.selection." + i + " \"" + obj.Users[i] + "\" ");
+                                .Append("users.add.selection." + i + " \"" + obj.Users[i].Name + "\" ")
+                                .Append(!(string.IsNullOrWhiteSpace(obj.Users[i].BaseDn)) ? "users.add.base-dn \"" + obj.Users[i].BaseDn + "\"" : "");
+
                             
                             file.WriteLine(sb_set.ToString());
                             

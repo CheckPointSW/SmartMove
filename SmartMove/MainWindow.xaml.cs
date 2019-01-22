@@ -403,7 +403,7 @@ namespace SmartMove
                 return;
             }
 
-            if (_supportedVendors.SelectedVendor.Equals(Vendor.FortiGate) && ConvertUserConfiguration)
+            if (ConvertUserConfiguration)
             {
                 if (LDAPAccountUnit.Text.Trim().Equals("") || LDAPAccountUnit.Text.Trim().Contains(" "))
                 {
@@ -546,7 +546,19 @@ namespace SmartMove
             vendorConverter.ExportPolicyPackagesAsHtml();
             if (ConvertNATConfiguration)
             {
+		ConvertedNatPolicyLink.MouseUp -= Link_OnClick;
                 vendorConverter.ExportNatLayerAsHtml();
+
+                //check if the user asked for NAT policy and no rules found.
+                if (vendorConverter.RulesInNatLayer() == 0 ) // anly if 0 then we do not show NAT report.
+                {
+                    ConvertedNatPolicyLink.Style = (Style)ConvertedNatPolicyLink.FindResource("NormalTextBloclStyle");
+                }
+                else // otherwise it is single NAT report or Catalog for NAT reports (value = -1)
+                {
+                    ConvertedNatPolicyLink.Style = (Style)ConvertedNatPolicyLink.FindResource("HyperLinkStyle");
+                    ConvertedNatPolicyLink.MouseUp += Link_OnClick;
+                }
             }
             UpdateProgress(100, "");
 

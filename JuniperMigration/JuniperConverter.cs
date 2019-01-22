@@ -208,6 +208,7 @@ namespace JuniperMigration
         private void Add_NetworkObjects()
         {
             bool inMultipleZones = false;
+            var networkAndZoneNamesDuplicates = new List<CheckPointObject>();
 
             foreach (Juniper_Fqdn fqdn in _juniperParser.Filter("_Fqdn"))
             {
@@ -246,8 +247,15 @@ namespace JuniperMigration
                 CheckObjectNameValidity(cpHost, host, inMultipleZones);
                 if (!inMultipleZones)
                 {
+                    if (AreNetworkAndZoneNamesDuplicated(cpHost.Name))
+                    {
+                        networkAndZoneNamesDuplicates.Add(cpHost);
+                    }
+                    else
+                    {
                     AddCheckPointObject(cpHost);
                 }
+            }
             }
 
             foreach (Juniper_Network network in _juniperParser.Filter("_Network"))
@@ -263,8 +271,15 @@ namespace JuniperMigration
                 CheckObjectNameValidity(cpNetwork, network, inMultipleZones);
                 if (!inMultipleZones)
                 {
+                    if (AreNetworkAndZoneNamesDuplicated(cpNetwork.Name))
+                    {
+                        networkAndZoneNamesDuplicates.Add(cpNetwork);
+                    }
+                    else
+                    {
                     AddCheckPointObject(cpNetwork);
                 }
+            }
             }
 
             foreach (Juniper_Range range in _juniperParser.Filter("_Range"))
@@ -280,8 +295,15 @@ namespace JuniperMigration
                 CheckObjectNameValidity(cpRange, range, inMultipleZones);
                 if (!inMultipleZones)
                 {
+                    if (AreNetworkAndZoneNamesDuplicated(cpRange.Name))
+                    {
+                        networkAndZoneNamesDuplicates.Add(cpRange);
+                    }
+                    else
+                    {
                     AddCheckPointObject(cpRange);
                 }
+            }
             }
 
             var groupsWithNonCreatedMembers = new List<CheckPoint_NetworkGroup>();
@@ -328,6 +350,15 @@ namespace JuniperMigration
                 AddCheckPointObject(cpNetworkObject);
             }
 
+            // Add the network objects that have name duplication with zones names.
+            foreach (var cpNetworkObject in networkAndZoneNamesDuplicates)
+            {
+                string originalName = cpNetworkObject.Name;
+                string uniqueName = originalName + "_" + cpNetworkObject.Tag;   // original name combined with the zone name
+                cpNetworkObject.Name = uniqueName;   // replace the original name with the unique one
+                AddCheckPointObject(cpNetworkObject);
+            }
+
             // After all groups are created, add the groups that had non created member groups.
             foreach (var networkGroup in groupsWithNonCreatedMembers)
             {
@@ -348,6 +379,21 @@ namespace JuniperMigration
                         {
                             networkGroup.Members[pos] = cpNetworkObject.Name;
                         }
+                    }
+                }
+            }
+
+            // Apply the same for the network objects that have name duplication with zones names.
+            foreach (var cpNetworkObject in networkAndZoneNamesDuplicates)
+            {
+                foreach (var networkGroup in _cpNetworkGroups)
+                {
+                    string zoneSuffix = "_" + cpNetworkObject.Tag;
+                    string originalName = cpNetworkObject.Name.Replace(zoneSuffix, "");
+                    int pos = networkGroup.Members.IndexOf(originalName);
+                    if (pos != -1)
+                    {
+                        networkGroup.Members[pos] = cpNetworkObject.Name;
                     }
                 }
             }
@@ -2981,6 +3027,19 @@ namespace JuniperMigration
                                                                 errorDescription,
                                                                 juniperObject.ConversionIncidentType));
                 return true;
+            }
+
+            return false;
+        }
+
+        private bool AreNetworkAndZoneNamesDuplicated(string networkName)
+        {
+            foreach (Juniper_Zone zone in JuniperZones)
+            {
+                if (networkName.Equals(zone.Name, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return true;
+                }
             }
 
             return false;

@@ -714,6 +714,7 @@ namespace FortiGateMigration
                 _errorsConvertedPackage = -1;
                 _rulesInConvertedPackage = -1;
                 _rulesInNatLayer = -1;
+                CleanCheckPointObjectsLists();
             }
 
             RaiseConversionProgress(70, "Optimizing Firewall rulebase ...");
@@ -863,6 +864,7 @@ namespace FortiGateMigration
             RaiseConversionProgress(35, "Convert configuration...");
             RaiseConversionProgress(40, "Convert objects...");
             _cpObjects.Initialize();   // must be first!!!
+            CleanCheckPointObjectsLists(); // must be first!!!
 
             //change folder path for writing reports
             //if it is VDOM then each report will be placed to own folder
@@ -1009,7 +1011,6 @@ namespace FortiGateMigration
 
             // to clean; must be the last!!!
             _cpObjects.ClearRepository();
-            CleanCheckPointObjectsLists();
             CleanSavedData();
         }
 
@@ -2063,10 +2064,33 @@ namespace FortiGateMigration
                         string[] members = membersStr.Split(new string[] { "\" \"" }, StringSplitOptions.None).ToArray();
                         foreach (string member in members)
                         {
-                            string[] accountUnits = member.Split(new string[] { "," }, StringSplitOptions.None).ToArray();
-                            if (accountUnits.Length > 0 && accountUnits[0].ToUpper().StartsWith("CN="))
+                            if (string.IsNullOrWhiteSpace(member))
+                                continue;
+
+                            if (member.Contains(","))
                             {
-                                cpAccessRole.Users.Add(accountUnits[0].Substring(accountUnits[0].IndexOf("=") + 1));
+                                List<string> values = new List<string>();
+                                member.Split(new string[] { "," }, StringSplitOptions.None).ToList().ForEach(x => values.Add(x.Trim().Substring(x.IndexOf("=") + 1)));
+
+                                AccessRoleUser arUser = new AccessRoleUser();
+                                arUser.Name = values[0];
+                                arUser.BaseDn = member;
+
+                                cpAccessRole.Users.Add(arUser);
+                            }
+                            else if (member.Contains("\\"))
+                            {
+                                AccessRoleUser arUser = new AccessRoleUser();
+                                arUser.Name = member.Substring(member.IndexOf("\\") + 1);
+
+                                cpAccessRole.Users.Add(arUser);
+                            }
+                            else
+                            {
+                                AccessRoleUser arUser = new AccessRoleUser();
+                                arUser.Name = member;
+
+                                cpAccessRole.Users.Add(arUser);
                             }
                         }
 

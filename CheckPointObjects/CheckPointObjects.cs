@@ -65,6 +65,12 @@ namespace CheckPointObjects
         /// </summary>
         public List<string> Tags = new List<string>();
 
+        // the type of CheckPoint object, is used for JSON representation
+        public string TypeName
+        {
+            get { return this.GetType().Name; }
+        }
+
         public int ConvertedCommandId { get; set; }
         public ConversionIncidentType ConversionIncidentType { get; set; }
 
@@ -132,7 +138,7 @@ namespace CheckPointObjects
             return str;
         }
 
-        protected static string WriteListParamWithIndexes(string paramName, List<string> paramValues, bool useSafeNames)
+        protected static string WriteListParamWithIndexes(string paramName, List<string> paramValues, bool useSafeNames, int i = 0)
         {
             if (paramValues.Count == 0)
             {
@@ -140,7 +146,6 @@ namespace CheckPointObjects
             }
 
             string str = "";
-            int i = 0;
 
             foreach (string paramValue in paramValues)
             {
@@ -483,9 +488,27 @@ namespace CheckPointObjects
         }
     }
 
+    public class CheckPoint_ApplicationGroup : CheckPointObject
+    {
+        public List<string> Members = new List<string>();
+
+        public override string ToCLIScript()
+        {
+            return "add application-site-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteListParam("members", Members, false)
+                + WriteListParam("tags", Tags, true);
+        }
+
+        public override string ToCLIScriptInstruction()
+        {
+            return "create application group [" + Name + "]: " + Members.Count + " members";
+        }
+    }
+
     public class CheckPoint_Time : CheckPointObject
     {
         public enum Weekdays { Sun, Mon, Tue, Wed, Thu, Fri, Sat };
+        public enum RecurrencePatternEnum { None, Daily, Weekly, Monthly };
 
         public bool StartNow { get; set; }
         public string StartDate { get; set; }
@@ -504,6 +527,12 @@ namespace CheckPointObjects
         public bool HoursRangesEnabled_2 { get; set; }
         public string HoursRangesFrom_2 { get; set; }
         public string HoursRangesTo_2 { get; set; }
+
+        public bool HoursRangesEnabled_3 { get; set; }
+        public string HoursRangesFrom_3 { get; set; }
+        public string HoursRangesTo_3 { get; set; }
+
+        public RecurrencePatternEnum RecurrencePattern { get; set; }
 
         public List<Weekdays> RecurrenceWeekdays = new List<Weekdays>();
 
@@ -529,7 +558,13 @@ namespace CheckPointObjects
                 + WriteParam("hours-ranges.2.from", HoursRangesFrom_2, "")
                 + WriteParam("hours-ranges.2.to", HoursRangesTo_2, "") 
                 
-                + WriteParam("recurrence.pattern", (RecurrenceWeekdays.Count > 0 ? "Weekly" : ""), "")
+                + WriteParam("hours-ranges.3.enabled", (HoursRangesEnabled_3 ? HoursRangesEnabled_3.ToString().ToLower() : ""), "")
+                + WriteParam("hours-ranges.3.from", HoursRangesFrom_3, "")
+                + WriteParam("hours-ranges.3.to", HoursRangesTo_3, "")
+
+                + WriteParam("recurrence.pattern", ((RecurrenceWeekdays.Count > 0 || RecurrencePattern == RecurrencePatternEnum.Weekly) ? "Weekly" : ""), "")
+                + WriteParam("recurrence.pattern", ((RecurrencePattern == RecurrencePatternEnum.Daily) ? "Daily" : ""), "")
+                + WriteParam("recurrence.pattern", ((RecurrencePattern == RecurrencePatternEnum.Monthly) ? "Monthly" : ""), "")
                 + WriteListParamWithIndexes("recurrence.weekdays", (from o in RecurrenceWeekdays select o.ToString()).ToList(), true)
 
                 + WriteListParam("tags", Tags, true);
@@ -558,9 +593,15 @@ namespace CheckPointObjects
         }
     }
 
+    public class AccessRoleUser
+    {
+        public string Name { get; set; }
+        public string BaseDn { get; set; }
+    }
+
     public class CheckPoint_AccessRole : CheckPointObject
     {
-        public List<string> Users = new List<string>();
+        public List<AccessRoleUser> Users = new List<AccessRoleUser>();
 
         public override string ToCLIScript()
         {
@@ -637,6 +678,7 @@ namespace CheckPointObjects
                 + WriteListParam("source", (from o in Source select o.Name).ToList(), true)
                 + WriteListParam("destination", (from o in Destination select o.Name).ToList(), true)
                 + WriteListParam("service", (from o in Service select o.Name).ToList(), true)
+                + WriteParamWithIndexesForApplications()
                 + WriteListParam("time", (from o in Time select o.Name).ToList(), true)
                 + WriteParam("action", actionName, "")
                 + WriteParam("track-settings.type", Track.ToString(), "")
@@ -685,6 +727,7 @@ namespace CheckPointObjects
             {
                 newRule.Time.Add(obj);
             }
+            CloneApplicationsToRule(newRule);
 
             return newRule;
         }
@@ -709,8 +752,9 @@ namespace CheckPointObjects
             bool sourceMatch = CompareLists(Source, other.Source);
             bool destMatch = CompareLists(Destination, other.Destination);
             bool serviceMatch = CompareLists(Service, other.Service);
+            bool applicationMatch = CompareApplications(other);
 
-            return sourceMatch && destMatch && serviceMatch;
+            return sourceMatch && destMatch && serviceMatch && applicationMatch;
         }
 
         public bool IsCleanupRule()
@@ -723,6 +767,7 @@ namespace CheckPointObjects
             if ((Source.Count == 1 && Source[0].Name == Any) &&
                 (Destination.Count == 1 && Destination[0].Name == Any) &&
                 (Service.Count == 1 && Service[0].Name == Any) &&
+                IsApplicationsClean() &&
                 (Action == ActionType.Drop))
             {
                 return true;   // user defined cleanup rule
@@ -731,7 +776,7 @@ namespace CheckPointObjects
             return false;
         }
 
-        private static bool CompareLists(IEnumerable<CheckPointObject> items1, IEnumerable<CheckPointObject> items2)
+        protected static bool CompareLists(IEnumerable<CheckPointObject> items1, IEnumerable<CheckPointObject> items2)
         {
             var list1 = (from o in items1 select o.Name).ToList();
             var list2 = (from o in items2 select o.Name).ToList();
@@ -741,16 +786,90 @@ namespace CheckPointObjects
 
             return (!firstNotSecond.Any() && !secondNotFirst.Any());
         }
+
+        //WriteParamWithIndexesForApplications will be overridden in the derived class if the class needs specific implementation for applications
+        //return null because this object doesn't handle with applications.
+        protected virtual string WriteParamWithIndexesForApplications()
+        {
+            return null;
+        }
+
+        //CloneApplicationsToRule will be overridden in the derived class if the class needs specific clone implementation for applications
+        //in this class the function empty because it doesn't handle with applications in services.
+        protected virtual void CloneApplicationsToRule(CheckPoint_Rule newRule)
+        {
+            return;
+        }
+
+        //CompareApplications will be overridden in the derived class if the class needs specific compare implementation for applications
+        //this function returns true so the CompareTo function won't be affected.
+        protected virtual bool CompareApplications(CheckPoint_Rule other)
+        {
+            return true;
+        }
+
+        //IsApplicationsClean will be overridden in the derived class if the class needs specific check for cleanup rule
+        ////this function returns true so the IsCleanupRule function won't be affected.
+        protected virtual bool IsApplicationsClean()
+        {
+            return true;
+        }
+    }
+
+    //In Check Point rules - both applications and services are part of "service" filed in the rule.
+    //This class used for rules that contains applications in the services list.
+    public class CheckPoint_RuleWithApplication : CheckPoint_Rule
+    {
+        //this is the vendor's responsibility to separate the applications from the services.
+        public List<CheckPointObject> Application = new List<CheckPointObject>();
+
+        //Since applications can include spaces and services can't, we first get services with safe names
+        //and then applications without safe names with the right index so it will be continue the services indexing.
+        protected override string WriteParamWithIndexesForApplications()
+        {
+            return WriteListParamWithIndexes("service", (from o in Application select o.Name).ToList(), false, Service.Count);
+        }
+
+        //specific extension for cloning applications
+        protected override void CloneApplicationsToRule(CheckPoint_Rule newRule)
+        {
+            if (newRule is CheckPoint_RuleWithApplication) {
+                foreach (CheckPointObject obj in Application)
+                {
+                    ((CheckPoint_RuleWithApplication)newRule).Application.Add(obj);
+                }
+            }
+        }
+
+        //specific extension for comparing applications
+        protected override bool CompareApplications(CheckPoint_Rule other)
+        {
+            if (other is CheckPoint_RuleWithApplication)
+            {
+                return CompareLists(Application, ((CheckPoint_RuleWithApplication)other).Application);
+            }
+           
+            return false;
+        }
+
+        //specific extension to check if the applications list contains only ANY parameter.
+        protected override bool IsApplicationsClean()
+        {
+            return (Application.Count == 1 && Application[0].Name == Any);
+        }
+
     }
 
     public class CheckPoint_Layer : CheckPointObject
     {
         public List<CheckPoint_Rule> Rules = new List<CheckPoint_Rule>();
+        public bool ApplicationsAndUrlFiltering { get; set; }
 
         public override string ToCLIScript()
         {
             return "add access-layer " + WriteParam("name", Name, "") + WriteParam("comments", Comments, "")
                 + WriteParam("add-default-rule", false, true)
+                + WriteParam("applications-and-url-filtering", ApplicationsAndUrlFiltering, false)
                 + WriteListParam("tags", Tags, true);
         }
 
