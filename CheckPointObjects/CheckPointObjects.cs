@@ -42,6 +42,7 @@ namespace CheckPointObjects
         protected const string CommentsValidityRegex = @"[^A-Za-z0-9 @#*$(){}\[\]_.\-=:,/]";
 
         public const string Any = "any";
+        public const string All_Internet = "All_Internet";
 
         public string Name { get; set; }
 
@@ -198,7 +199,7 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add dns-domain " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("is-sub-domain", IsSubDomain, true)
+                + WriteParam("is-sub-domain", IsSubDomain, !IsSubDomain) //"is-sub-domain" is a required field by documentation 
                 + WriteListParam("tags", Tags, true);
         }
 
@@ -766,7 +767,7 @@ namespace CheckPointObjects
 
             if ((Source.Count == 1 && Source[0].Name == Any) &&
                 (Destination.Count == 1 && Destination[0].Name == Any) &&
-                (Service.Count == 1 && Service[0].Name == Any) &&
+                (Service.Count == 1 && Service[0].Name == Any) && 
                 IsApplicationsClean() &&
                 (Action == ActionType.Drop))
             {

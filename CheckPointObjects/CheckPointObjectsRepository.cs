@@ -54,7 +54,7 @@ namespace CheckPointObjects
         /// </summary>
         public void Initialize()
         {
-            string[] names = { CheckPointObject.Any, "icmp-proto" };   // general objects
+            string[] names = { CheckPointObject.Any, "icmp-proto", CheckPointObject.All_Internet };   // general objects
             foreach (string name in names)
             {
                 var cpPredifinedObject = new CheckPoint_PredifinedObject { Name = name };
