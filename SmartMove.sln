@@ -28,6 +28,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetScreenMigration", "NetSc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FortiGateMigration", "FortinetMigration\FortiGateMigration.csproj", "{3FA93A97-B484-48CA-A9EA-89FA2E3A6AE3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaloAltoMigration", "PaloAltoMigration\PaloAltoMigration.csproj", "{87B734BD-1D17-4EEC-AE44-6A2BE8E03E41}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,8 +68,15 @@ Global
 		{3FA93A97-B484-48CA-A9EA-89FA2E3A6AE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FA93A97-B484-48CA-A9EA-89FA2E3A6AE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3FA93A97-B484-48CA-A9EA-89FA2E3A6AE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87B734BD-1D17-4EEC-AE44-6A2BE8E03E41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87B734BD-1D17-4EEC-AE44-6A2BE8E03E41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87B734BD-1D17-4EEC-AE44-6A2BE8E03E41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87B734BD-1D17-4EEC-AE44-6A2BE8E03E41}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F43B2C4F-946D-4470-8FE7-5CE2F61B109E}
 	EndGlobalSection
 EndGlobal

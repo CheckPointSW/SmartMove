@@ -36,12 +36,15 @@ namespace MigrationBase
         public const string FortiGateConfigurationFileLabel = "FortiGate configuration file:";
         public const string FortiGateProduct = "FortiGate to Check Point Migration Tool";
         public const string FortiGateProductDescription = "This tool supports migration of FortiGate 5.x \nand above configuration files.";
+        public const string PaloAltoConfigurationFileLabel = "PaloAlto configuration file:";
+        public const string PaloAltoProduct = "PaloAlto PAN-OS to Check Point Migration Tool";
+        public const string PaloAltoProductDescription = "This tool supports migration of PaloAlto PAN-OS 7.x \nand above configuration files.";
         
         #endregion
 
         #region Private Members
 
-        private readonly List<Vendor> _vendors = new List<Vendor> { Vendor.CiscoASA, Vendor.JuniperJunosOS, Vendor.JuniperScreenOS, Vendor.FortiGate };
+        private readonly List<Vendor> _vendors = new List<Vendor> { Vendor.CiscoASA, Vendor.JuniperJunosOS, Vendor.JuniperScreenOS, Vendor.FortiGate, Vendor.PaloAlto };
         
         #endregion
 
@@ -67,6 +70,8 @@ namespace MigrationBase
         [Description("Juniper ScreenOS SSG/ISG/NS")]
         JuniperScreenOS,
         [Description("Fortinet FortiGate")]
-        FortiGate
+        FortiGate,
+        [Description("PaloAlto PAN-OS")]
+        PaloAlto
     }
 }

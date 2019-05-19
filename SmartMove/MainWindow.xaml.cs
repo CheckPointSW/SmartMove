@@ -30,6 +30,7 @@ using JuniperMigration;
 using MigrationBase;
 using NetScreenMigration;
 using FortiGateMigration;
+using PaloAltoMigration;
 
 namespace SmartMove
 {
@@ -291,6 +292,13 @@ namespace SmartMove
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
+                case Vendor.PaloAlto:
+                    ConfigurationFileLabel = SupportedVendors.PaloAltoConfigurationFileLabel;
+                    DomainNameTB.Visibility = Visibility.Collapsed;
+                    DomainName.Visibility = Visibility.Collapsed;
+                    SkipUnusedObjects.Visibility = Visibility.Visible;
+                    ConvertUserConf.Visibility = Visibility.Visible;
+                    break;
             }
 
             ConfigFilePath.Text = SourceFolder;
@@ -326,6 +334,9 @@ namespace SmartMove
                     break;
                 case Vendor.FortiGate:
                     filter = "conf files (*.conf)|*.conf";
+                    break;
+                case Vendor.PaloAlto:
+                    filter = "xml files (*.xml)|*.xml";
                     break;
             }
 
@@ -436,6 +447,9 @@ namespace SmartMove
                 case Vendor.FortiGate:
                     vendorParser = new FortiGateParser();
                     break;
+                case Vendor.PaloAlto:
+                    vendorParser = new PaloAltoParser();
+                    break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
             }
@@ -491,6 +505,16 @@ namespace SmartMove
                         ShowMessage("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                     }
                     break;
+                case Vendor.PaloAlto:
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                    }
+                    else if (vendorParser.MajorVersion < 7)
+                    {
+                        ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                    }
+                    break;
             }
 
             string vendorFileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
@@ -520,6 +544,13 @@ namespace SmartMove
                     fgConverter.ConvertUserConf = ConvertUserConfiguration;
                     fgConverter.LDAPAccoutUnit = ldapAccountUnit.Trim();
                     vendorConverter = fgConverter;
+                    break;
+                case Vendor.PaloAlto:
+                    PaloAltoConverter paConverter = new PaloAltoConverter();
+                    paConverter.OptimizeConf = SkipUnusedObjectsConversion;
+                    paConverter.ConvertUserConf = ConvertUserConfiguration;
+                    paConverter.LDAPAccoutUnit = ldapAccountUnit.Trim();
+                    vendorConverter = paConverter;
                     break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
@@ -658,6 +689,16 @@ namespace SmartMove
                     ConvertingErrorsCount = (fgConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", fgConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;
 
+                case Vendor.PaloAlto:
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+                    PaloAltoConverter paConverter = (PaloAltoConverter)vendorConverter;
+                    ConvertedPolicyRulesCount = (paConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", paConverter.RulesInConvertedPackage()) : " Check report.";
+                    ConvertedNATPolicyRulesCount = (paConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", paConverter.RulesInNatLayer()) : " Check report.";
+                    ConvertingWarningsCount = (paConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", paConverter.WarningsInConvertedPackage()) : " Check report.";
+                    ConvertingErrorsCount = (paConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", paConverter.ErrorsInConvertedPackage()) : " Check report.";
+                    break;
                 default:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Collapsed;
                     ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;

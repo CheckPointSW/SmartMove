@@ -152,6 +152,10 @@
       <Project>{f985894e-81cc-488c-876d-8436ae9c0cd7}</Project>
       <Name>NetScreenMigration</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PaloAltoMigration\PaloAltoMigration.csproj">
+      <Project>{87b734bd-1d17-4eec-ae44-6a2be8e03e41}</Project>
+      <Name>PaloAltoMigration</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Conversion_Icon.ico" />
