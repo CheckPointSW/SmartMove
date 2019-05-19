@@ -1,7 +1,7 @@
 # SmartMove
 Check Point SmartMove tool enables you to convert 3rd party database with firewall security policy and NAT to Check Point database.
 
-At the moment, the tool parses Cisco ASA, Juniper JunosOS/ScreenOS, and Fortinet FortiOS configurations and converts the objects, NAT and firewall policy to a Check Point R80.10 compliant policy. The tool is planned to support additional vendors and security configurations in the future.
+At the moment, the tool parses Cisco ASA, Juniper JunosOS/ScreenOS, Fortinet FortiOS and Palo Alto configurations and converts the objects, NAT and firewall policy to a Check Point R80.10 compliant policy. The tool is planned to support additional vendors and security configurations in the future.
 
 The tool generates bash scripts by utilizing Check Point Management API's command line interface, to migrate the converted policy into a R80.10 Management (or Multi-Domain) server.
 
