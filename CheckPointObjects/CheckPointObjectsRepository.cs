@@ -54,7 +54,7 @@ namespace CheckPointObjects
         /// </summary>
         public void Initialize()
         {
-            string[] names = { CheckPointObject.Any, "icmp-proto", CheckPointObject.All_Internet };   // general objects
+            string[] names = { CheckPointObject.Any, CheckPointObject.icmpProtocol, CheckPointObject.All_Internet };   // general objects
             foreach (string name in names)
             {
                 var cpPredifinedObject = new CheckPoint_PredifinedObject { Name = name };
@@ -134,7 +134,7 @@ namespace CheckPointObjects
                     _knownServices.Add(key, value);
                 }
             }
-            _knownServices.Add("ICMP_99", "icmp-proto");
+            _knownServices.Add("ICMP_99", CheckPointObject.icmpProtocol);
 
             string[] knownServiceGroups = File.ReadAllLines("CP_KnownServiceGroups.csv");
             foreach (string knownServiceGroup in knownServiceGroups)
@@ -201,7 +201,7 @@ namespace CheckPointObjects
 
         public bool IsKnownService(string serviceName)
         {
-            return (serviceName == CheckPointObject.Any || serviceName == "icmp-proto" || _knownServices.ContainsValue(serviceName));
+            return (serviceName == CheckPointObject.Any || serviceName == CheckPointObject.icmpProtocol || _knownServices.ContainsValue(serviceName));
         }
 
         #endregion

@@ -220,7 +220,7 @@ namespace MigrationBase
 
         public void ExportNatLayerAsHtml()
         {
-            if (RulesInNatLayer() == 0)
+            if (RulesInNatLayer() < 1) // == 0)
             {
                 return;
             }
@@ -1262,8 +1262,18 @@ namespace MigrationBase
                             
                             sb_set.Append("cmd='mgmt_cli ")
                                 .Append("set access-role ")
-                                .Append("name " + "\"" + obj.SafeName() + "\" ")
-                                .Append("networks \"any\" ")
+                                .Append("name " + "\"" + obj.SafeName() + "\" ");
+
+                            if(obj.Networks.Count == 0)
+                            {
+                                sb_set.Append("networks \"any\" ");
+                            }
+                            else
+                            {
+                                obj.Networks.ForEach(x => sb_set.Append("networks." + obj.Networks.IndexOf(x) + " \"" + x + "\" "));
+                            }
+
+                            sb_set
                                 .Append("users.add.source $LDAPAU ")
                                 .Append("users.add.selection." + i + " \"" + obj.Users[i].Name + "\" ")
                                 .Append(!(string.IsNullOrWhiteSpace(obj.Users[i].BaseDn)) ? "users.add.base-dn \"" + obj.Users[i].BaseDn + "\"" : "")
@@ -1346,8 +1356,8 @@ namespace MigrationBase
                                         "applications-and-url-filtering \"true\" " + 
                                         "ignore-warnings true -s id.txt --user-agent mgmt_cli_smartmove'");
                         file.WriteLine("run_command");
-                    }
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                    }
                     file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Add rules to parent layer {0}", package.NameOfAccessLayer)));
                     // !!! Attention !!! -- the rules are created in the reverse order but will be inserted at the TOP (!!!) position,
                     //                      so they are created in the correct order!
@@ -1568,8 +1578,18 @@ namespace MigrationBase
 
                         var sb_add = new StringBuilder();
                         sb_add.Append("add access-role ")
-                            .Append("name " + "\"" + obj.SafeName() + "\" ")
-                            .Append("networks \"any\" ")
+                            .Append("name " + "\"" + obj.SafeName() + "\" ");
+                        
+                        if (obj.Networks.Count == 0)
+                        {
+                            sb_add.Append("networks \"any\" ");
+                        }
+                        else
+                        {
+                            obj.Networks.ForEach(x => sb_add.Append("networks." + obj.Networks.IndexOf(x) + " \"" + x + "\" "));
+                        }
+
+                        sb_add
                             .Append("users.source " + LDAP_Account_Unit + " ");
 
                         file.WriteLine(sb_add.ToString());
@@ -1582,8 +1602,18 @@ namespace MigrationBase
                             
                             var sb_set = new StringBuilder();
                             sb_set.Append("set access-role ")
-                                .Append("name " + "\"" + obj.SafeName() + "\" ")
-                                .Append("networks \"any\" ")
+                                .Append("name " + "\"" + obj.SafeName() + "\" ");
+
+                            if (obj.Networks.Count == 0)
+                            {
+                                sb_set.Append("networks \"any\" ");
+                            }
+                            else
+                            {
+                                obj.Networks.ForEach(x => sb_set.Append("networks." + obj.Networks.IndexOf(x) + " \"" + x + "\" "));
+                            }
+
+                            sb_set
                                 .Append("users.source " + LDAP_Account_Unit + " ")
                                 .Append("users.add.selection." + i + " \"" + obj.Users[i].Name + "\" ")
                                 .Append(!(string.IsNullOrWhiteSpace(obj.Users[i].BaseDn)) ? "users.add.base-dn \"" + obj.Users[i].BaseDn + "\"" : "");

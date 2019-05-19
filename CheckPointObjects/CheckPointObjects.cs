@@ -43,6 +43,7 @@ namespace CheckPointObjects
 
         public const string Any = "any";
         public const string All_Internet = "All_Internet";
+        public const string icmpProtocol = "icmp-proto";
 
         public string Name { get; set; }
 
@@ -602,11 +603,18 @@ namespace CheckPointObjects
 
     public class CheckPoint_AccessRole : CheckPointObject
     {
+        public List<string> Networks = new List<string>();
         public List<AccessRoleUser> Users = new List<AccessRoleUser>();
 
         public override string ToCLIScript()
         {
-            return "add access-role " + WriteParam("name", SafeName(), "") + "networks \"any\" "
+            if(Networks.Count == 0)
+            {
+                Networks.Add("any");
+            }
+            return "add access-role "
+                + WriteParam("name", SafeName(), "")
+                + WriteListParam("networks", Networks, true)
                 + WriteListParam("tags", Tags, true);
         }
 
