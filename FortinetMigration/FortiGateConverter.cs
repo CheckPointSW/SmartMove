@@ -4681,6 +4681,11 @@ namespace FortiGateMigration
 
             return retList;
         }
+
+        protected override string GetVendorName()
+        {
+            return Vendor.FortiGate.ToString();
+        }
     }
 
     public class FgInterface

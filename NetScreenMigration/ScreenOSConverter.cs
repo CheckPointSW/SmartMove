@@ -669,6 +669,10 @@ namespace NetScreenMigration
             }
         }
 
+        protected override string GetVendorName()
+        {
+            return Vendor.JuniperScreenOS.ToString();
+        }
         #endregion
 
         #region Private Methods

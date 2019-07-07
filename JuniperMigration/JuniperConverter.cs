@@ -3423,6 +3423,10 @@ namespace JuniperMigration
             return cpDummyObject;
         }
 
+        protected override string GetVendorName()
+        {
+            return Vendor.JuniperJunosOS.ToString();
+        }
         #endregion
 
         #region Public Methods

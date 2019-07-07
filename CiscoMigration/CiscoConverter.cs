@@ -4839,6 +4839,10 @@ namespace CiscoMigration
             }
         }
 
+        protected override string GetVendorName()
+        {
+            return Vendor.CiscoASA.ToString();
+        }
         #endregion
     }
 }

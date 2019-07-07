@@ -215,6 +215,7 @@ namespace MigrationBase
         public abstract int RulesInNatLayer();
         public abstract void ExportConfigurationAsHtml();
         public abstract void ExportPolicyPackagesAsHtml();
+        protected abstract string GetVendorName();
         
         #endregion
 
@@ -848,7 +849,7 @@ namespace MigrationBase
                     file.WriteLine(Environment.NewLine);
                 }
 
-                file.WriteLine(CLIScriptBuilder.GenerateDiagnosticsCommandScript("SmartMove_Create_Objects"));
+                file.WriteLine(CLIScriptBuilder.GenerateDiagnosticsCommandScript("SmartMove_Create_Objects", GetVendorName()));
 
                 int totalObjectsCount = _cpDomains.Count +
                                         _cpHosts.Count +
@@ -1317,7 +1318,7 @@ namespace MigrationBase
                     file.WriteLine(CLIScriptBuilder.GenerateScriptHeader(_toolVersion, false));
                     file.WriteLine(CLIScriptBuilder.GenerateRunCommandScript(errorsReportFile));
                     file.WriteLine(CLIScriptBuilder.GenerateLoginScript(_domainName, errorsReportFile));
-                    file.WriteLine(CLIScriptBuilder.GenerateDiagnosticsCommandScript(diagnosticsTarget));
+                    file.WriteLine(CLIScriptBuilder.GenerateDiagnosticsCommandScript(diagnosticsTarget, GetVendorName()));
 
                     file.WriteLine(CLIScriptBuilder.GenerateObjectScript(package));
 

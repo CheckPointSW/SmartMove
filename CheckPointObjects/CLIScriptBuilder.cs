@@ -191,7 +191,7 @@ namespace CheckPointObjects
             return sb.ToString();
         }
 
-        public static string GenerateDiagnosticsCommandScript(string command)
+        public static string GenerateDiagnosticsCommandScript(string command, string vendorName)
         {
             if (string.IsNullOrEmpty(command))
             {
@@ -200,7 +200,7 @@ namespace CheckPointObjects
 
             var sb = new StringBuilder();
 
-            sb.Append("mgmt_cli ").Append(command).Append(" -s id.txt > /dev/null 2>&1");
+            sb.Append("mgmt_cli ").Append(command + "_" + vendorName).Append(" -s id.txt > /dev/null 2>&1");
 
             return sb.ToString();
         }
