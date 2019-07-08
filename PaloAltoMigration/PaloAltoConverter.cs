@@ -3510,6 +3510,10 @@ namespace PaloAltoMigration
             }
         }
 
+        protected override string GetVendorName()
+        {
+            return Vendor.PaloAlto.ToString();
+        }
         #endregion
     }
 }
