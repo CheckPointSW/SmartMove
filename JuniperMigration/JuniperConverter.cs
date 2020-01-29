@@ -870,7 +870,7 @@ namespace JuniperMigration
                 }
             }
 
-            if (isZonelessAllGlobalRules)
+            if (isZonelessAllGlobalRules && _juniperParser.GetGlobalPolicyRules().Count > 1)
             {
                 CheckPoint_Rule cpRule4GlobalLayer = new CheckPoint_Rule();
                 cpRule4GlobalLayer.Name = "";
@@ -917,7 +917,7 @@ namespace JuniperMigration
 
                 //the last rule which is created by default by CheckPoint script importer. It is for report only.
                 var cpRuleCleanUp = new CheckPoint_Rule();
-                cpRuleCleanUp.Name = "Cleanup rule";
+                cpRuleCleanUp.Name = Juniper_GlobalPolicyRule.DefaultActionRuleName;
                 package.ParentLayer.Rules.Add(cpRuleCleanUp);
             }
             else
