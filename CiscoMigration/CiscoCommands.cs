@@ -1222,6 +1222,122 @@ namespace CiscoMigration
         }
     }
 
+    public class Cisco_TimeRange : CiscoCommand
+    {
+        public enum Weekdays { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday };
+
+        private string _timeRangeName;
+
+        private string _startDateTime;
+        private string _endDateTime;
+
+        private List<string> _periodicsList;
+
+        public string TimeRangeName
+        {
+            get { return _timeRangeName; }
+        }
+
+        public string StartDateTime
+        {
+            get { return _startDateTime; }
+        }
+
+        public string EndDateTime
+        {
+            get { return _endDateTime; }
+        }
+
+        public List<string> PeriodicsList
+        {
+            get { return _periodicsList; }
+        }
+
+        public override string Name() { return "time-range"; }
+
+        public override void Parse(CiscoCommand command, CiscoCommand prevCommand, Dictionary<string, CiscoCommand> ciscoIds, Dictionary<string, string> aliases)
+        {
+            base.Parse(command, prevCommand, ciscoIds, aliases);
+
+            _periodicsList = new List<string>();
+
+            _timeRangeName = this.GetParam(1);
+
+            foreach(CiscoCommand child in Children)
+            {
+                if(child.FirstWord.Equals("absolute"))
+                {
+                    int startIndex = child.Text.IndexOf("start");
+                    int endIndex = child.Text.IndexOf("end");
+                    if(startIndex > -1 && endIndex > -1)
+                    {
+                        _startDateTime = child.Text.Substring("absolute".Length + "start".Length + 2, endIndex - startIndex - "start".Length).Trim();
+                        _endDateTime = child.Text.Substring(endIndex + "end".Length).Trim();
+                    }
+                    else if (startIndex > -1 && endIndex == -1)
+                    {
+                        _startDateTime = child.Text.Substring("absolute".Length + "start".Length + 2).Trim();
+                    }
+                    else if(startIndex == -1 && endIndex > -1)
+                    {
+                        _endDateTime = child.Text.Substring("absolute".Length + "end".Length + 2).Trim();
+                    }
+                }
+
+                if (child.FirstWord.Equals("periodic"))
+                {
+                    string period = child.Text.Substring("periodic".Length + 1).Trim();
+
+                    string[] daysTimes = period.Trim().Split(new string[] { "to" }, StringSplitOptions.RemoveEmptyEntries);
+
+                    string[] daysTimes_1 = daysTimes[0].Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+                    string[] daysTimes_2 = daysTimes[1].Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+
+                    if (daysTimes_1.Length == 2 && daysTimes_2.Length == 2)
+                    {
+                        int startWdIndex = (int)Enum.Parse(typeof(Weekdays), daysTimes_1[0]);
+                        int endWdIndex = (int)Enum.Parse(typeof(Weekdays), daysTimes_2[0]);
+
+                        if (startWdIndex < endWdIndex)
+                        {
+                            _periodicsList.Add((Weekdays)startWdIndex + " " + daysTimes_1[1] + " to 23:59");
+
+                            for (int i = startWdIndex+1; i <= endWdIndex-1; i++)
+                            {
+                                _periodicsList.Add((Weekdays)i + " 0:00 to 23:59");
+                            }
+
+                            _periodicsList.Add((Weekdays)endWdIndex + " 0:00 to " + daysTimes_2[1]);
+                        }
+                        else
+                        {
+                            int firstWdIndex = (int)Enum.GetValues(typeof(Weekdays)).Cast<Weekdays>().First();
+                            int lastWdIndex = (int)Enum.GetValues(typeof(Weekdays)).Cast<Weekdays>().Last();
+
+                            _periodicsList.Add((Weekdays)startWdIndex + " " + daysTimes_1[1] + " to 23:59");
+
+                            for (int i = startWdIndex + 1; i <= lastWdIndex; i++)
+                            {
+                                _periodicsList.Add((Weekdays)i + " 0:00 to 23:59");
+                            }
+
+                            for (int i = firstWdIndex; i <= endWdIndex-1; i++)
+                            {
+                                _periodicsList.Add((Weekdays)i + " 0:00 to 23:59");
+                            }
+
+                            _periodicsList.Add((Weekdays)endWdIndex + " 0:00 to " + daysTimes_2[1]);
+                        }
+                    }
+                    else
+                    {
+                        _periodicsList.Add(period);
+                    }
+                }
+            }
+        }
+    }
+	
     public class Cisco_Interface : CiscoCommand
     {
         public string InterfaceName { get; set; }
@@ -1973,6 +2089,7 @@ namespace CiscoMigration
         public string Remark { get; set; }
         public bool IsRemark { get; set; }
         public bool IsTimeRangeSpecified { get; set; }
+        public string TimeRangeName { get; set; }
         public SourceDest Source { get; set; }
         public SourceDest Destination { get; set; }
         public ProtocolProperties SourceProperties { get; set; }
@@ -2138,6 +2255,8 @@ namespace CiscoMigration
             if (command.GetParamPosition("time-range") > 0)
             {
                 IsTimeRangeSpecified = true;
+                int indexTimeRange = command.GetParamPosition("time-range");
+                TimeRangeName = command.GetParam(indexTimeRange + 1);
             }
 
             if (command.GetParamPosition("inactive") > 0)

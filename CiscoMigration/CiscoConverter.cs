@@ -25,6 +25,7 @@ using CheckPointObjects;
 using MigrationBase;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace CiscoMigration
 {
@@ -503,6 +504,7 @@ namespace CiscoMigration
         private IEnumerable<CiscoCommand> _ciscoAclCommands;
         private IEnumerable<CiscoCommand> _ciscoAccessGroupCommands;
         private IEnumerable<CiscoCommand> _ciscoInterfaceCommands;
+        private IEnumerable<CiscoCommand> _ciscoTimeRangeCommands;
         private IEnumerable<CiscoCommand> _ciscoClassMapCommands;
         private IList<CiscoCommand> _ciscoSshCommands;
         private Cisco_Hostname _ciscoHostnameCommand;
@@ -518,6 +520,8 @@ namespace CiscoMigration
         private bool _isInterInterfaceTrafficAllowed = false;
         private bool _isIntraInterfaceTrafficAllowed = false;
 
+        private Dictionary<string, List<string>> _ciscoTimeNamesToCpTimeNamesDict = new Dictionary<string, List<string>>();
+		
         private enum CheckPointDummyObjectType { Host, NetworkGroup, ServiceGroup, OtherService, TimeGroup };
 
         private IEnumerable<CiscoCommand> CiscoAllCommands
@@ -567,7 +571,15 @@ namespace CiscoMigration
                 return _ciscoInterfaceCommands ?? (_ciscoInterfaceCommands = _ciscoParser.Filter("interface"));
             }
         }
-
+		
+        private IEnumerable<CiscoCommand> CisciTimeRangeCommands
+        {
+            get
+            {
+                return _ciscoTimeRangeCommands ?? (_ciscoTimeRangeCommands = _ciscoParser.Filter("time-range"));
+            }
+        }
+		
         private IEnumerable<CiscoCommand> CiscoClassMapCommands
         {
             get
@@ -1670,7 +1682,241 @@ namespace CiscoMigration
                 }
             }
         }
+		
+        private void Add_TimeRanges()
+        {
+            IEnumerable<CiscoCommand> caTimesList = CisciTimeRangeCommands;
 
+            const int cpTimeRangeNameLength = 11;
+
+            List<string> cpTimeRangesNamesUniq = new List<string>();
+            int cpTimeNamePostfixInt = 1;
+
+            foreach(CiscoCommand command in caTimesList)
+            {
+                if (command.GetType() == typeof(Cisco_TimeRange))
+                {
+                    Cisco_TimeRange caTime = (Cisco_TimeRange)command;
+
+                    string cpTimeRangeNameSrc = caTime.TimeRangeName;
+
+                    if (caTime.PeriodicsList != null && caTime.PeriodicsList.Count > 1)
+                    {
+                        int postfixIndex = 1;
+                        bool isRenamed = false;
+                        foreach (string periodic in caTime.PeriodicsList)
+                        {
+                            string postfixString = $"_{postfixIndex++}";
+                            string cpTimeRangeName = cpTimeRangeNameSrc + postfixString;
+
+                            while (cpTimeRangeName.Length > cpTimeRangeNameLength || cpTimeRangesNamesUniq.Contains(cpTimeRangeName))
+                            {
+                                string cpTimeNamePostfixStr = $"_{cpTimeNamePostfixInt}";
+                                cpTimeRangeName = cpTimeRangeNameSrc.Substring(0, cpTimeRangeNameLength - cpTimeNamePostfixStr.Length - postfixString.Length);
+                                cpTimeRangeName = cpTimeRangeName + cpTimeNamePostfixStr + postfixString;
+                                isRenamed = true;
+                            }
+
+                            Add_TimeRange(caTime.Id, caTime.TimeRangeName, cpTimeRangeName, caTime.StartDateTime, caTime.EndDateTime, periodic);
+                            cpTimeRangesNamesUniq.Add(cpTimeRangeName);
+                        }
+
+                        if(isRenamed)
+                            cpTimeNamePostfixInt += 1;
+                    }
+                    else
+                    {
+                        while (cpTimeRangeNameSrc.Length > cpTimeRangeNameLength || cpTimeRangesNamesUniq.Contains(cpTimeRangeNameSrc))
+                        {
+                            string cpTimeNamePostfixStr = $"_{cpTimeNamePostfixInt}";
+                            cpTimeRangeNameSrc = cpTimeRangeNameSrc.Substring(0, cpTimeRangeNameLength - cpTimeNamePostfixStr.Length);
+                            cpTimeRangeNameSrc = cpTimeRangeNameSrc + cpTimeNamePostfixStr;
+                            cpTimeNamePostfixInt += 1;
+                        }
+
+                        string periodic = null;
+                        if(caTime.PeriodicsList.Count == 1)
+                        {
+                            periodic = caTime.PeriodicsList[0];
+                        }
+                        Add_TimeRange(caTime.Id, caTime.TimeRangeName, cpTimeRangeNameSrc, caTime.StartDateTime, caTime.EndDateTime, periodic);
+                        cpTimeRangesNamesUniq.Add(cpTimeRangeNameSrc);
+                    }
+                }
+            }
+        }
+		
+        private void Add_TimeRange(int caTimeId, string caTimeRangeName, string cpTimeRangeName, string cpStartDateTime, string cpEndDateTime, string period = null)
+        {
+            if(!caTimeRangeName.Equals(cpTimeRangeName))
+            {
+                _conversionIncidents.Add(
+                    new ConversionIncident(
+                        caTimeId, 
+                        "TITLE: object is renamed", 
+                        $"DESCRIPTION: object renamed from {caTimeRangeName} to {cpTimeRangeName}", 
+                        ConversionIncidentType.Informative));
+            }
+
+            CheckPoint_Time cpTime = new CheckPoint_Time();
+            cpTime.Name = cpTimeRangeName;
+            cpTime.Comments = "Old Time Object name: " + caTimeRangeName;
+            cpTime.StartNow = true;
+            cpTime.EndNever = true;
+
+            if (cpStartDateTime != null) // check if Cisco has Start Time
+            {
+                cpTime.StartNow = false;
+
+                DateTime date = DateTime.ParseExact(cpStartDateTime, "HH:mm dd MMMM yyyy", CultureInfo.InvariantCulture);
+                cpTime.StartDate = date.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture).Trim();
+                cpTime.StartTime = date.ToString("HH:mm").Trim();
+            }
+
+            if (cpEndDateTime != null)
+            {
+                cpTime.EndNever = false;
+
+                DateTime date = DateTime.ParseExact(cpEndDateTime, "HH:mm dd MMMM yyyy", CultureInfo.InvariantCulture);
+                cpTime.EndDate = date.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture).Trim();
+                cpTime.EndTime = date.ToString("HH:mm").Trim();
+            }
+
+
+            if (period != null)
+            {
+                string[] times = null;
+
+                if (period.StartsWith("daily"))
+                {
+                    times = period.Trim().Substring("daily".Length).Trim().Split(new string[] { "to" }, StringSplitOptions.RemoveEmptyEntries);
+
+                    cpTime.RecurrencePattern = CheckPoint_Time.RecurrencePatternEnum.Daily;
+                }
+                else
+                {
+                    cpTime.RecurrencePattern = CheckPoint_Time.RecurrencePatternEnum.Weekly;
+
+                    if (period.StartsWith("weekdays"))
+                    {
+                        cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Mon);
+                        cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Tue);
+                        cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Wed);
+                        cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Thu);
+                        cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Fri);
+
+                        times = period.Trim().Substring("weekdays".Length).Trim().Split(new string[] { "to" }, StringSplitOptions.RemoveEmptyEntries);
+                    }
+                    else if (period.StartsWith("weekend"))
+                    {
+                        cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Sat);
+                        cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Sun);
+
+                        times = period.Trim().Substring("weekend".Length).Trim().Split(new string[] { "to" }, StringSplitOptions.RemoveEmptyEntries);
+                    }
+                    else
+                    {
+                        string[] daysTimes = period.Trim().Split(new string[] { "to" }, StringSplitOptions.RemoveEmptyEntries);
+
+                        string[] daysTimes_1 = daysTimes[0].Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+                        string[] daysTimes_2 = daysTimes[1].Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+
+                        if (daysTimes_1.Length == 2 && daysTimes_2.Length == 2)
+                        {
+                            int startWdIndex = (int)WeekDayFromCiscoToCP(daysTimes_1[0]);
+                            int endWdIndex = (int)WeekDayFromCiscoToCP(daysTimes_2[0]);
+
+                            if (startWdIndex < endWdIndex)
+                            {
+                                for (int i = startWdIndex; i <= endWdIndex; i++)
+                                {
+                                    cpTime.RecurrenceWeekdays.Add((CheckPoint_Time.Weekdays)i);
+                                }
+                            }
+                            else
+                            {
+                                int firstWdIndex = (int)Enum.GetValues(typeof(CheckPoint_Time.Weekdays)).Cast<CheckPoint_Time.Weekdays>().First();
+                                int lastWdIndex = (int)Enum.GetValues(typeof(CheckPoint_Time.Weekdays)).Cast<CheckPoint_Time.Weekdays>().Last();
+
+                                for (int i = firstWdIndex; i <= endWdIndex; i++)
+                                {
+                                    cpTime.RecurrenceWeekdays.Add((CheckPoint_Time.Weekdays)i);
+                                }
+
+                                for (int i = startWdIndex; i <= lastWdIndex; i++)
+                                {
+                                    cpTime.RecurrenceWeekdays.Add((CheckPoint_Time.Weekdays)i);
+                                }
+                            }
+
+                            times = new string[] { daysTimes_1[daysTimes_1.Length - 1], daysTimes_2[daysTimes_2.Length - 1] };
+                        }
+                        else if (daysTimes_2.Length == 1)
+                        {
+                            for (int i = 0; i < daysTimes_1.Length - 1; i++)
+                            {
+                                cpTime.RecurrenceWeekdays.Add(WeekDayFromCiscoToCP(daysTimes_1[i]));
+                            }
+
+                            times = new string[] { daysTimes_1[daysTimes_1.Length - 1], daysTimes_2[0] };
+                        }
+                        else
+                        {
+                            throw new IOException("Invalid periodic pattern");
+                        }
+                    }
+                }
+
+                TimeSpan timeCheck0 = TimeSpan.ParseExact(times[0].Trim(), "h\\:mm", CultureInfo.InvariantCulture);
+                TimeSpan timeCheck1 = TimeSpan.ParseExact(times[1].Trim(), "h\\:mm", CultureInfo.InvariantCulture);
+
+                if (TimeSpan.Compare(timeCheck0, timeCheck1) == -1)
+                {
+                    cpTime.HoursRangesEnabled_1 = true;
+                    cpTime.HoursRangesFrom_1 = times[0].Trim();
+                    cpTime.HoursRangesTo_1 = times[1].Trim();
+                }
+                else
+                {
+                    cpTime.HoursRangesEnabled_1 = true;
+                    cpTime.HoursRangesFrom_1 = times[0].Trim();
+                    cpTime.HoursRangesTo_1 = "23:59".Trim();
+
+                    cpTime.HoursRangesEnabled_2 = true;
+                    cpTime.HoursRangesFrom_2 = "00:00".Trim();
+                    cpTime.HoursRangesTo_2 = times[1].Trim();
+                }
+            }
+
+            AddCheckPointObject(cpTime);
+
+            List<string> cpTimeNamesList = null;
+            _ciscoTimeNamesToCpTimeNamesDict.TryGetValue(caTimeRangeName, out cpTimeNamesList);
+            if (cpTimeNamesList == null)
+            {
+                cpTimeNamesList = new List<string>();
+            }
+            cpTimeNamesList.Add(cpTime.Name);
+            _ciscoTimeNamesToCpTimeNamesDict[caTimeRangeName] = cpTimeNamesList;
+        }
+
+        private CheckPoint_Time.Weekdays WeekDayFromCiscoToCP(string weekDayCisco)
+        {
+            CheckPoint_Time.Weekdays weekDayCP;
+            switch(weekDayCisco)
+            {
+                case "Monday": weekDayCP = CheckPoint_Time.Weekdays.Mon; break;
+                case "Tuesday": weekDayCP = CheckPoint_Time.Weekdays.Tue; break;
+                case "Wednesday": weekDayCP = CheckPoint_Time.Weekdays.Wed; break;
+                case "Thursday": weekDayCP = CheckPoint_Time.Weekdays.Thu; break;
+                case "Friday": weekDayCP = CheckPoint_Time.Weekdays.Fri; break;
+                case "Saturday": weekDayCP = CheckPoint_Time.Weekdays.Sat; break;
+                default: weekDayCP = CheckPoint_Time.Weekdays.Sun; break;
+            }
+
+            return weekDayCP;
+        }
+		
         private void Add_Package()
         {
             var cpPackage = new CheckPoint_Package();
@@ -2091,12 +2337,29 @@ namespace CiscoMigration
 
             if (ciscoAcl.IsTimeRangeSpecified)
             {
-                cpObject = GetCheckPointObjectOrCreateDummy("not_existing_object",
-                                                            CheckPointDummyObjectType.TimeGroup,
-                                                            ciscoAcl,
-                                                            "Not applying time-range objects to ACLs",
-                                                            "Appropriate time object should be added manually.");
-                cpRule.Time.Add(cpObject);
+                List<string> cpTimeNamesList = null;
+                _ciscoTimeNamesToCpTimeNamesDict.TryGetValue(ciscoAcl.TimeRangeName, out cpTimeNamesList);
+                if (cpTimeNamesList != null)
+                {
+                    foreach(string cpTimeName in cpTimeNamesList)
+                    {
+                        cpObject = GetCheckPointObjectOrCreateDummy(cpTimeName,
+                                                                CheckPointDummyObjectType.TimeGroup,
+                                                                ciscoAcl,
+                                                                "Not applying time-range objects to ACLs",
+                                                                "Appropriate time object should be added manually.");
+                        cpRule.Time.Add(cpObject);
+                    }
+                }
+                else
+                {
+                    cpObject = GetCheckPointObjectOrCreateDummy("not_existing_object",
+                                                                CheckPointDummyObjectType.TimeGroup,
+                                                                ciscoAcl,
+                                                                "Not applying time-range objects to ACLs",
+                                                                "Appropriate time object should be added manually.");
+                    cpRule.Time.Add(cpObject);
+                }
             }
 
             switch (ciscoAcl.Source.Type)
@@ -3720,7 +3983,7 @@ namespace CiscoMigration
                         for (int ruleNumber = 0; ruleNumber < subPolicy.Rules.Count; ruleNumber++)
                         {
                             var cpRule = subPolicy.Rules[ruleNumber];
-
+							
                             // Do not match on cleanup rule
                             if (cpRule.IsCleanupRule())
                             {
@@ -4109,6 +4372,7 @@ namespace CiscoMigration
             Add_Zones();
             Add_or_Modify_InterfaceNetworkGroups();
             Add_ServicesAndServiceGroups();
+            Add_TimeRanges();
             RaiseConversionProgress(30, "Converting rules ...");
             Add_Package();
 
