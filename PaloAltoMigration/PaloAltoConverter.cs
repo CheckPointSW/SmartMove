@@ -1072,7 +1072,14 @@ namespace PaloAltoMigration
                 _warningsList.Add(objName + " " + objType.Trim() + " was renamed to " + objNameNew);
                 objName = objNameNew;
             }
-
+			
+            objNameNew = GetSafeName(objName);
+            if(!objNameNew.Equals(objName))
+            {
+                _warningsList.Add(objName + " " + objType.Trim() + " was renamed to " + objNameNew);
+                objName = objNameNew;
+            }
+			
             if (!_objectsNamesSet.Add(objName.ToLower()))
             {
                 objNameNew = objName + "_" + _numPostfix++;
@@ -1097,6 +1104,7 @@ namespace PaloAltoMigration
                 {
                     CheckPoint_Zone cpZone = new CheckPoint_Zone();
                     cpZone.Name = InspectObjectName(paZoneEntry.Name, CP_OBJECT_TYPE_NAME_ZONE);
+                    cpZone.Name = cpZone.SafeName();
                     cpZone.Comments = paZoneEntry.Description;
                     cpZone.Tags = paZoneEntry.TagMembers;
                     cpZonesDict[paZoneEntry.Name] = cpZone;
