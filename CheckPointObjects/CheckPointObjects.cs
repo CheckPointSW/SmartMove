@@ -873,12 +873,14 @@ namespace CheckPointObjects
     {
         public List<CheckPoint_Rule> Rules = new List<CheckPoint_Rule>();
         public bool ApplicationsAndUrlFiltering { get; set; }
+        public bool Shared { get; set; }
 
         public override string ToCLIScript()
         {
             return "add access-layer " + WriteParam("name", Name, "") + WriteParam("comments", Comments, "")
                 + WriteParam("add-default-rule", false, true)
                 + WriteParam("applications-and-url-filtering", ApplicationsAndUrlFiltering, false)
+                + WriteParam("shared", Shared, false)
                 + WriteListParam("tags", Tags, true);
         }
 
