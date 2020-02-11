@@ -1706,12 +1706,12 @@ namespace CiscoMigration
                         bool isRenamed = false;
                         foreach (string periodic in caTime.PeriodicsList)
                         {
-                            string postfixString = $"_{postfixIndex++}";
+                            string postfixString = "_" + postfixIndex++;
                             string cpTimeRangeName = cpTimeRangeNameSrc + postfixString;
 
                             while (cpTimeRangeName.Length > cpTimeRangeNameLength || cpTimeRangesNamesUniq.Contains(cpTimeRangeName))
                             {
-                                string cpTimeNamePostfixStr = $"_{cpTimeNamePostfixInt}";
+                                string cpTimeNamePostfixStr = "_" + cpTimeNamePostfixInt;
                                 cpTimeRangeName = cpTimeRangeNameSrc.Substring(0, cpTimeRangeNameLength - cpTimeNamePostfixStr.Length - postfixString.Length);
                                 cpTimeRangeName = cpTimeRangeName + cpTimeNamePostfixStr + postfixString;
                                 isRenamed = true;
@@ -1728,7 +1728,7 @@ namespace CiscoMigration
                     {
                         while (cpTimeRangeNameSrc.Length > cpTimeRangeNameLength || cpTimeRangesNamesUniq.Contains(cpTimeRangeNameSrc))
                         {
-                            string cpTimeNamePostfixStr = $"_{cpTimeNamePostfixInt}";
+                            string cpTimeNamePostfixStr = "_" + cpTimeNamePostfixInt;
                             cpTimeRangeNameSrc = cpTimeRangeNameSrc.Substring(0, cpTimeRangeNameLength - cpTimeNamePostfixStr.Length);
                             cpTimeRangeNameSrc = cpTimeRangeNameSrc + cpTimeNamePostfixStr;
                             cpTimeNamePostfixInt += 1;
@@ -1754,7 +1754,7 @@ namespace CiscoMigration
                     new ConversionIncident(
                         caTimeId, 
                         "TITLE: object is renamed", 
-                        $"DESCRIPTION: object renamed from {caTimeRangeName} to {cpTimeRangeName}", 
+                        "DESCRIPTION: object renamed from " + caTimeRangeName + " to " + cpTimeRangeName, 
                         ConversionIncidentType.Informative));
             }
 
