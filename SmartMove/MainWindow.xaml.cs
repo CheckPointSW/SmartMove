@@ -474,10 +474,12 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         ShowMessage("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
                     }
                     else if (vendorParser.MajorVersion < 8 || (vendorParser.MajorVersion == 8 && vendorParser.MinorVersion < 3))
                     {
                         ShowMessage("Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
                     }
                     break;
 
@@ -485,10 +487,12 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         ShowMessage("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
                     }
                     else if (vendorParser.MajorVersion < 12 || (vendorParser.MajorVersion == 12 && vendorParser.MinorVersion < 1))
                     {
                         ShowMessage("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
                     }
                     break;
 
@@ -499,20 +503,24 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         ShowMessage("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
                     }
                     else if(vendorParser.MajorVersion < 5)
                     {
                         ShowMessage("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
                     }
                     break;
                 case Vendor.PaloAlto:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
                         ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
                     }
                     break;
             }
