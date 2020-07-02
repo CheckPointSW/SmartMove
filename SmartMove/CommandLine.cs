@@ -132,30 +132,30 @@ namespace SmartMove
                 return 0;
             }
             if (!fullVendorsList.Contains(commandLine.Vendor))
-            {
-                Console.WriteLine("Specified vendor \"" + commandLine.Vendor + "\" is not available.", MessageTypes.Error);
+             {               
+                 Console.WriteLine("Specified vendor \"" + commandLine.Vendor + "\" is not available.", MessageTypes.Error);
                 Console.WriteLine("Available options are: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama", MessageTypes.Error);
-                Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
-                return 0;
-            }
+                 Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                 return 0;
+             }
             if (vendorsList1.Contains(commandLine.Vendor))
-            {
+             {
                 if (commandLine.ConvertUserConfiguration == true)
-                {
-                    Console.WriteLine("Option -u is not valid for vendor " + commandLine.Vendor + "!");
-                    Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                 {
+                     Console.WriteLine("Option -u is not valid for vendor " + commandLine.Vendor + "!");
+                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
                     return 0;
                 }
-
+                        
                 if (commandLine.DontImportUnusedObjects == true)
-                {
-                    Console.WriteLine("Option -i is not valid for vendor " + commandLine.Vendor + "!");
-                    Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                 {
+                     Console.WriteLine("Option -i is not valid for vendor " + commandLine.Vendor + "!");
+                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
                     return 0;
-                }
-
-            }
-            if (vendorsList2.Contains(commandLine.Vendor))
+                }                    
+                 
+              }
+             if (vendorsList2.Contains(commandLine.Vendor))
             {
                 if (commandLine.ConvertUserConfiguration == true && commandLine.LdapAccountUnit == null)
                 {
@@ -163,7 +163,7 @@ namespace SmartMove
                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
                     return 0;
                 }
-
+                    
             }
             if ((commandLine.vendor == "JuniperSRX" || commandLine.vendor == "PaloAlto") && !commandLine.configFileName.EndsWith(".xml"))
             {
@@ -308,7 +308,7 @@ namespace SmartMove
         public void DoMigration(CommandLine commandLine)
         {
             
-            string fileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
+            string fileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);            
             //Console.WriteLine("File name: " + fileName);
 
             if (string.IsNullOrEmpty(commandLine.ConfigFileName) || string.IsNullOrEmpty(fileName))            
@@ -373,7 +373,7 @@ namespace SmartMove
                 }
                 else
                 {
-                    vendorParser.Parse(ciscoFile);
+                vendorParser.Parse(ciscoFile);
                 }
             }
             catch (Exception ex)
@@ -485,12 +485,12 @@ namespace SmartMove
                     fgConverter.LDAPAccoutUnit = ldapAccountUnit;
                     vendorConverter = fgConverter;
                     break;
-                case "PaloAlto":
+                case "PaloAlto":                    
                     PaloAltoConverter paConverter = new PaloAltoConverter();
                     paConverter.OptimizeConf = commandLine.DontImportUnusedObjects;
                     paConverter.ConvertUserConf = commandLine.ConvertUserConfiguration;
                     paConverter.LDAPAccoutUnit = ldapAccountUnit;
-                    vendorConverter = paConverter;                    
+                    vendorConverter = paConverter;
                     break;
                 case "Panorama":
                     PanoramaConverter panoramaConverter = new PanoramaConverter();
@@ -513,7 +513,7 @@ namespace SmartMove
             }
             catch (Exception ex)
             {
-
+               
                 if (ex is InvalidDataException && ex.Message != null && ex.Message.Contains("Policy exceeds the maximum number"))
                 {
                     Console.WriteLine(String.Format("{1}{0}{2}{0}{3}", Environment.NewLine, "SmartMove is unable to convert the provided policy.",
@@ -522,7 +522,7 @@ namespace SmartMove
                 }
                 else
                 {
-                    Console.WriteLine(string.Format("Could not convert configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                Console.WriteLine(string.Format("Could not convert configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
                 }
                 return;
             }                     
