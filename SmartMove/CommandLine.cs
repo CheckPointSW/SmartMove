@@ -9,6 +9,7 @@ using MigrationBase;
 using NetScreenMigration;
 using FortiGateMigration;
 using PaloAltoMigration;
+using PanoramaPaloAltoMigration;
 using System.Text.RegularExpressions;
 
 namespace SmartMove
@@ -97,12 +98,12 @@ namespace SmartMove
             Console.WriteLine();
             Console.WriteLine("Options:");
             Console.WriteLine("\t" + "-f" + "\t" + "full path to vendor configuration file");
-            Console.WriteLine("\t" + "-v" + "\t" + "vendor for conversion (available options: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto)");
+            Console.WriteLine("\t" + "-v" + "\t" + "vendor for conversion (available options: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama)");
             Console.WriteLine("\t" + "-t" + "\t" + "migration output folder");
             Console.WriteLine("\t" + "-d" + "\t" + "domain name (for CiscoASA, JuniperSRX, JuniperSSG only)");
             Console.WriteLine("\t" + "-n" + "\t" + "convert NAT configuration");
-            Console.WriteLine("\t" + "-u" + "\t" + "LDAP Account unit for convert user configuration option (for FortiNet and PaloAlto only)");
-            Console.WriteLine("\t" + "-i" + "\t" + "do not import unused objects (for FortiNet and PaloAlto only)");
+            Console.WriteLine("\t" + "-u" + "\t" + "LDAP Account unit for convert user configuration option (for FortiNet, PaloAlto and Panorama only)");
+            Console.WriteLine("\t" + "-i" + "\t" + "do not import unused objects (for FortiNet, PaloAlto and Panorama only)");
             Console.WriteLine();
             Console.WriteLine("Example:");
             Console.WriteLine("\t" + "SmartMove.exe –f \"D:\\SmartMove\\Content\\config.txt\" –v CiscoASA - t \"D:\\SmartMove\\Content\" –n");
@@ -115,9 +116,9 @@ namespace SmartMove
          */
         public int CheckOptionsValidity(CommandLine commandLine)
         {
-            var fullVendorsList = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FortiNet", "PaloAlto" };
+            var fullVendorsList = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FortiNet", "PaloAlto", "Panorama" };
             var vendorsList1 = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG" };
-            var vendorsList2 = new List<string> { "FortiNet", "PaloAlto" };
+            var vendorsList2 = new List<string> { "FortiNet", "PaloAlto", "Panorama" };
             if (String.IsNullOrEmpty(commandLine.Vendor))
             {
                 Console.WriteLine("Option -v is mandatory but not specified.", MessageTypes.Error);
@@ -131,30 +132,30 @@ namespace SmartMove
                 return 0;
             }
             if (!fullVendorsList.Contains(commandLine.Vendor))
-             {               
-                 Console.WriteLine("Specified vendor \"" + commandLine.Vendor + "\" is not available.", MessageTypes.Error);
-                 Console.WriteLine("Available options are: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto", MessageTypes.Error);
-                 Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
-                 return 0;
-             }
-             if ( vendorsList1.Contains(commandLine.Vendor))
-             {
-                 if (commandLine.ConvertUserConfiguration is true)
-                 {
-                     Console.WriteLine("Option -u is not valid for vendor " + commandLine.Vendor + "!");
-                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+            {
+                Console.WriteLine("Specified vendor \"" + commandLine.Vendor + "\" is not available.", MessageTypes.Error);
+                Console.WriteLine("Available options are: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama", MessageTypes.Error);
+                Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                return 0;
+            }
+            if (vendorsList1.Contains(commandLine.Vendor))
+            {
+                if (commandLine.ConvertUserConfiguration is true)
+                {
+                    Console.WriteLine("Option -u is not valid for vendor " + commandLine.Vendor + "!");
+                    Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
                     return 0;
                 }
-                        
-                 if (commandLine.DontImportUnusedObjects is true)
-                 {
-                     Console.WriteLine("Option -i is not valid for vendor " + commandLine.Vendor + "!");
-                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+
+                if (commandLine.DontImportUnusedObjects is true)
+                {
+                    Console.WriteLine("Option -i is not valid for vendor " + commandLine.Vendor + "!");
+                    Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
                     return 0;
-                }                    
-                 
-              }
-             if (vendorsList2.Contains(commandLine.Vendor))
+                }
+
+            }
+            if (vendorsList2.Contains(commandLine.Vendor))
             {
                 if (commandLine.ConvertUserConfiguration is true && commandLine.LdapAccountUnit is null)
                 {
@@ -162,7 +163,17 @@ namespace SmartMove
                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
                     return 0;
                 }
-                    
+
+            }
+            if ((commandLine.vendor == "JuniperSRX" || commandLine.vendor == "PaloAlto") && !commandLine.configFileName.EndsWith(".xml"))
+            {
+                Console.WriteLine("Config file for " + commandLine.vendor + " must be in .xml format!");
+                return 0;
+            }
+            if (commandLine.vendor == "Panorama" && !commandLine.configFileName.EndsWith(".tgz"))
+            {
+                Console.WriteLine("Config files archive for " + commandLine.vendor + " must be in .tgz format!");
+                return 0;
             }
             return 1;
         }
@@ -297,7 +308,8 @@ namespace SmartMove
         public void DoMigration(CommandLine commandLine)
         {
             
-            string fileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);            
+            string fileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
+            //Console.WriteLine("File name: " + fileName);
 
             if (string.IsNullOrEmpty(commandLine.ConfigFileName) || string.IsNullOrEmpty(fileName))            
             {
@@ -342,6 +354,9 @@ namespace SmartMove
                 case "PaloAlto":                    
                     vendorParser = new PaloAltoParser();                    
                     break;
+                case "Panorama":
+                    vendorParser = new PanoramaParser();
+                    break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
             }
@@ -350,8 +365,16 @@ namespace SmartMove
             {                
                 string ciscoFile = commandLine.ConfigFileName;
                 Console.WriteLine("Parsing configuration file...");
-                vendorParser.Parse(ciscoFile);
                 
+                if (commandLine.Vendor.Equals("Panorama"))
+                {
+                    PanoramaParser panParser = (PanoramaParser)vendorParser;
+                    panParser.ParseWithTargetFolder(ciscoFile, TargetFolder);
+                }
+                else
+                {
+                    vendorParser.Parse(ciscoFile);
+                }
             }
             catch (Exception ex)
             {                
@@ -415,6 +438,18 @@ namespace SmartMove
                         return;
                     }
                     break;
+                case "Panorama":
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        Console.WriteLine("Unspecified PaloAlto Panorama version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
+                    }
+                    else if (vendorParser.MajorVersion < 7)
+                    {
+                        Console.WriteLine("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
+                    }
+                    break;
             }
             #endregion                       
 
@@ -450,12 +485,19 @@ namespace SmartMove
                     fgConverter.LDAPAccoutUnit = ldapAccountUnit;
                     vendorConverter = fgConverter;
                     break;
-                case "PaloAlto":                    
+                case "PaloAlto":
                     PaloAltoConverter paConverter = new PaloAltoConverter();
                     paConverter.OptimizeConf = commandLine.DontImportUnusedObjects;
                     paConverter.ConvertUserConf = commandLine.ConvertUserConfiguration;
                     paConverter.LDAPAccoutUnit = ldapAccountUnit;
-                    vendorConverter = paConverter;
+                    vendorConverter = paConverter;                    
+                    break;
+                case "Panorama":
+                    PanoramaConverter panoramaConverter = new PanoramaConverter();
+                    panoramaConverter.OptimizeConf = commandLine.DontImportUnusedObjects;
+                    panoramaConverter.ConvertUserConf = commandLine.ConvertUserConfiguration;
+                    panoramaConverter.LDAPAccoutUnit = ldapAccountUnit;
+                    vendorConverter = panoramaConverter;
                     break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
