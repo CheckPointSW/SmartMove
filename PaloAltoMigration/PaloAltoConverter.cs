@@ -328,7 +328,7 @@ namespace PaloAltoMigration
                                         file.WriteLine("      <td>" + subRule.Name + "</td>");
                                         file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Source, subRule.SourceNegated, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
                                         file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Destination, subRule.DestinationNegated, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
-/* */                                   file.WriteLine("      <td>" + RuleItemsList2Html_pa(subRule.Service, subRuleAppsList, false, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
+                                        file.WriteLine("      <td>" + RuleItemsList2Html_pa(subRule.Service, subRuleAppsList, false, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
                                         file.WriteLine("      <td class='" + subRule.Action.ToString().ToLower() + "'>" + subRule.Action.ToString() + "</td>");
                                         file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Time, false, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
                                         file.WriteLine("      <td>" + subRule.Track.ToString() + "</td>");
@@ -800,7 +800,7 @@ namespace PaloAltoMigration
 
                     s_paAppFiltersList = GetPAApplicationsFilters(paConfig.Shared, null);
 
-                    s_cpAppGroupsDict = ConvertApplicationsGroups(new List<PA_ApplicationGroupEntry>(paConfig.Shared.ApplicationGroupsEntries), s_appsMatchList, null, s_paAppFiltersList);
+                    s_cpAppGroupsDict = ConvertApplicationsGroups(new List<PA_ApplicationGroupEntry>(paConfig.Shared.ApplicationGroupsEntries), s_appsMatchList, null, s_paAppFiltersList, s_cpServicesGroupsDict);
 
                     s_cpSchedulesDict = new Dictionary<string, List<CheckPoint_Time>>();
                     ConvertSchedules(paConfig.Shared).ForEach(x =>
@@ -1317,18 +1317,27 @@ namespace PaloAltoMigration
             return tagsToNamesDict;
         }
 
-        public Dictionary<string, CheckPoint_NetworkGroup> ConvertAddressesGroupsWithInspection(PA_Objects paVsysEntry, 
+        public Dictionary<string, CheckPoint_NetworkGroup> ConvertAddressesGroupsWithInspection(PA_Objects paVsysEntry,
                                                                                                 Dictionary<string, CheckPointObject> cpAddressesDict,
-                                                                                                Dictionary<string, CheckPoint_NetworkGroup> s_cpNetGroupsDict, 
+                                                                                                Dictionary<string, CheckPoint_NetworkGroup> s_cpNetGroupsDict,
                                                                                                 List<PA_TagEntry> s_TagEntries)
         {
-            Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsList = 
+            Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsDict =
                 ConvertAddressesGroups(paVsysEntry, s_TagEntries, (new List<CheckPointObject>(cpAddressesDict.Values)), s_cpNetGroupsDict);
 
-            Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsResult = InspectAddressGroups(cpAddressesDict, cpNetGroupsList, null);
+            if (s_cpNetGroupsDict is null)
+            {
+                return cpNetGroupsDict;//don't inspect address groups from shared section because they will be inspected further while device-group processing 
+            }
+            else
+            {
+                Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsResult = InspectAddressGroups(cpAddressesDict, cpNetGroupsDict, null);
+                return cpNetGroupsResult;
+            }
 
-            return cpNetGroupsResult;
+           
         }
+
 
         public Dictionary<string, CheckPoint_NetworkGroup> InspectAddressGroups(Dictionary<string, CheckPointObject> cpAddressesNamesDict, 
                                                                                 Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsCheck,
@@ -1354,6 +1363,8 @@ namespace PaloAltoMigration
                 cpNetGroupResult.Name = cpNetGroupCheck.Name;
                 cpNetGroupResult.Comments = cpNetGroupCheck.Comments;
                 cpNetGroupResult.Tags = cpNetGroupCheck.Tags;
+                cpNetGroupResult.IsPanoramaDeviceGroup = cpNetGroupCheck.IsPanoramaDeviceGroup;
+
 
                 foreach (string member in cpNetGroupCheck.Members)
                 {
@@ -2077,6 +2088,8 @@ namespace PaloAltoMigration
                                         cpServiceGroup.Members.Add(matchedValue.Trim());
                                     }
                                 }
+                                cpServicesGroupsDict[paAppsGroupCheck.Name + "-svc"] = cpServiceGroup;
+
                             }
                             else
                             {
@@ -2109,8 +2122,7 @@ namespace PaloAltoMigration
                         }
                     }
 
-                    cpAppGroupDict[paAppsGroupCheck.Name] = cpAppGroup;
-                    cpServicesGroupsDict[paAppsGroupCheck.Name + "svc"] = cpServiceGroup;
+                    cpAppGroupDict[paAppsGroupCheck.Name] = cpAppGroup;                   
 
                 }
             }
@@ -2810,6 +2822,42 @@ namespace PaloAltoMigration
                                     else if (cpNetGroupsDict.ContainsKey(translatedAddress))
                                     {
                                         cpSourceTranslationList.Add(cpNetGroupsDict[translatedAddress]);
+                                    }
+                                    else if (Regex.IsMatch(translatedAddress, RE_NET_ADDRESS)) //create address or network object for translated address if they were not created before
+                                    {
+                                        if (!translatedAddress.Contains("/") || translatedAddress.Contains(NETWORK_NETMASK_WS))
+                                        {
+                                            string ipAddress;
+
+                                            if (translatedAddress.Contains("/"))
+                                                ipAddress = translatedAddress.Substring(0, translatedAddress.IndexOf("/"));
+                                            else
+                                                ipAddress = translatedAddress.Substring(0);
+
+                                            CheckPoint_Host cpHostNew = new CheckPoint_Host();
+                                            cpHostNew.Name = "Host_" + ipAddress;
+                                            cpHostNew.IpAddress = ipAddress;
+
+                                            cpAddressesDict[translatedAddress] = cpHostNew;                                            
+                                            cpSourceTranslationList.Add(cpHostNew);
+                                            _warningsList.Add(cpHostNew.Name + " host object is created for NAT rule.");
+                                        }
+                                        else
+                                        {
+                                            IPNetwork ipNetwork;
+                                            if (IPNetwork.TryParse(translatedAddress, out ipNetwork))
+                                            {
+                                                string ipAddress = translatedAddress.Substring(0, translatedAddress.IndexOf("/"));
+
+                                                CheckPoint_Network cpNetworkNew = new CheckPoint_Network();
+                                                cpNetworkNew.Name = "Net_" + ipAddress;
+                                                cpNetworkNew.Subnet = ipAddress;
+                                                cpNetworkNew.Netmask = ipNetwork.Netmask.ToString();
+                                                cpAddressesDict[translatedAddress] = cpNetworkNew;                                                
+                                                cpSourceTranslationList.Add(cpNetworkNew);
+                                                _warningsList.Add(cpNetworkNew.Name + " network object is created for NAT rule.");
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -210,18 +210,19 @@ namespace CheckPointObjects
     public class CheckPoint_Domain : CheckPointObject
     {
         public string Fqdn { get; set; }
+      
         public bool IsSubDomain { get; set; }
 
         public override string ToCLIScript()
         {
             return "add dns-domain " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("is-sub-domain", IsSubDomain, !IsSubDomain) //"is-sub-domain" is a required field by documentation 
-                + WriteListParam("tags", Tags, true);
+            + WriteParam("is-sub-domain", IsSubDomain, !IsSubDomain) //"is-sub-domain" is a required field by documentation 
+            + WriteListParam("tags", Tags, true);                       
         }
 
         public override string ToCLIScriptInstruction()
         {
-            return "create domain [" + Name + "]";
+                return "create domain [" + Name + "]";                
         }
     }
 
@@ -657,7 +658,7 @@ namespace CheckPointObjects
         public bool SourceNegated { get; set; }
         public bool DestinationNegated { get; set; }
 
-        public List<string> Target = new List<string>();        
+        public List<string> Target = new List<string>();
         public bool TargetNegated { get; set; }
 
         private string _conversionComments;
@@ -843,7 +844,7 @@ namespace CheckPointObjects
         }
         protected virtual string WriteParamWithIndexesForServices()
         {
-            return null;
+            return WriteListParam("service", (from o in Service select o.Name).ToList(), true);
         }
 
         //CloneApplicationsToRule will be overridden in the derived class if the class needs specific clone implementation for applications
