@@ -42,6 +42,7 @@ namespace CheckPointObjects
         protected const string CommentsValidityRegex = @"[^A-Za-z0-9 @#*$(){}\[\]_.\-=:,/]";
 
         public const string Any = "any";
+        public const string All = "All";
         public const string All_Internet = "All_Internet";
         public const string icmpProtocol = "icmp-proto";
 
@@ -283,6 +284,8 @@ namespace CheckPointObjects
     public class CheckPoint_NetworkGroup : CheckPointObject
     {
         public List<string> Members = new List<string>();
+		
+		public bool IsPanoramaDeviceGroup = false;
 
         /// <summary>
         /// This property is used to overcome the problematic order of objects creation for 
@@ -639,6 +642,9 @@ namespace CheckPointObjects
         public bool SourceNegated { get; set; }
         public bool DestinationNegated { get; set; }
 
+        public List<string> Target = new List<string>();//"install-on" parameter of CP rule
+        public bool TargetNegated { get; set; }
+
         private string _conversionComments;
         public string ConversionComments
         {
@@ -697,6 +703,7 @@ namespace CheckPointObjects
                 + WriteParam("position", "top", "")
                 + WriteParam("inline-layer", SubPolicyName, "")
                 + WriteParam("name", Name, "")
+                + WriteListParam("install-on", (from o in Target select o).ToList(), true)				
                 + WriteParam("custom-fields.field-1", ConversionComments.Substring(0, Math.Min(ConversionComments.Length, 150)), "");
         }
 
@@ -735,6 +742,10 @@ namespace CheckPointObjects
             foreach (CheckPointObject obj in Time)
             {
                 newRule.Time.Add(obj);
+            }
+            foreach (string obj in Target)
+            {
+                newRule.Target.Add(obj);
             }
             CloneApplicationsToRule(newRule);
 
@@ -906,6 +917,8 @@ namespace CheckPointObjects
         public CheckPointObject TranslatedDestination;
         public CheckPointObject TranslatedService;
 
+        public List<string> Target = new List<string>();
+
         public CheckPoint_NAT_Rule()
         {
             Enabled = true;
@@ -923,7 +936,9 @@ namespace CheckPointObjects
                 + WriteParam("comments", Comments, "")
                 + WriteParam("method", Method.ToString().ToLower(), "")
                 + WriteParam("enabled", Enabled, true)
-                + WriteParam("position", "top", "");
+                + WriteParam("position", "top", "")
+                + WriteListParam("install-on", (from o in Target select o).ToList(), true);
+
         }
 
         public override string ToCLIScriptInstruction()
@@ -946,6 +961,7 @@ namespace CheckPointObjects
             newRule.TranslatedService = TranslatedService;
             newRule.ConvertedCommandId = ConvertedCommandId;
             newRule.ConversionIncidentType = ConversionIncidentType;
+            newRule.Target = Target;
 
             return newRule;
         }
