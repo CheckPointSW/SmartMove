@@ -90,6 +90,20 @@ namespace CheckPointObjects
         {
             return Regex.Replace(name, NameValidityRegex, "_");
         }
+		
+		//escaping quote sign in script
+        public List<string> EscapeQuote(List<string> members)
+        {
+            List<string> resultList = new List<string>();
+            foreach (string member in members)
+            {
+                if (member.IndexOf("\'") != -1)
+                    resultList.Add(member.Replace("\'", "\'\\\'\'"));                    
+                else
+                    resultList.Add(member);
+            }
+            return resultList;
+        }
 
         protected static string WriteParam(string paramName, bool paramValue, bool defaultValue)
         {
@@ -499,8 +513,10 @@ namespace CheckPointObjects
 
         public override string ToCLIScript()
         {
+            List<string> members = EscapeQuote(Members);//escaping quote sign in script
+
             return "add application-site-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteListParam("members", Members, false)
+                + WriteListParam("members", members, false)
                 + WriteListParam("tags", Tags, true);
         }
 
