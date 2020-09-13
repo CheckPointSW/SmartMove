@@ -2792,7 +2792,16 @@ namespace PanoramaPaloAltoMigration
                                                                              cpAppGroupsDict,
                                                                              //devicesGroupList,
                                                                              cpTargetDeviceUIDList
-                                                                             );                        
+                                                                             ); 
+                        if (cpRule.IsCleanupRule())
+                        {                            
+                            continue;
+                        }
+
+                        if (cpRule.IsAllowAnyRule())
+                        {
+                            cpRule.Enabled = false;
+                        }																			 
                         
                         cpRule.Layer = cpPackage.ParentLayer.Name;
 
