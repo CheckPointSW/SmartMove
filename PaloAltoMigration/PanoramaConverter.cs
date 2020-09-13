@@ -1909,6 +1909,14 @@ namespace PanoramaPaloAltoMigration
                 cpServicesDict = new Dictionary<string, CheckPointObject>(s_cpServicesDict);
             else
                 cpServicesDict = new Dictionary<string, CheckPointObject>();
+			
+            Dictionary<string, CheckPointObject> cpInspectedServicesDict = new Dictionary<string, CheckPointObject>();
+            foreach (string service in cpServicesDict.Keys)
+            {
+                cpInspectedServicesDict[service] = InspectService(cpServicesDict[service]);                
+            }
+            cpServicesDict = cpInspectedServicesDict;
+
    
             GetPredefinedServices().ForEach(x => cpServicesDict[x.Name] = InspectService(x));
 
