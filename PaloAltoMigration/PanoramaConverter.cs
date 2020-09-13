@@ -1524,12 +1524,20 @@ namespace PanoramaPaloAltoMigration
                                                                                                 List<PA_TagEntry> s_TagEntries
                                                                                                 )
         {
-                        Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsList = 
-                ConvertAddressesGroups(paVsysEntry, s_TagEntries, (new List<CheckPointObject>(cpAddressesDict.Values)), s_cpNetGroupsDict);
+            Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsDict =
+            ConvertAddressesGroups(paDeviceGroupEntry, s_TagEntries, (new List<CheckPointObject>(cpAddressesDict.Values)), s_cpNetGroupsDict);
 
-            Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsResult = InspectAddressGroups(cpAddressesDict, cpNetGroupsList, null);
-			
-            return cpNetGroupsResult;
+            if (s_cpNetGroupsDict is null)
+            {
+                return cpNetGroupsDict;//don't inspect address groups from shared section because they will be inspected further while device-group processing 
+            }
+            else
+            {
+                Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsResult = InspectAddressGroups(cpAddressesDict, cpNetGroupsDict, null);
+
+                return cpNetGroupsResult;
+            }
+
 
         }
 
