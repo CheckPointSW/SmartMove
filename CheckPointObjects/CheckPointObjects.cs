@@ -800,9 +800,9 @@ namespace CheckPointObjects
                 return true;   // sub-policy's automatic cleanup rule
             }
 
-            if ((Source.Count == 1 && Source[0].Name == Any) &&
-                (Destination.Count == 1 && Destination[0].Name == Any) &&
-                (Service.Count == 1 && Service[0].Name == Any) && 
+            if ((Source.Count == 1 && Source[0].Name == Any || Source.Count == 0) &&
+                (Destination.Count == 1 && Destination[0].Name == Any || Destination.Count == 0) &&
+                (Service.Count == 1 && Service[0].Name == Any || Service.Count == 0) && 
                 IsApplicationsClean() &&
                 (Action == ActionType.Drop))
             {
@@ -811,6 +811,24 @@ namespace CheckPointObjects
 
             return false;
         }
+
+        /// <summary>
+        /// Verifies if the rule allows all traffic (which means rule has source: Any, destination: Any, service: Any and action: Accept)
+        /// </summary>
+        /// <returns></returns>
+        public bool IsAllowAnyRule()
+        {
+            if ((Source.Count == 1 && Source[0].Name == Any || Source.Count == 0) &&
+                (Destination.Count == 1 && Destination[0].Name == Any || Destination.Count == 0) &&
+                (Service.Count == 1 && Service[0].Name == Any || Service.Count == 0) &&
+                IsApplicationsClean() &&
+                (Action == ActionType.Accept))
+            {
+                return true;   // user defined Allow Any rule
+            }
+            return false;
+        }
+
 
         protected static bool CompareLists(IEnumerable<CheckPointObject> items1, IEnumerable<CheckPointObject> items2)
         {
