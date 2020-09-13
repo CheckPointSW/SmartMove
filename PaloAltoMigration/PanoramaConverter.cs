@@ -3192,7 +3192,42 @@ namespace PanoramaPaloAltoMigration
                                     else if (cpNetGroupsDict.ContainsKey(translatedAddress))
                                     {
                                         cpSourceTranslationList.Add(cpNetGroupsDict[translatedAddress]);
-                                    }                                    
+                                    }
+                                    else if (Regex.IsMatch(translatedAddress, RE_NET_ADDRESS)) //create address or network object for translated address if they were not created before
+                                    {
+                                        if (!translatedAddress.Contains("/") || translatedAddress.Contains(NETWORK_NETMASK_WS))
+                                        {
+                                            string ipAddress;
+
+                                            if (translatedAddress.Contains("/"))
+                                                ipAddress = translatedAddress.Substring(0, translatedAddress.IndexOf("/"));
+                                            else
+                                                ipAddress = translatedAddress.Substring(0);
+
+                                            CheckPoint_Host cpHostNew = new CheckPoint_Host();
+                                            cpHostNew.Name = "Host_" + ipAddress;
+                                            cpHostNew.IpAddress = ipAddress;
+                                            cpAddressesDict[translatedAddress] = cpHostNew;                                            
+                                            cpSourceTranslationList.Add(cpHostNew);
+                                            _warningsList.Add(cpHostNew.Name + " host object is created for NAT rule.");
+                                        }
+                                        else
+                                        {
+                                            IPNetwork ipNetwork;
+                                            if (IPNetwork.TryParse(translatedAddress, out ipNetwork))
+                                            {
+                                                string ipAddress = translatedAddress.Substring(0, translatedAddress.IndexOf("/"));
+                                                CheckPoint_Network cpNetworkNew = new CheckPoint_Network();
+                                                cpNetworkNew.Name = "Net_" + ipAddress;
+                                                cpNetworkNew.Subnet = ipAddress;
+                                                cpNetworkNew.Netmask = ipNetwork.Netmask.ToString();
+                                                cpAddressesDict[translatedAddress] = cpNetworkNew;                                                
+                                                cpSourceTranslationList.Add(cpNetworkNew);
+                                                _warningsList.Add(cpNetworkNew.Name + " network object is created for NAT rule.");
+                                            }
+                                        }
+                                    }
+                                    
                                 }
                             }
                             else if (paNatRuleEntry.SourceTranslation.DynamicIpAndPort.InterfaceAddress != null)
