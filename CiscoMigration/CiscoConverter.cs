@@ -2234,7 +2234,7 @@ namespace CiscoMigration
                         var ciscoAcl = (Cisco_AccessList)aclCommand;
                         if (!ciscoAcl.IsRemark && ciscoAcl.ACLName == ciscoAccessGroup.AccessListName)
                         {
-                            var cpRule = Acl_To_CPRule(ciscoAcl);
+                            var cpRule = Acl_To_CPRule(ciscoAcl, null);
 
                             if (ciscoInterface.Shutdown)
                             {
@@ -2274,58 +2274,154 @@ namespace CiscoMigration
         }
 
         private void Add_Global_Rules(CheckPoint_Package package)
-        {
-            foreach (Cisco_AccessList ciscoAcl in _ciscoGlobalAclCommands)
-            {
-                foreach (CheckPoint_Rule cpParentRule in package.ParentLayer.Rules)
+        {            
+            if (_ciscoGlobalAclCommands.Count > 0)
+            {                
+                // remove clenup rule of each sublayer if global rules exist because cleanup rule should be added after global-rules                
+                foreach (var subpolicy in package.SubPolicies)
                 {
-                    if (cpParentRule.Action == CheckPoint_Rule.ActionType.SubPolicy)
+                    if (subpolicy.Rules.Count > 0)
                     {
-                        // Get into the relevant sub-policy
-                        foreach (CheckPoint_Layer subPolicy in package.SubPolicies)
+                        var lastRule = subpolicy.Rules[subpolicy.Rules.Count - 1];
+                        if (lastRule.IsCleanupRule())
+                            subpolicy.Rules.Remove(lastRule);                            
+                    }
+                }
+
+                //remove cleanup rule of parent layer because it will be added after global rules
+                if (package.ParentLayer.Rules.Count > 0)
+                {
+                    var lastRule = package.ParentLayer.Rules[package.ParentLayer.Rules.Count - 1];
+                    if (lastRule.IsCleanupRule())                        
+                        package.ParentLayer.Rules.Remove(lastRule);                    
+                }
+
+                CheckPoint_Rule cpRule4GlobalLayer = new CheckPoint_Rule();
+                cpRule4GlobalLayer.Name = "";
+                cpRule4GlobalLayer.Layer = package.NameOfAccessLayer;                
+                cpRule4GlobalLayer.Source.Add(_cpObjects.GetObject(CheckPointObject.Any));
+                cpRule4GlobalLayer.Destination.Add(_cpObjects.GetObject(CheckPointObject.Any));
+                cpRule4GlobalLayer.Action = CheckPoint_Rule.ActionType.SubPolicy;
+                cpRule4GlobalLayer.Track = CheckPoint_Rule.TrackTypes.None;
+                cpRule4GlobalLayer.Time.Add(_cpObjects.GetObject(CheckPointObject.Any));
+                cpRule4GlobalLayer.Service.Add(_cpObjects.GetObject(CheckPointObject.Any));
+                cpRule4GlobalLayer.SubPolicyName = "Global Rules";
+
+                package.ParentLayer.Rules.Add(cpRule4GlobalLayer);
+
+                CheckPoint_Layer cpSubLayer4GlobalRules = new CheckPoint_Layer();
+                cpSubLayer4GlobalRules.ApplicationsAndUrlFiltering = true;
+                cpSubLayer4GlobalRules.Shared = true;
+                cpSubLayer4GlobalRules.Name = cpRule4GlobalLayer.SubPolicyName;
+           
+                package.SubPolicies.Insert(0, cpSubLayer4GlobalRules); // insert at the begging becuase Global Rules should be created before all policy
+
+                foreach (var globalPolicyRule in _ciscoGlobalAclCommands)
+                {
+                    // Append the global policy rules BELOW the existing sub-policies.                    
+                    CheckPoint_Rule cpRule = Acl_To_CPRule(globalPolicyRule, cpSubLayer4GlobalRules.Name);                    
+                    cpSubLayer4GlobalRules.Rules.Add(cpRule);
+                }
+
+                //add cleanup rule after all global rules
+
+                // Do NOT create a cleanup rule if it already exists
+                bool createCleanupRule = true;
+                if (cpSubLayer4GlobalRules.Rules.Count > 0)
+                {
+                    var lastRule = cpSubLayer4GlobalRules.Rules[cpSubLayer4GlobalRules.Rules.Count - 1];
+                    createCleanupRule = !lastRule.IsCleanupRule();
+                }
+
+                if (createCleanupRule)
+                {
+                    var cpCleanupRule = new CheckPoint_Rule();
+                    cpCleanupRule.Name = "Default action rule";
+                    cpCleanupRule.Action = CheckPoint_Rule.ActionType.Drop;
+                    cpCleanupRule.Layer = cpSubLayer4GlobalRules.Name;
+                    cpSubLayer4GlobalRules.Rules.Add(cpCleanupRule);
+                }
+                
+                // Fill in the shared layer with global policy rules INSIDE the existing sub-policies.
+                foreach (CheckPoint_Layer subPolicy in package.SubPolicies)
+                {                    
+                    if (subPolicy.Name.Equals(cpSubLayer4GlobalRules.Name))
+                    {
+                        continue;
+                    }
+
+                    CheckPoint_Rule cpSubRule4GlobalLayer = cpRule4GlobalLayer.Clone();
+                    cpSubRule4GlobalLayer.Name = "Global Layer";
+                    cpSubRule4GlobalLayer.Layer = subPolicy.Name;
+                    subPolicy.Rules.Add(cpSubRule4GlobalLayer);                                    
+                }
+
+
+                //the last rule which is created by default by CheckPoint script importer. It is for report only.
+                var cpRuleCleanUp = new CheckPoint_Rule();
+                cpRuleCleanUp.Name = "Default action rule";
+                package.ParentLayer.Rules.Add(cpRuleCleanUp);
+            }
+            else
+            {
+                foreach (Cisco_AccessList ciscoAcl in _ciscoGlobalAclCommands)
+                {
+                    // Fill in the global policy rules INSIDE the existing sub-policies.
+                    foreach (CheckPoint_Rule cpParentRule in package.ParentLayer.Rules)
+                    {
+                        if (cpParentRule.Action == CheckPoint_Rule.ActionType.SubPolicy)
                         {
-                            if (subPolicy.Name == cpParentRule.SubPolicyName)
+                            // Get into the relevant sub-policy
+                            foreach (CheckPoint_Layer subPolicy in package.SubPolicies)
                             {
-                                // This is done to avoid duplication of incident reporting over all matched sub-policy rules.
-                                ConversionIncidentType aclConversionIncident = ciscoAcl.ConversionIncidentType;
-                                ciscoAcl.ConversionIncidentType = ConversionIncidentType.None;
-
-                                var cpRule = Acl_To_CPRule(ciscoAcl);
-                                cpRule.Layer = subPolicy.Name;
-
-                                if (!string.IsNullOrEmpty(subPolicy.Tag) && subPolicy.Tag == "InterfaceDisabled")
+                                if (subPolicy.Name == cpParentRule.SubPolicyName)
                                 {
-                                    cpRule.Enabled = false;
-                                }
+                                    // This is done to avoid duplication of incident reporting over all matched sub-policy rules.
+                                    ConversionIncidentType aclConversionIncident = ciscoAcl.ConversionIncidentType;
+                                    ciscoAcl.ConversionIncidentType = ConversionIncidentType.None;                                    
 
-                                // If the global ACL didn't have an incident previously, 
-                                // and the incident was just encountered during this convertion, retain the incident!!!
-                                if (ciscoAcl.ConversionIncidentType == ConversionIncidentType.None)
-                                {
-                                    ciscoAcl.ConversionIncidentType = aclConversionIncident;
-                                }
+                                    var cpRule = Acl_To_CPRule(ciscoAcl, subPolicy.Name);
+                                    
+                                    cpRule.Layer = subPolicy.Name;                                    
 
-                                // Insert the global rules at the end of each sub-policy, BEFORE the cleanup rule.
-                                int rulesCount = subPolicy.Rules.Count;
-                                subPolicy.Rules.Insert(rulesCount - 1, cpRule);
+                                    if (!string.IsNullOrEmpty(subPolicy.Tag) && subPolicy.Tag == "InterfaceDisabled")
+                                    {
+                                        cpRule.Enabled = false;
+                                    }
 
-                                if (cpRule.ConversionIncidentType != ConversionIncidentType.None || ciscoAcl.ConversionIncidentType != ConversionIncidentType.None)
-                                {
-                                    package.ConversionIncidentType = ConversionIncidentType.Informative;
+                                    // If the global ACL didn't have an incident previously, 
+                                    // and the incident was just encountered during this convertion, retain the incident!!!
+                                    if (ciscoAcl.ConversionIncidentType == ConversionIncidentType.None)
+                                    {
+                                        ciscoAcl.ConversionIncidentType = aclConversionIncident;
+                                    }
+
+                                    // Insert the global rules at the end of each sub-policy, BEFORE the cleanup rule.
+                                    int rulesCount = subPolicy.Rules.Count;
+                                    subPolicy.Rules.Insert(rulesCount - 1, cpRule);
+
+                                    if (cpRule.ConversionIncidentType != ConversionIncidentType.None || ciscoAcl.ConversionIncidentType != ConversionIncidentType.None)
+                                    {
+                                        package.ConversionIncidentType = ConversionIncidentType.Informative;
+                                    }
                                 }
                             }
                         }
-                    }
-                }
-            }
+                    }                    
+                }                
+            }           
         }
 
-        private CheckPoint_Rule Acl_To_CPRule(Cisco_AccessList ciscoAcl)
+        private CheckPoint_Rule Acl_To_CPRule(Cisco_AccessList ciscoAcl, string layerName)
         {
-            var cpRule = new CheckPoint_Rule();
-            cpRule.Name = ciscoAcl.Description;
-            cpRule.Enabled = !ciscoAcl.Inactive;
-            cpRule.Layer = ciscoAcl.ACLName;
+             var cpRule = new CheckPoint_Rule();
+            cpRule.Name = ciscoAcl.Description;            
+            cpRule.Enabled = !ciscoAcl.Inactive;            
+            if (layerName != null)                            
+                cpRule.Layer = layerName;            
+            else            
+                cpRule.Layer = ciscoAcl.ACLName;
+            
             cpRule.Comments = ciscoAcl.Remark;
             cpRule.ConversionComments = ciscoAcl.Id + ") " + ciscoAcl.Text;
 
@@ -3103,7 +3199,7 @@ namespace CiscoMigration
             // Go over the affected ACLs and match the fw rules by: source, destination and service fields
             foreach (var ciscoInspectedAcl in ciscoInspectedAclCommands)
             {
-                var inspectedRule = Acl_To_CPRule(ciscoInspectedAcl);
+                var inspectedRule = Acl_To_CPRule(ciscoInspectedAcl, null);
 
                 if ((inspectedRule.Source.Count == 1 && inspectedRule.Source[0].Name == CheckPointObject.Any) &&
                     (inspectedRule.Destination.Count == 1 && inspectedRule.Destination[0].Name == CheckPointObject.Any) &&
@@ -4283,17 +4379,25 @@ namespace CiscoMigration
             CheckPoint_Package regularPackage = _cpPackages[0];
 
             var optimizedPackage = new CheckPoint_Package();
-            optimizedPackage.Name = _policyPackageOptimizedName;
-            optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;
-            optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;
+            optimizedPackage.Name = _policyPackageOptimizedName;            
+            optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;            
+            optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;            
 
             var regular2OptimizedLayers = new Dictionary<string, string>();
 
-            foreach (CheckPoint_Layer layer in regularPackage.SubPolicies)
-            {
+            foreach (CheckPoint_Layer layer in regularPackage.SubPolicies) 
+            {                
                 string optimizedSubPolicyName = layer.Name + "_opt";
+                
                 CheckPoint_Layer optimizedLayer = RuleBaseOptimizer.Optimize(layer, optimizedSubPolicyName);
-
+                foreach (CheckPoint_Rule subSubRule in optimizedLayer.Rules)
+                {
+                    if (subSubRule.SubPolicyName.Equals("Global Rules"))
+                    {
+                        //The Global sub-sub rule subpolicy name should also be renamed for consistency
+                        subSubRule.SubPolicyName += "_opt";
+                    }
+                }
                 if (!regular2OptimizedLayers.ContainsKey(layer.Name))
                 {
                     regular2OptimizedLayers.Add(layer.Name, optimizedSubPolicyName);
@@ -4303,13 +4407,12 @@ namespace CiscoMigration
 
             foreach (CheckPoint_Rule rule in regularPackage.ParentLayer.Rules)
             {
-                CheckPoint_Rule newRule = rule.Clone();
+                CheckPoint_Rule newRule = rule.Clone();                
                 if (newRule.Action == CheckPoint_Rule.ActionType.SubPolicy)
-                {
-                    newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];
+                {                    
+                    newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];                    
                 }
-                newRule.Layer = optimizedPackage.ParentLayer.Name;
-
+                newRule.Layer = optimizedPackage.ParentLayer.Name;                
                 optimizedPackage.ParentLayer.Rules.Add(newRule);
             }
 
@@ -4725,9 +4828,8 @@ namespace CiscoMigration
             const string ruleIdPrefix = "rule_";
 
             foreach (CheckPoint_Package package in _cpPackages)
-            {
-                string filename = _targetFolder + "\\" + package.Name + ".html";
-
+            {                
+                string filename = _targetFolder + "\\" + package.Name + ".html";                
                 using (var file = new StreamWriter(filename, false))
                 {
                     var rulesWithConversionErrors = new Dictionary<string, CheckPoint_Rule>();
@@ -4739,13 +4841,13 @@ namespace CiscoMigration
                     // Generate the report body
                     file.WriteLine("<table>");
                     file.WriteLine("   <tr>");
-                    file.WriteLine("      <th colspan='2'>No.</th> <th>Name</th> <th>Source</th> <th>Destination</th> <th>Service</th> <th>Action</th> <th>Time</th> <th>Track</th> <th>Comments</th> <th>Conversion Comments</th>");
+                    file.WriteLine("      <th colspan='3'>No.</th> <th>Name</th> <th>Source</th> <th>Destination</th> <th>Service</th> <th>Action</th> <th>Time</th> <th>Track</th> <th>Comments</th> <th>Conversion Comments</th>");
                     file.WriteLine("   </tr>");
 
                     int ruleNumber = 1;
 
                     foreach (CheckPoint_Rule rule in package.ParentLayer.Rules)
-                    {
+                    {                        
                         bool isSubPolicy = false;
                         string action = "";
                         string actionStyle = "";
@@ -4759,7 +4861,7 @@ namespace CiscoMigration
                                 actionStyle = rule.Action.ToString().ToLower();
                                 break;
 
-                            case CheckPoint_Rule.ActionType.SubPolicy:
+                            case CheckPoint_Rule.ActionType.SubPolicy:                                
                                 isSubPolicy = true;
                                 action = "Sub-policy: " + rule.SubPolicyName;
                                 actionStyle = "";
@@ -4773,12 +4875,12 @@ namespace CiscoMigration
                             file.WriteLine("  <tr class='parent_rule' id=\"" + curParentRuleId + "\">");
                             if (isSubPolicy)
                             {
-                                file.WriteLine("      <td class='rule_number' colspan='2' onclick='toggleSubRules(this)'>" + 
+                                file.WriteLine("      <td class='rule_number' colspan='3' onclick='toggleSubRules(this)'>" + 
                                     string.Format(HtmlSubPolicyArrowImageTagFormat, curParentRuleId + "_img", HtmlDownArrowImageSourceData) + ruleNumber + "</td>");
                             }
                             else
                             {
-                                file.WriteLine("      <td class='rule_number' colspan='2' style='padding-left:22px;'>" + ruleNumber + "</td>");
+                                file.WriteLine("      <td class='rule_number' colspan='3' style='padding-left:22px;'>" + ruleNumber + "</td>");
                             }
                         }
                         else
@@ -4786,12 +4888,12 @@ namespace CiscoMigration
                             file.WriteLine("  <tr class='parent_rule_disabled' id=\"" + curParentRuleId + "\">");
                             if (isSubPolicy)
                             {
-                                file.WriteLine("      <td class='rule_number' colspan='2' onclick='toggleSubRules(this)'>" + 
+                                file.WriteLine("      <td class='rule_number' colspan='3' onclick='toggleSubRules(this)'>" + 
                                     string.Format(HtmlSubPolicyArrowImageTagFormat, curParentRuleId + "_img", HtmlDownArrowImageSourceData) + ruleNumber + HtmlDisabledImageTag + "</td>");
                             }
                             else
                             {
-                                file.WriteLine("      <td class='rule_number' colspan='2' style='padding-left:22px;'>" + ruleNumber + HtmlDisabledImageTag + "</td>");
+                                file.WriteLine("      <td class='rule_number' colspan='3' style='padding-left:22px;'>" + ruleNumber + HtmlDisabledImageTag + "</td>");
                             }
                         }
                         file.WriteLine("      <td>" + rule.Name + "</td>");
@@ -4806,15 +4908,35 @@ namespace CiscoMigration
                         file.WriteLine("  </tr>");
 
                         if (isSubPolicy)
-                        {
+                        {                            
                             foreach (CheckPoint_Layer subPolicy in package.SubPolicies)
                             {
                                 int subRuleNumber = 1;
-
+                                
                                 foreach (CheckPoint_Rule subRule in subPolicy.Rules)
-                                {
+                                {                                    
                                     if (subRule.Layer == rule.SubPolicyName)
                                     {
+                                        bool isSubSubPolicy = false;
+                                        string subAction = "";
+                                        string subActionStyle = "";
+
+                                        switch (subRule.Action)
+                                        {
+                                            case CheckPoint_Rule.ActionType.Accept:
+                                            case CheckPoint_Rule.ActionType.Drop:
+                                            case CheckPoint_Rule.ActionType.Reject:
+                                                subAction = subRule.Action.ToString();
+                                                subActionStyle = subRule.Action.ToString().ToLower();
+                                                break;
+
+                                            case CheckPoint_Rule.ActionType.SubPolicy:                                                
+                                                isSubSubPolicy = true;
+                                                subAction = "Sub-policy: " + subRule.SubPolicyName;
+                                                subActionStyle = "";
+                                                break;
+                                        }
+
                                         var ruleConversionIncidentType = ConversionIncidentType.None;
                                         bool isInspectedRule = !string.IsNullOrEmpty(subRule.Tag);
                                         string curRuleNumber = ruleNumber + "." + subRuleNumber;
@@ -4831,8 +4953,17 @@ namespace CiscoMigration
 
                                         var sbCurRuleNumberColumnTag = new StringBuilder();
                                         sbCurRuleNumberColumnTag.Append("      <td class='indent_rule_number'/>");
-                                        sbCurRuleNumberColumnTag.Append("      <td class='rule_number'>");
-                                        sbCurRuleNumberColumnTag.Append(curRuleNumber);
+                                        if (isSubSubPolicy)
+                                        {                                         
+                                            sbCurRuleNumberColumnTag.Append("      <td class='rule_number' colspan='2' onclick='toggleSubRules(this)'>" +
+                                                string.Format(HtmlSubPolicyArrowImageTagFormat, curRuleId + "_img", HtmlDownArrowImageSourceData) + curRuleNumber);
+                                        }
+                                        else
+                                        {                                            
+                                            sbCurRuleNumberColumnTag.Append("      <td class='rule_number' colspan='2'>");
+                                            sbCurRuleNumberColumnTag.Append(curRuleNumber);
+                                        }                            
+                                                                                
                                         if (isInspectedRule)
                                         {
                                             sbCurRuleNumberColumnTag.Append(BuildInspectedRuleInfo(subRule.Tag));
@@ -4853,12 +4984,84 @@ namespace CiscoMigration
                                         file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Source, subRule.SourceNegated, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
                                         file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Destination, subRule.DestinationNegated, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
                                         file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Service, false, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
-                                        file.WriteLine("      <td class='" + subRule.Action.ToString().ToLower() + "'>" + subRule.Action.ToString() + "</td>");
+                                        //file.WriteLine("      <td class='" + subRule.Action.ToString().ToLower() + "'>" + subRule.Action.ToString() + "</td>");
+                                        file.WriteLine("      <td class='" + subActionStyle + "'>" + subAction + "</td>");
                                         file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Time, false, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
                                         file.WriteLine("      <td>" + subRule.Track.ToString() + "</td>");
                                         file.WriteLine("      <td class='comments'>" + subRule.Comments + "</td>");
                                         file.WriteLine("      <td class='comments'>" + subRule.ConversionComments + "</td>");
                                         file.WriteLine("  </tr>");
+
+                                        if (isSubSubPolicy)
+                                        {                                            
+                                            foreach (CheckPoint_Layer subSubPolicy in package.SubPolicies)
+                                            {
+                                                int subSubRuleNumber = 1;
+
+                                                foreach (CheckPoint_Rule subSubRule in subSubPolicy.Rules)
+                                                {
+                                                    //if (subSubRule.Layer == subRule.SubPolicyName || subSubRule.Layer == subRule.SubPolicyName + "_opt")
+                                                    if (subSubRule.Layer == subRule.SubPolicyName)
+                                                    {                                                        
+                                                        var subRuleConversionIncidentType = ConversionIncidentType.None;
+                                                        string subCurRuleNumber = ruleNumber + "." + subRuleNumber + "." + subSubRuleNumber;
+                                                        string subCurRuleId = ruleIdPrefix + subCurRuleNumber;
+
+                                                        if (subSubRule.Enabled)
+                                                        {
+                                                            file.WriteLine("  <tr id=\"" + subCurRuleId + "\">");
+                                                        }
+                                                        else
+                                                        {
+                                                            file.WriteLine("  <tr class='disabled_rule' id=\"" + subCurRuleId + "\">");
+                                                        }
+
+                                                        var sbSubCurRuleNumberColumnTag = new StringBuilder();
+                                                        sbSubCurRuleNumberColumnTag.Append("      <td class='indent_rule_number'/>");
+                                                        sbSubCurRuleNumberColumnTag.Append("      <td class='indent_rule_number'/>");
+                                                        sbSubCurRuleNumberColumnTag.Append("      <td class='rule_number'>");
+                                                        sbSubCurRuleNumberColumnTag.Append(subCurRuleNumber);
+                                                        if (subSubRule.ConversionIncidentType != ConversionIncidentType.None)
+                                                        {
+                                                            sbSubCurRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(subSubRule.ConvertedCommandId));
+                                                            subRuleConversionIncidentType = subSubRule.ConversionIncidentType;
+                                                        }
+                                                        if (!subSubRule.Enabled)
+                                                        {
+                                                            sbSubCurRuleNumberColumnTag.Append(HtmlDisabledImageTag);
+                                                        }
+                                                        sbSubCurRuleNumberColumnTag.Append("</td>");
+                                                        file.WriteLine(sbSubCurRuleNumberColumnTag.ToString());
+
+                                                        file.WriteLine("      <td>" + subSubRule.Name + "</td>");
+                                                        file.WriteLine("      <td>" + RuleItemsList2Html(subSubRule.Source, subSubRule.SourceNegated, CheckPointObject.Any, ref subRuleConversionIncidentType) + "</td>");
+                                                        file.WriteLine("      <td>" + RuleItemsList2Html(subSubRule.Destination, subSubRule.DestinationNegated, CheckPointObject.Any, ref subRuleConversionIncidentType) + "</td>");
+                                                        file.WriteLine("      <td>" + RuleItemsList2Html(subSubRule.Service, false, CheckPointObject.Any, ref subRuleConversionIncidentType) + "</td>");
+                                                        file.WriteLine("      <td class='" + subSubRule.Action.ToString().ToLower() + "'>" + subSubRule.Action.ToString() + "</td>");
+                                                        file.WriteLine("      <td>" + RuleItemsList2Html(subSubRule.Time, false, CheckPointObject.Any, ref subRuleConversionIncidentType) + "</td>");
+                                                        file.WriteLine("      <td>" + subSubRule.Track.ToString() + "</td>");
+                                                        file.WriteLine("      <td class='comments'>" + subSubRule.Comments + "</td>");
+                                                        file.WriteLine("      <td class='comments'>" + subSubRule.ConversionComments + "</td>");
+                                                        file.WriteLine("  </tr>");
+
+                                                        subSubRuleNumber++;
+
+                                                        if (package.ConversionIncidentType != ConversionIncidentType.None && subRuleConversionIncidentType != ConversionIncidentType.None)
+                                                        {
+                                                            if (subRuleConversionIncidentType == ConversionIncidentType.ManualActionRequired)
+                                                            {
+                                                                rulesWithConversionErrors.Add(subCurRuleId, subSubRule);
+                                                            }
+                                                            else
+                                                            {
+                                                                rulesWithConversionInfos.Add(subCurRuleId, subSubRule);
+                                                            }
+                                                        }
+                                                    }                                                   
+                                                }
+                                            }
+                                        }
+
 
                                         subRuleNumber++;
 
