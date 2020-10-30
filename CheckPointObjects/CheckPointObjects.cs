@@ -799,17 +799,7 @@ namespace CheckPointObjects
             {
                 return true;   // sub-policy's automatic cleanup rule
             }
-
-            if ((Source.Count == 1 && Source[0].Name == Any || Source.Count == 0) &&
-                (Destination.Count == 1 && Destination[0].Name == Any || Destination.Count == 0) &&
-                (Service.Count == 1 && Service[0].Name == Any || Service.Count == 0) && 
-                IsApplicationsClean() &&
-                (Action == ActionType.Drop))
-            {
-                return true;   // user defined cleanup rule
-            }
-
-            return false;
+            return checkRuleType(ActionType.Drop);// user defined cleanup rule           
         }
 
         /// <summary>
@@ -818,17 +808,21 @@ namespace CheckPointObjects
         /// <returns></returns>
         public bool IsAllowAnyRule()
         {
+            return checkRuleType(ActionType.Accept);// user defined Allow Any rule
+        }
+
+        private bool checkRuleType(ActionType actionType)
+        {
             if ((Source.Count == 1 && Source[0].Name == Any || Source.Count == 0) &&
                 (Destination.Count == 1 && Destination[0].Name == Any || Destination.Count == 0) &&
                 (Service.Count == 1 && Service[0].Name == Any || Service.Count == 0) &&
                 IsApplicationsClean() &&
-                (Action == ActionType.Accept))
+                (Action == actionType))
             {
-                return true;   // user defined Allow Any rule
+                return true;
             }
             return false;
         }
-
 
         protected static bool CompareLists(IEnumerable<CheckPointObject> items1, IEnumerable<CheckPointObject> items2)
         {
