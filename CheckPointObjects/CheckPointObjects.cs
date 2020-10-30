@@ -708,7 +708,7 @@ namespace CheckPointObjects
             return "add access-rule " + WriteParam("layer", Layer, "") + WriteParam("comments", Comments, "")
                 + WriteListParam("source", (from o in Source select o.Name).ToList(), true)
                 + WriteListParam("destination", (from o in Destination select o.Name).ToList(), true)
-                + WriteParamWithIndexesForServices()
+                + WriteServicesParams()
                 + WriteParamWithIndexesForApplications()
                 + WriteListParam("time", (from o in Time select o.Name).ToList(), true)
                 + WriteParam("action", actionName, "")
@@ -842,7 +842,7 @@ namespace CheckPointObjects
             return null;
         }
 		
-        protected virtual string WriteParamWithIndexesForServices()
+        protected virtual string WriteServicesParams()
         {
             return WriteListParam("service", (from o in Service select o.Name).ToList(), true);
         }
@@ -883,12 +883,9 @@ namespace CheckPointObjects
             return WriteListParamWithIndexes("service", (from o in Application select o.Name).ToList(), false, Service.Count);
         }
 		
-		protected override string WriteParamWithIndexesForServices()
-        {
-            if (Application.Count != 0)
-                return WriteListParamWithIndexes("service", (from o in Service select o.Name).ToList(), false, 0);
-            else
-                return WriteListParam("service", (from o in Service select o.Name).ToList(), true);
+		protected override string WriteServicesParams()
+        {            
+            return WriteListParamWithIndexes("service", (from o in Service select o.Name).ToList(), true, 0);//add indexes to services in case applications present as well
         }
 
         //specific extension for cloning applications
