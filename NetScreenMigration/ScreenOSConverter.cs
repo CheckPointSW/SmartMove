@@ -51,19 +51,19 @@ namespace NetScreenMigration
             public static bool IsMask(string maskLength)
             {
                 int n;
-                return (int.TryParse(maskLength, out n) && NetworkUtils.IsValidNetmask(NetworkUtils.MaskLength2Netmask(n)));
+                return (int.TryParse(maskLength, out n) && NetworkUtils.IsValidNetmaskv4(NetworkUtils.MaskLength2Netmask(n)));
             }
 
             public static bool IsHost(string host)
             {
                 string[] hostArray = host.Split('/');
-                return (hostArray.Length == 2 && NetworkUtils.IsValidIp(hostArray[0]) && IsMask(hostArray[1]) && int.Parse(hostArray[1]) == 32);
+                return (hostArray.Length == 2 && NetworkUtils.IsValidIpv4(hostArray[0]) && IsMask(hostArray[1]) && int.Parse(hostArray[1]) == 32);
             }
 
             public static bool IsNetwork(string host)
             {
                 string[] hostArray = host.Split('/');
-                return (hostArray.Length == 2 && NetworkUtils.IsValidIp(hostArray[0]) && IsMask(hostArray[1]) && int.Parse(hostArray[1]) < 32);
+                return (hostArray.Length == 2 && NetworkUtils.IsValidIpv4(hostArray[0]) && IsMask(hostArray[1]) && int.Parse(hostArray[1]) < 32);
             }
 
             public static bool IsIPv6(string ip)

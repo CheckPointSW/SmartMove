@@ -26,25 +26,73 @@ namespace CommonUtils
     /// </summary>
     public static class NetworkUtils
     {
+        public static bool IsValidIpv4(string sIp)
+        {
+            return IsValidIp(sIp, new AddressFamily[] { AddressFamily.InterNetwork });
+        }
+        public static bool IsValidIpv6(string sIp)
+        {
+            return IsValidIp(sIp, new AddressFamily[] { AddressFamily.InterNetworkV6 });
+        }
+
         public static bool IsValidIp(string sIp)
         {
-            IPAddress ip;
-            if (IPAddress.TryParse(sIp, out ip) && (ip.AddressFamily == AddressFamily.InterNetwork))
+            return IsValidIp(sIp, new AddressFamily[] { AddressFamily.InterNetwork, AddressFamily.InterNetworkV6 });
+        }
+
+        private static bool IsValidIp(String sIp, AddressFamily[] allowedAddressFamilies)
+        {
+            if (allowedAddressFamilies == null || allowedAddressFamilies.Length == 0)
+            {
+                return false;
+            }
+
+            if (IPAddress.TryParse(sIp, out IPAddress ip) && Array.Exists(allowedAddressFamilies, e => e == ip.AddressFamily))
             {
                 return true;
             }
-
             return false;
+        }
+
+        public static bool IsValidNetmaskv4(string sNetmask)
+        {
+            return IsValidNetmask(sNetmask, new AddressFamily[] { AddressFamily.InterNetwork });
+        }
+
+        public static bool IsValidNetmaskv6(string sNetmask)
+        {
+            return IsValidNetmask(sNetmask, new AddressFamily[] { AddressFamily.InterNetworkV6 });
         }
 
         public static bool IsValidNetmask(string sNetmask)
         {
-            IPAddress netmask;
-            if (IPAddress.TryParse(sNetmask, out netmask) && (netmask.AddressFamily == AddressFamily.InterNetwork))
+            return IsValidNetmask(sNetmask, new AddressFamily[] { AddressFamily.InterNetwork, AddressFamily.InterNetworkV6 });
+        }
+
+        private static bool IsValidNetmask(String sNetmask, AddressFamily[] allowedAddressFamilies)
+        {
+            if (allowedAddressFamilies == null || allowedAddressFamilies.Length == 0)
+            {
+                return false;
+            }
+
+            if (IPAddress.TryParse(sNetmask, out IPAddress netmask) && Array.Exists(allowedAddressFamilies, e => e == netmask.AddressFamily))
             {
                 return IPNetwork.ValidNetmask(netmask);
             }
-
+            return false;
+        }
+        public static bool TryParseNetwortWithPrefix(String sNetwork, out String sIp, out String sMaskLenght)
+        {
+            sIp = "";
+            sMaskLenght = "";
+            String[] splitedNetwork = sNetwork.Split('/');
+            if (splitedNetwork.Length == 2 && IPAddress.TryParse(splitedNetwork[0], out IPAddress ipAddr) && int.TryParse(splitedNetwork[1], out int maskLengthNum))
+            {
+                sMaskLenght = Convert.ToString(maskLengthNum);
+                sIp = Convert.ToString(ipAddr);
+                return true;
+            }
             return false;
         }
 
@@ -158,7 +206,7 @@ namespace CommonUtils
             string oct1 = ((number & 0xff000000) >> 24).ToString();
             string oct2 = ((number & 0x00ff0000) >> 16).ToString();
             string oct3 = ((number & 0x0000ff00) >> 08).ToString();
-            string oct4 = ((number & 0x000000ff)      ).ToString();
+            string oct4 = ((number & 0x000000ff)).ToString();
 
             return oct1 + "." + oct2 + "." + oct3 + "." + oct4;
         }
