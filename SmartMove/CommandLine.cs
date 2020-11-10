@@ -140,14 +140,14 @@ namespace SmartMove
             }
             if (vendorsList1.Contains(commandLine.Vendor))
             {
-                if (commandLine.ConvertUserConfiguration is true)
+                if (commandLine.ConvertUserConfiguration == true)
                 {
                     Console.WriteLine("Option -u is not valid for vendor " + commandLine.Vendor + "!");
                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
                     return 0;
                 }
 
-                if (commandLine.DontImportUnusedObjects is true)
+                if (commandLine.DontImportUnusedObjects == true)
                 {
                     Console.WriteLine("Option -i is not valid for vendor " + commandLine.Vendor + "!");
                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
@@ -157,7 +157,7 @@ namespace SmartMove
             }
             if (vendorsList2.Contains(commandLine.Vendor))
             {
-                if (commandLine.ConvertUserConfiguration is true && commandLine.LdapAccountUnit is null)
+                if (commandLine.ConvertUserConfiguration == true && commandLine.LdapAccountUnit == null)
                 {
                     Console.WriteLine("Value for option -u is not specified!");
                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
