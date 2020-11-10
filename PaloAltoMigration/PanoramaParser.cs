@@ -14,8 +14,8 @@ namespace PanoramaPaloAltoMigration
         private static string _archiveName;
         public string _ArchiveName
         {
-            get => _archiveName;
-            set => _archiveName = value;
+            get { return _archiveName; }
+            set { _archiveName = value; }
         }
 
         public Panorama_Config Config { get; set; }

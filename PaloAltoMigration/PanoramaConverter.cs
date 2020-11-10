@@ -1527,7 +1527,7 @@ namespace PanoramaPaloAltoMigration
             Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsDict =
             ConvertAddressesGroups(paDeviceGroupEntry, s_TagEntries, (new List<CheckPointObject>(cpAddressesDict.Values)), s_cpNetGroupsDict);
 
-            if (s_cpNetGroupsDict is null)
+            if (s_cpNetGroupsDict == null)
             {
                 return cpNetGroupsDict;//don't inspect address groups from shared section because they will be inspected further while device-group processing 
             }
