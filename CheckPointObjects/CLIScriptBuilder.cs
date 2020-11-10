@@ -52,7 +52,7 @@ namespace CheckPointObjects
               .Append("mgmt_cli logout -s id.txt")
               .Append(Environment.NewLine)
               .Append(Environment.NewLine)
-              .Append("if [ -f ").Append(errorsReportFileName).Append(" ]; then")
+              .Append("if [[ -f ").Append(errorsReportFileName).Append(" ]]; then")
               .Append(Environment.NewLine)
               .Append("  echo ''")
               .Append(Environment.NewLine)
@@ -78,7 +78,7 @@ namespace CheckPointObjects
               .Append(Environment.NewLine)
               .Append("  eval $cmd > last_output.txt 2>&1")
               .Append(Environment.NewLine)
-              .Append("  if [ $? -ne 0 ]; then")
+              .Append("  if [[ $? -ne 0 ]]; then")
               .Append(Environment.NewLine)
               .Append("    echo $cmd >> ").Append(errorsReportFileName)
               .Append(Environment.NewLine)
@@ -103,7 +103,7 @@ namespace CheckPointObjects
             var sb = new StringBuilder();
             sb.Append("echo 'Logging in...'")
               .Append(Environment.NewLine)
-              .Append("if [ -f ").Append(errorsReportFileName).Append(" ]; then")
+              .Append("if [[ -f ").Append(errorsReportFileName).Append(" ]]; then")
               .Append(Environment.NewLine)
               .Append("  rm ").Append(errorsReportFileName)
               .Append(Environment.NewLine)
@@ -121,7 +121,7 @@ namespace CheckPointObjects
                 sb.Append("mgmt_cli login -r true -d \"").Append(domainName).Append("\" -v 1.1 > id.txt").Append(Environment.NewLine);
             }
 
-            sb.Append("if [ $? -ne 0 ]; then")
+            sb.Append("if [[ $? -ne 0 ]]; then")
               .Append(Environment.NewLine)
               .Append("  echo 'Login Failed'")
               .Append(Environment.NewLine)
@@ -138,7 +138,7 @@ namespace CheckPointObjects
               .Append(Environment.NewLine)
               .Append("DOMAINS_COUNT=$($JQ -r \".total\" domains.json)")
               .Append(Environment.NewLine)
-              .Append("if [ $DOMAINS_COUNT -ne 0 ]; then")
+              .Append("if [[ $DOMAINS_COUNT -ne 0 ]]; then")
               .Append(Environment.NewLine)
               .Append("  echo 'This script cannot be executed on MDS. Please specify a domain name in SmartMove tool.'")
               .Append(Environment.NewLine)
