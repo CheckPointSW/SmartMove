@@ -255,7 +255,14 @@ namespace CheckPointObjects
 
         public override IPRanges GetIPRanges()
         {
-            return new IPRanges(new IPRange(IPNetwork.Parse(Subnet, Netmask)));
+            if (!string.IsNullOrEmpty(Netmask))
+            {
+                return new IPRanges(new IPRange(IPNetwork.Parse(Subnet, Netmask)));
+            }
+            else
+            {
+                return new IPRanges(new IPRange(IPNetwork.Parse($"{Subnet}/{MaskLenght}")));
+            }
         }
 
         public override string ToCLIScript()
