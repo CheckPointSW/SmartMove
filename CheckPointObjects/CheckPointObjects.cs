@@ -378,6 +378,7 @@ namespace CheckPointObjects
                 + WriteParam("port", Port, "")
                 + WriteParam("source-port", SourcePort, "")
                 + WriteParam("session-timeout", SessionTimeout, "0")
+                + ((SessionTimeout != null && !SessionTimeout.Equals("0")) ? WriteParam("use-default-session-timeout", "false", "") : "")
                 + WriteListParam("tags", Tags, true);
         }
 
@@ -399,6 +400,7 @@ namespace CheckPointObjects
                 + WriteParam("port", Port, "")
                 + WriteParam("source-port", SourcePort, "")
                 + WriteParam("session-timeout", SessionTimeout, "0")
+                + ((SessionTimeout != null && !SessionTimeout.Equals("0")) ? WriteParam("use-default-session-timeout", "false", "") : "")
                 + WriteListParam("tags", Tags, true);
         }
 
@@ -420,6 +422,7 @@ namespace CheckPointObjects
                 + WriteParam("port", Port, "")
                 + WriteParam("source-port", SourcePort, "")
                 + WriteParam("session-timeout", SessionTimeout, "0")
+                + ((SessionTimeout != null && !SessionTimeout.Equals("0")) ? WriteParam("use-default-session-timeout", "false", "") : "")
                 + WriteListParam("tags", Tags, true);
         }
 
