@@ -4053,6 +4053,11 @@ namespace CiscoMigration
                     {
                         continue;
                     }
+					
+					if (cpParentRule.Source[0] is CheckPoint_PredifinedObject && cpParentRule.Source[0].Name.Equals(CheckPointObject.Any))
+                    {
+                        continue;
+                    }
 
                     var parentLayerRuleZone = (CheckPoint_Zone)cpParentRule.Source[0];
                     if (parentLayerRuleZone == null)
