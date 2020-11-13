@@ -114,11 +114,11 @@ namespace CheckPointObjects
 
             if (string.IsNullOrEmpty(domainName))
             {
-                sb.Append("mgmt_cli login -r true -v 1.1 > id.txt").Append(Environment.NewLine);
+                sb.Append("mgmt_cli login -r true > id.txt").Append(Environment.NewLine);
             }
             else
             {
-                sb.Append("mgmt_cli login -r true -d \"").Append(domainName).Append("\" -v 1.1 > id.txt").Append(Environment.NewLine);
+                sb.Append("mgmt_cli login -r true -d \"").Append(domainName).Append("\" > id.txt").Append(Environment.NewLine);
             }
 
             sb.Append("if [[ $? -ne 0 ]]; then")
