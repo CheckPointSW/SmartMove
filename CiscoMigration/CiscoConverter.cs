@@ -4052,15 +4052,15 @@ namespace CiscoMigration
                                 bool ruleIsAlreadyAdded = false;
                                 foreach (var rule in subPolicy.Rules)
                                 {
-                                    if (!(newRule.Source.Except(rule.Source).Any()) && !(rule.Source.Except(newRule.Source).Any()))
-                                        if (!(newRule.Destination.Except(rule.Destination).Any()) && !(rule.Destination.Except(newRule.Destination).Any()))
-                                            if (!(newRule.Service.Except(rule.Service).Any()) && !(rule.Service.Except(newRule.Service).Any()))
-                                                ruleIsAlreadyAdded = true;
+                                    if (newRule.CompareTo(rule)){
+										ruleIsAlreadyAdded = true;
+									}
                                 }
 
                                 // Add a new rule ABOVE the matched rule.
-                                if (!ruleIsAlreadyAdded)
-                                subPolicy.Rules.Insert(ruleNumber, newRule);
+                                if (!ruleIsAlreadyAdded){
+									subPolicy.Rules.Insert(ruleNumber, newRule);
+								}                            
 
                                 if (newRule.ConversionIncidentType != ConversionIncidentType.None)
                                 {
