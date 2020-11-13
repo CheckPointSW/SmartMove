@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using CommonUtils;
 
@@ -112,7 +113,12 @@ namespace CheckPointObjects
 
         protected static string WriteListParam(string paramName, List<string> paramValues, bool useSafeNames)
         {
-            if (paramValues.Count == 0)
+            return WriteListParam(paramName, paramValues, useSafeNames, 0, paramValues.Count);
+        }
+
+        protected static string WriteListParam(string paramName, List<string> paramValues, bool useSafeNames, int firstIndex, int maxSize)
+        {
+            if (paramValues.Count == 0 || firstIndex >= paramValues.Count || maxSize <= 0)
             {
                 return "";
             }
@@ -122,22 +128,15 @@ namespace CheckPointObjects
                 return WriteParam(paramName, paramValues[0], "");
             }
 
-            string str = "";
-            int i = 0;
-
-            foreach (string paramValue in paramValues)
+            var sb = new StringBuilder("");
+            int maxIndex = ((firstIndex + maxSize) < paramValues.Count) ? (firstIndex + maxSize) : paramValues.Count;
+            for (int i = firstIndex; i < maxIndex; i++)
             {
-                string val = paramValue;
-                if (useSafeNames)
-                {
-                    val = GetSafeName(paramValue);
-                }
-
-                str += string.Format("{0}.{1} \"{2}\" ", paramName, i, val);
-                i++;
+                string value = useSafeNames ? paramValues[i] : GetSafeName(paramValues[i]);
+                sb.AppendFormat("{0}.{1} \"{2}\" ", paramName, i, value);
             }
 
-            return str;
+            return sb.ToString();
         }
 
         protected static string WriteListParamWithIndexes(string paramName, List<string> paramValues, bool useSafeNames, int i = 0)
@@ -289,17 +288,19 @@ namespace CheckPointObjects
         /// GroupWithExclusion and NetworkGroup types cross-referencing each other.
         /// </summary>
         public bool CreateAfterGroupsWithExclusion { get; set; }
+        public int MembersPublishIndex { get; set; } = 0;
+        public int MembersMaxPublishSize { get; set; } = Int32.MaxValue;
 
         public override string ToCLIScript()
         {
-            return "add group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteListParam("members", Members, true)
+            return (MembersPublishIndex == 0 ? "add " : "set ") + "group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteListParam("members", Members, true, MembersPublishIndex, MembersMaxPublishSize)
                 + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
         {
-            return "create network group [" + Name + "]: " + Members.Count + " members";
+            return (MembersPublishIndex == 0 ? "create " : "update ") + "network group [" + Name + "]: " + Members.Count + " members";
         }
     }
 
@@ -476,17 +477,19 @@ namespace CheckPointObjects
     public class CheckPoint_ServiceGroup : CheckPointObject
     {
         public List<string> Members = new List<string>();
+        public int MembersPublishIndex { get; set; } = 0;
+        public int MembersMaxPublishSize { get; set; } = Int32.MaxValue;
 
         public override string ToCLIScript()
         {
-            return "add service-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteListParam("members", Members, true)
+            return (MembersPublishIndex == 0 ? "add " : "set ") + "service-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteListParam("members", Members, true, MembersPublishIndex, MembersMaxPublishSize)
                 + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
         {
-            return "create service group [" + Name + "]: " + Members.Count + " members";
+            return (MembersPublishIndex == 0 ? "create " : "update ") + "service group [" + Name + "]: " + Members.Count + " members";
         }
     }
 

@@ -122,7 +122,7 @@ namespace MigrationBase
                 ConversionProgress(progress, title);
             }
         }
-        
+
         #endregion
 
         #region Methods
@@ -216,7 +216,7 @@ namespace MigrationBase
         public abstract void ExportConfigurationAsHtml();
         public abstract void ExportPolicyPackagesAsHtml();
         protected abstract string GetVendorName();
-        
+
         #endregion
 
         public void ExportNatLayerAsHtml()
@@ -534,7 +534,7 @@ namespace MigrationBase
                 file.WriteLine("</body>");
                 file.WriteLine("</html>");
             }
-			
+
         }
 
         protected virtual bool AddCheckPointObject(CheckPointObject cpObject)
@@ -733,7 +733,7 @@ namespace MigrationBase
                             UInt32[] range2 = NetworkUtils.GetNetworkRangeInNumbers(network2.Subnet, network2.Netmask);
 
                             // Check networks ranges overlap
-                            if (((range2[0] >= range1[0]) && (range2[0] <= range1[1])) || 
+                            if (((range2[0] >= range1[0]) && (range2[0] <= range1[1])) ||
                                 ((range1[0] >= range2[0]) && (range1[0] <= range2[1])))
                             {
                                 if (range1[1] - range1[0] > range2[1] - range2[0])
@@ -835,6 +835,7 @@ namespace MigrationBase
         protected void CreateObjectsScript()
         {
             const int publishLatency = 100;
+            const int groupsMaxBulkSize = 100;
 
             using (var file = new StreamWriter(ObjectsScriptFile, false))
             {
@@ -970,12 +971,18 @@ namespace MigrationBase
                             continue;
                         }
 
-                        file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
-
-                        objectsCount++;
-                        if (objectsCount % publishLatency == 0)
+                        obj.MembersMaxPublishSize = groupsMaxBulkSize;
+                        for (int i = 0; i < obj.Members.Count; i += groupsMaxBulkSize)
                         {
-                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                            obj.MembersPublishIndex = i;
+
+                            file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                            objectsCount++;
+                            if (objectsCount % publishLatency == 0)
+                            {
+                                file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                            }
                         }
                     }
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
@@ -1173,13 +1180,27 @@ namespace MigrationBase
                     int objectsCount = 0;
                     foreach (CheckPoint_ServiceGroup obj in _cpServiceGroups)
                     {
-                        file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+                        obj.MembersMaxPublishSize = groupsMaxBulkSize;
+                        for (int i = 0; i < obj.Members.Count; i += groupsMaxBulkSize)
+                        {
+                            obj.MembersPublishIndex = i;
+
+                            file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                            objectsCount++;
+                            if (objectsCount % publishLatency == 0)
+                            {
+                                file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                            }
+                        }
+
+                        /* file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
 
                         objectsCount++;
                         if (objectsCount % publishLatency == 0)
                         {
                             file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
-                        }
+                        } */
                     }
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
                 }
@@ -1260,12 +1281,12 @@ namespace MigrationBase
                         for (int i = 0; i < obj.Users.Count; i++)
                         {
                             var sb_set = new StringBuilder();
-                            
+
                             sb_set.Append("cmd='mgmt_cli ")
                                 .Append("set access-role ")
                                 .Append("name " + "\"" + obj.SafeName() + "\" ");
 
-                            if(obj.Networks.Count == 0)
+                            if (obj.Networks.Count == 0)
                             {
                                 sb_set.Append("networks \"any\" ");
                             }
@@ -1279,7 +1300,7 @@ namespace MigrationBase
                                 .Append("users.add.selection." + i + " \"" + obj.Users[i].Name + "\" ")
                                 .Append(!(string.IsNullOrWhiteSpace(obj.Users[i].BaseDn)) ? "users.add.base-dn \"" + obj.Users[i].BaseDn + "\"" : "")
                                 .Append(" ignore-warnings true -s id.txt --user-agent mgmt_cli_smartmove'");
-                            
+
                             file.WriteLine("  " + sb_set.ToString());
                             file.WriteLine("  " + "run_command");
                         }
@@ -1349,15 +1370,15 @@ namespace MigrationBase
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
 
                     // Enabling Applications and URL Filtering in parent layer
-                    if(package.ParentLayer.ApplicationsAndUrlFiltering)
+                    if (package.ParentLayer.ApplicationsAndUrlFiltering)
                     {
                         file.WriteLine("echo 'Enabling Applications and URL Filtering in parent layer vsys1_policy Network'");
-                        file.WriteLine("cmd='mgmt_cli set access-layer " + 
-                                        "name \"" + package.ParentLayer.Name + "\" " + 
-                                        "applications-and-url-filtering \"true\" " + 
+                        file.WriteLine("cmd='mgmt_cli set access-layer " +
+                                        "name \"" + package.ParentLayer.Name + "\" " +
+                                        "applications-and-url-filtering \"true\" " +
                                         "ignore-warnings true -s id.txt --user-agent mgmt_cli_smartmove'");
                         file.WriteLine("run_command");
-                    file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                        file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
                     }
                     file.WriteLine(CLIScriptBuilder.GenerateInstructionScript(string.Format("Add rules to parent layer {0}", package.NameOfAccessLayer)));
                     // !!! Attention !!! -- the rules are created in the reverse order but will be inserted at the TOP (!!!) position,
@@ -1580,7 +1601,7 @@ namespace MigrationBase
                         var sb_add = new StringBuilder();
                         sb_add.Append("add access-role ")
                             .Append("name " + "\"" + obj.SafeName() + "\" ");
-                        
+
                         if (obj.Networks.Count == 0)
                         {
                             sb_add.Append("networks \"any\" ");
@@ -1600,7 +1621,7 @@ namespace MigrationBase
                         for (int i = 0; i < obj.Users.Count; i++)
                         {
                             file.WriteLine("<div id=\"" + obj.Name + "_user_" + i + "\">");
-                            
+
                             var sb_set = new StringBuilder();
                             sb_set.Append("set access-role ")
                                 .Append("name " + "\"" + obj.SafeName() + "\" ");
@@ -1619,9 +1640,9 @@ namespace MigrationBase
                                 .Append("users.add.selection." + i + " \"" + obj.Users[i].Name + "\" ")
                                 .Append(!(string.IsNullOrWhiteSpace(obj.Users[i].BaseDn)) ? "users.add.base-dn \"" + obj.Users[i].BaseDn + "\"" : "");
 
-                            
+
                             file.WriteLine(sb_set.ToString());
-                            
+
                             file.WriteLine("</div>");
                         }
                     }
