@@ -754,7 +754,7 @@ namespace JuniperMigration
                 
                 int postfixIndex = 1;//postfix of time-object in case Juniper scheduler is splitted to several objects     
 
-                if (scheduler.StartStopDates is null)
+                if (scheduler.StartStopDates == null)
                 {// check if time object has Start Time
                     CheckPoint_Time cpTime = new CheckPoint_Time();
                     cpTime.Comments = "Old Time Object name: " + scheduler.Name;
