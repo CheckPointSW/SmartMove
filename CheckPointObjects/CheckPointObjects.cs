@@ -995,7 +995,7 @@ namespace CheckPointObjects
 
     public class CheckPoint_NAT_Rule : CheckPointObject
     {
-        public enum NatMethod { Static, Hide };
+        public enum NatMethod { Static, Hide, Nat64, Nat46 };
 
         public bool Enabled { get; set; }
         public string Package { get; set; }
