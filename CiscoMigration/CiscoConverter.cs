@@ -2305,7 +2305,7 @@ namespace CiscoMigration
                 cpRule4GlobalLayer.Track = CheckPoint_Rule.TrackTypes.None;
                 cpRule4GlobalLayer.Time.Add(_cpObjects.GetObject(CheckPointObject.Any));
                 cpRule4GlobalLayer.Service.Add(_cpObjects.GetObject(CheckPointObject.Any));
-                cpRule4GlobalLayer.SubPolicyName = "Global Rules";
+                cpRule4GlobalLayer.SubPolicyName = GlobalRulesSubpolicyName;
 
                 package.ParentLayer.Rules.Add(cpRule4GlobalLayer);
 
@@ -4056,14 +4056,20 @@ namespace CiscoMigration
 					
 					if (cpParentRule.Source[0] is CheckPoint_PredifinedObject && cpParentRule.Source[0].Name.Equals(CheckPointObject.Any))
                     {
-                        continue;
+                        if (cpParentRule.SubPolicyName != GlobalRulesSubpolicyName)
+                        {                            
+                            continue;
+                        }
                     }
 
-                    var parentLayerRuleZone = (CheckPoint_Zone)cpParentRule.Source[0];
-                    if (parentLayerRuleZone == null)
+                    CheckPoint_Zone parentLayerRuleZone = new CheckPoint_Zone();
+                    if (cpParentRule.SubPolicyName == GlobalRulesSubpolicyName)
                     {
-                        Console.WriteLine("Ooopppsssss...............");   // shouldn't happen...
-                        continue;
+                        parentLayerRuleZone.Name = "any";
+                    }
+                    else
+                    {
+                        parentLayerRuleZone = (CheckPoint_Zone)cpParentRule.Source[0];
                     }
 
                     // NAT rule interfaces should match on firewall rule interfaces (zones)
@@ -4397,7 +4403,7 @@ namespace CiscoMigration
                 CheckPoint_Layer optimizedLayer = RuleBaseOptimizer.Optimize(layer, optimizedSubPolicyName);
                 foreach (CheckPoint_Rule subSubRule in optimizedLayer.Rules)
                 {
-                    if (subSubRule.SubPolicyName.Equals("Global Rules"))
+                    if (subSubRule.SubPolicyName.Equals(GlobalRulesSubpolicyName))
                     {
                         //The Global sub-sub rule subpolicy name should also be renamed for consistency
                         subSubRule.SubPolicyName += "_opt";
