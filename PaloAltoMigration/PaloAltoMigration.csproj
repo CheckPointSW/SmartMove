@@ -48,6 +48,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PanoramaParser.cs" />
+    <Compile Include="PanoramaConverter.cs" />
+    <Compile Include="Panorama_Config.cs" />
     <Compile Include="PA_Config.cs" />
     <Compile Include="PaloAltoConverter.cs" />
     <Compile Include="PaloAltoParser.cs" />
