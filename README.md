@@ -8,5 +8,14 @@ The tool generates bash scripts by utilizing Check Point Management API's comman
 For SmartMove tool release notes and latest updates, please refer to Check Point sk115416 at:
 https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewsolutiondetails=&solutionid=sk115416
 
+
+## Smart Connector and PaloAlto Panorama
+'Smart Connector' and 'PaloAlto Panorama' are using external reasorces.
+
+* The files can be dowloaded from the support center: 
+https://supportcenter.checkpoint.com/supportcenter/portal?action=portlets.DCFileAction&eventSubmit_doGetdcdetails=&fileid=110747
+* Extract the files into 'SmartMove\SmartMove\SmartConnector\compressors\' inside your project.
+
+
 ## Development Environment
 The tool is developed using Microsoft C# language and .Net framework version 4.5 (WPF application). The project solution file is configured for Microsoft Visual Studio 2012 and above.
