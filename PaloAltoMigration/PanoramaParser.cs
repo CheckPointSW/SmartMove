@@ -111,7 +111,7 @@ namespace PanoramaPaloAltoMigration
 
         public void UncompressArchive(string archiveName, string targetFolder)
         {
-            string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "compressors";            
+            string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "SmartConnector" + Path.DirectorySeparatorChar + "compressors";
             string archiveCopyName = targetFolder + archiveName.Substring(archiveName.LastIndexOf("\\") + 1);
             archiveCopyName = archiveCopyName.Substring(0, archiveCopyName.IndexOf(".tgz")) + "_copy" + ".tgz";            
             File.Copy(archiveName, archiveCopyName, true);            
