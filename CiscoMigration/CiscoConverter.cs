@@ -2336,7 +2336,7 @@ namespace CiscoMigration
                 if (createCleanupRule)
                 {
                     var cpCleanupRule = new CheckPoint_Rule();
-                    cpCleanupRule.Name = "Default action rule";
+                    cpCleanupRule.Name = CheckPoint_Rule.SubPolicyCleanupRuleName;
                     cpCleanupRule.Action = CheckPoint_Rule.ActionType.Drop;
                     cpCleanupRule.Layer = cpSubLayer4GlobalRules.Name;
                     cpSubLayer4GlobalRules.Rules.Add(cpCleanupRule);
@@ -2359,7 +2359,7 @@ namespace CiscoMigration
 
                 //the last rule which is created by default by CheckPoint script importer. It is for report only.
                 var cpRuleCleanUp = new CheckPoint_Rule();
-                cpRuleCleanUp.Name = "Default action rule";
+                cpRuleCleanUp.Name = "Cleanup rule";
                 package.ParentLayer.Rules.Add(cpRuleCleanUp);
             }
             else
