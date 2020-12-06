@@ -773,9 +773,9 @@ namespace CheckPointObjects
                 return true;   // sub-policy's automatic cleanup rule
             }
 
-            if ((Source.Count == 1 && Source[0].Name == Any) &&
-                (Destination.Count == 1 && Destination[0].Name == Any) &&
-                (Service.Count == 1 && Service[0].Name == Any) && 
+            if ((Source.Count == 1 && Source[0].Name == Any || Source.Count == 0) &&
+                (Destination.Count == 1 && Destination[0].Name == Any || Destination.Count == 0) &&
+                (Service.Count == 1 && Service[0].Name == Any || Service.Count == 0) &&
                 IsApplicationsClean() &&
                 (Action == ActionType.Drop))
             {
