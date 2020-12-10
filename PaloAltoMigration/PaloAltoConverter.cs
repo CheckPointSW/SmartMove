@@ -799,7 +799,7 @@ namespace PaloAltoMigration
 
                     s_paAppFiltersList = GetPAApplicationsFilters(paConfig.Shared, null);
 
-                    s_cpAppGroupsDict = ConvertApplicationsGroups(new List<PA_ApplicationGroupEntry>(paConfig.Shared.ApplicationGroupsEntries), s_appsMatchList, null, s_paAppFiltersList);
+                    s_cpAppGroupsDict = ConvertApplicationsGroups(new List<PA_ApplicationGroupEntry>(paConfig.Shared.ApplicationGroupsEntries), s_appsMatchList, null, s_paAppFiltersList, s_cpServicesGroupsDict);
 
                     s_cpSchedulesDict = new Dictionary<string, List<CheckPoint_Time>>();
                     ConvertSchedules(paConfig.Shared).ForEach(x =>
@@ -927,7 +927,7 @@ namespace PaloAltoMigration
             List<string> paAppFiltersList = GetPAApplicationsFilters(paVsysEntry, s_paAppFiltersList);
 
             Dictionary<string, CheckPoint_ApplicationGroup> cpAppGroupsDict = 
-                ConvertApplicationsGroups(new List<PA_ApplicationGroupEntry>(paVsysEntry.ApplicationGroupsEntries), appsMatchList, s_cpAppGroupsDict, paAppFiltersList);
+                ConvertApplicationsGroups(new List<PA_ApplicationGroupEntry>(paVsysEntry.ApplicationGroupsEntries), appsMatchList, s_cpAppGroupsDict, paAppFiltersList, cpServicesGroupsDict);                      
 
             Dictionary<string, List<CheckPoint_Time>> cpSchedulesDict = null;
             if (s_cpSchedulesDict != null)
@@ -961,7 +961,7 @@ namespace PaloAltoMigration
 
             if (_isNatConverted)
             {
-                ConvertNatPolicy(paVsysEntry, cpAddressesDict, cpNetGroupsDict, cpServicesDict, paServicesTypesDict, cpServicesGroupsDict);
+                ConvertNatPolicy(paVsysEntry, cpAddressesDict, cpNetGroupsDict, cpServicesDict, paServicesTypesDict, cpServicesGroupsDict, cpServicesGroupsDict);
             }
 
             //if non-optimized convert method is used then all objects are added
@@ -2022,10 +2022,11 @@ namespace PaloAltoMigration
             return new List<string>(File.ReadAllLines(PA_APPLICATIONS_FILE_NAME));
         }
 
-        public Dictionary<string, CheckPoint_ApplicationGroup> ConvertApplicationsGroups(List<PA_ApplicationGroupEntry> paAppsGroupsListCheck, 
+        public Dictionary<string, CheckPoint_ApplicationGroup> ConvertApplicationsGroups(List<PA_ApplicationGroupEntry> paAppsGroupsListCheck,
                                                                                          List<string> appsMatchList,
                                                                                          Dictionary<string, CheckPoint_ApplicationGroup> s_cpAppGroupDict,
-                                                                                         List<string> paAppFiltersList)
+                                                                                         List<string> paAppFiltersList,
+                                                                                         Dictionary<string, CheckPoint_ServiceGroup> cpServicesGroupsDict)
         {
             Dictionary<string, CheckPoint_ApplicationGroup> cpAppGroupDict = null;
             if (s_cpAppGroupDict != null)
@@ -2043,7 +2044,10 @@ namespace PaloAltoMigration
                     CheckPoint_ApplicationGroup cpAppGroup = new CheckPoint_ApplicationGroup();
                     cpAppGroup.Name = InspectObjectName(GetSafeName(paAppsGroupCheck.Name), CP_OBJECT_TYPE_NAME_APPLICATION_GROUP);
 
-                    foreach(string appMember in paAppsGroupCheck.ApplicationGroupMembers)
+                    CheckPoint_ServiceGroup cpServiceGroup = new CheckPoint_ServiceGroup();
+                    cpServiceGroup.Name = InspectObjectName(GetSafeName(paAppsGroupCheck.Name + "-svc"), CP_OBJECT_TYPE_NAME_APPLICATION_GROUP);
+
+                    foreach (string appMember in paAppsGroupCheck.ApplicationGroupMembers)
                     {
                         string matchedLine = appsMatchList.Find(x => x.StartsWith(appMember + ";"));
                         if (!string.IsNullOrEmpty(matchedLine))
@@ -2052,9 +2056,9 @@ namespace PaloAltoMigration
                             if (!string.IsNullOrWhiteSpace(matchedArray[1]))
                             {
                                 string[] matchedValues = matchedArray[1].Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                                foreach(string matchedValue in matchedValues)
+                                foreach (string matchedValue in matchedValues)
                                 {
-                                    if(!matchedValue.Trim().Equals(""))
+                                    if (!matchedValue.Trim().Equals(""))
                                     {
                                         cpAppGroup.Members.Add(matchedValue.Trim());
                                     }
@@ -2066,10 +2070,11 @@ namespace PaloAltoMigration
                                 foreach (string matchedValue in matchedValues)
                                 {
                                     if (!matchedValue.Trim().Equals(""))
-                                    {
-                                        cpAppGroup.Members.Add(matchedValue.Trim());
+                                    {                                        
+                                        cpServiceGroup.Members.Add(matchedValue.Trim());
                                     }
                                 }
+                                cpServicesGroupsDict[paAppsGroupCheck.Name + "-svc"] = cpServiceGroup;
                             }
                             else
                             {
@@ -2084,9 +2089,9 @@ namespace PaloAltoMigration
                         {
                             _warningsList.Add(paAppsGroupCheck.Name + " application group contains application filter: " + appMember);
                         }
-                        else if(paAppsGroupsListCheck.FindIndex(x => x.Name.Equals(appMember)) != -1)
+                        else if (paAppsGroupsListCheck.FindIndex(x => x.Name.Equals(appMember)) != -1)
                         {
-                            cpAppGroupDict = ConvertApplicationsGroups(paAppsGroupsListCheck, appsMatchList, cpAppGroupDict, paAppFiltersList);
+                            cpAppGroupDict = ConvertApplicationsGroups(paAppsGroupsListCheck, appsMatchList, cpAppGroupDict, paAppFiltersList, cpServicesGroupsDict);
                             if (cpAppGroupDict.ContainsKey(appMember))
                             {
                                 cpAppGroup.Members.Add(cpAppGroupDict[appMember].Name);
@@ -2359,6 +2364,10 @@ namespace PaloAltoMigration
                     applicationsFiltering = true;
                     foreach (string paAppName in paSecurityRuleEntry.ApplicationList)
                     {
+						if (cpServicesGroupsDict.ContainsKey(paAppName + "-svc"))//to add mapped PA services from CP application group entry
+                        {
+                            cpRuleServiceList.Add(cpServicesGroupsDict[paAppName + "-svc"]);
+                        }
                         if (cpAppGroupsDict.ContainsKey(paAppName))
                         {
                             cpRuleApplilcationList.Add(cpAppGroupsDict[paAppName]);
@@ -2726,11 +2735,12 @@ namespace PaloAltoMigration
         #region Convert Nat Policy
 
         public void ConvertNatPolicy(PA_VsysEntry paVsysEntry,
-                                     Dictionary<string, CheckPointObject> cpAddressesDict, 
+                                     Dictionary<string, CheckPointObject> cpAddressesDict,
                                      Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsDict,
-                                     Dictionary<string, CheckPointObject> cpServicesDict, 
+                                     Dictionary<string, CheckPointObject> cpServicesDict,
                                      Dictionary<string, string> paServicesTypesDict,
-                                     Dictionary<string, CheckPoint_ServiceGroup> cpServicesGroupsDict)
+                                     Dictionary<string, CheckPoint_ServiceGroup> cpServicesGroupsDict,
+                                     Dictionary<string, CheckPoint_ServiceGroup> cpServicesFromAppsGroupDict)
         {
             int counterNatRules = -1;
 
