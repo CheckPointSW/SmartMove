@@ -1877,14 +1877,14 @@ namespace MigrationBase
          */
         public void CreateSmartConnector()
         {
-            #region Processing SmartConnector
+            const string dirLibName = "cpapi";
 
             string[] pySmartConnectorFNs = new string[] {
-                    "cpapi" + Path.DirectorySeparatorChar + "__init__.py",
-                    "cpapi" + Path.DirectorySeparatorChar + "api_exceptions.py",
-                    "cpapi" + Path.DirectorySeparatorChar + "api_response.py",
-                    "cpapi" + Path.DirectorySeparatorChar + "mgmt_api.py",
-                    "cpapi" + Path.DirectorySeparatorChar + "utils.py",
+                    dirLibName + Path.DirectorySeparatorChar + "__init__.py",
+                    dirLibName + Path.DirectorySeparatorChar + "api_exceptions.py",
+                    dirLibName + Path.DirectorySeparatorChar + "api_response.py",
+                    dirLibName + Path.DirectorySeparatorChar + "mgmt_api.py",
+                    dirLibName + Path.DirectorySeparatorChar + "utils.py",
                     "smartconnector.py"
                 };
 
@@ -1897,6 +1897,13 @@ namespace MigrationBase
                     break;
                 }
             }
+			
+			string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "SmartConnector" + Path.DirectorySeparatorChar + "compressors" ;
+            string compressorZip = Path.Combine(compressorsDirPath, "zip.exe");
+            string compressorGtar = Path.Combine(compressorsDirPath, "gtar.exe");
+            string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
+            if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
+                isGeneratingSC = false;
 
             if (isGeneratingSC)
             {
@@ -1964,8 +1971,7 @@ namespace MigrationBase
                 cpJsonObjects.AddRange(_cpTimes);
                 // objects are added
                 // adding Security rules
-                if (_cpPackages.Count > 0)
-                    cpJsonObjects.Add(_cpPackages[0]);
+                cpJsonObjects.Add(_cpPackages.FirstOrDefault());
                 // adding NAT rules
                 _cpNatRules.ForEach(x => x.Package = _cpPackages[0].Name);
                 cpJsonObjects.AddRange(_cpNatRules);
@@ -2003,8 +2009,6 @@ namespace MigrationBase
                 File.Copy(cpObjectsJsonFP, smartConnectorArchivePath + Path.DirectorySeparatorChar + cpObjectsJsonFN);
                 #endregion
 
-                string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "SmartConnector" + Path.DirectorySeparatorChar + "compressors";
-
                 ProcessStartInfo startInfo = new ProcessStartInfo();
                 startInfo.UseShellExecute = false;
                 startInfo.CreateNoWindow = true;
@@ -2014,7 +2018,7 @@ namespace MigrationBase
                 if (File.Exists(smartConnectorArchivePath + ".zip"))
                     File.Delete(smartConnectorArchivePath + ".zip");
 
-                startInfo.FileName = Path.Combine(compressorsDirPath, "zip.exe");
+                startInfo.FileName = compressorZip;
                 startInfo.WorkingDirectory = _targetFolder + Path.DirectorySeparatorChar + smartConnectorArchiveName;
                 startInfo.Arguments = "-r" + " ..\\" + smartConnectorArchiveName + ".zip" + " *";
                 compressProc = Process.Start(startInfo);
@@ -2025,13 +2029,13 @@ namespace MigrationBase
                 if (File.Exists(smartConnectorArchivePath + ".tar.gz"))
                     File.Delete(smartConnectorArchivePath + ".tar.gz");
 
-                startInfo.FileName = Path.Combine(compressorsDirPath, "gtar.exe");
+                startInfo.FileName = compressorGtar;
                 startInfo.WorkingDirectory = _targetFolder + Path.DirectorySeparatorChar + smartConnectorArchiveName;
                 startInfo.Arguments = "cf" + " ..\\" + smartConnectorArchiveName + ".tar" + " *";
                 compressProc = Process.Start(startInfo);
                 compressProc.WaitForExit();
 
-                startInfo.FileName = Path.Combine(compressorsDirPath, "gzip.exe");
+                startInfo.FileName = compressorGzip;
                 startInfo.WorkingDirectory = _targetFolder;
                 startInfo.Arguments = smartConnectorArchiveName + ".tar";
                 compressProc = Process.Start(startInfo);
@@ -2043,8 +2047,7 @@ namespace MigrationBase
 
                 if (Directory.Exists(smartConnectorArchivePath))
                     Directory.Delete(smartConnectorArchivePath, true);
-            }
-            #endregion
+            }            
         }
     }
 }
