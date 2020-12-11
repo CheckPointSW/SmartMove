@@ -752,14 +752,16 @@ namespace JuniperMigration
             {
                 List<CheckPoint_Time> timesList = new List<CheckPoint_Time>();//will store time-objects for separate days with different hours-ranges                              
                 
-                int postfixIndex = 1;//postfix of time-object in case Juniper scheduler is splitted to several objects     
+                int postfixIndex = 1;//postfix of time-object in case Juniper scheduler is split to several objects     
 
-                if (scheduler.StartStopDates == null)
+                if (scheduler.StartStopDates.Count == 0)
                 {// check if time object has Start Time
                     CheckPoint_Time cpTime = new CheckPoint_Time();
                     cpTime.Comments = "Old Time Object name: " + scheduler.Name;
                     cpTime.StartNow = true;
                     cpTime.EndNever = true;
+					cpTime.Name = checkTimeNameLength(scheduler.Name, cpTimeRangesNamesUniq);
+					
                     Add_TimeObject(scheduler, cpTime, timesList, cpTimeRangesNamesUniq);
                     foreach (CheckPoint_Time time in timesList)
                         AddCheckPointObject(time);
@@ -772,7 +774,7 @@ namespace JuniperMigration
                         //2020-09-06.01:01;2020-09-08.12:30
                         if (scheduler.StartStopDates.Count == 1)
                         {
-                            cpTime.Name = scheduler.Name;                            
+                            cpTime.Name = checkTimeNameLength(scheduler.Name, cpTimeRangesNamesUniq);                       
                         }
                         else
                         {
@@ -780,10 +782,10 @@ namespace JuniperMigration
                                 cpTime.Name = scheduler.Name + "_" + postfixIndex++;
                             else
                             {
-                                cpTime.Name = scheduler.Name.Substring(0, 6) + "_" + postfixIndex++;
+                                cpTime.Name = scheduler.Name.Substring(0, 7) + "_" + postfixIndex++;
                                 while (cpTimeRangesNamesUniq.Contains(cpTime.Name))
                                 {
-                                    cpTime.Name = scheduler.Name.Substring(0, 6) + "_" + postfixIndex++;
+                                    cpTime.Name = scheduler.Name.Substring(0, 7) + "_" + postfixIndex++;
                                 }                                
                             }                                
                         }
@@ -806,11 +808,33 @@ namespace JuniperMigration
             }
         }
 
+        /// <summary>
+        /// Check the length of time object name.
+        /// CheckPoint time object name is limited to 11 chars. In case it's more than 11 it's either truncated or truncated and completed with postfix so that to be unique.
+        /// </summary>         
+        private string checkTimeNameLength(string timeName, List<string> cpTimeRangesNamesUniq)
+        {
+            int postfixIndex = 1;
+            if (timeName.Length > 11)
+            {
+                timeName = timeName.Substring(0, 11);
+                while (cpTimeRangesNamesUniq.Contains(timeName))
+                {
+                    timeName = timeName.Substring(0, 9) + "_" + postfixIndex++;
+                }
+                return timeName;
+            }
+            else
+            {
+                return timeName;
+            }
+        }
+
         private List<CheckPoint_Time> Add_TimeObject(Juniper_Scheduler scheduler, CheckPoint_Time cpTime, List<CheckPoint_Time> timesList, List<string> cpTimeRangesNamesUniq)
         {
             List<string> daysList = new List<string> { "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday" };
 
-            int postfixIndex = 1;//postfix of time-object in case Juniper scheduler is splitted to several objects
+            int postfixIndex = 1;//postfix of time-object in case Juniper scheduler is split to several objects
 
             bool dailyIsConfigured = false;
 
@@ -868,7 +892,7 @@ namespace JuniperMigration
                         {
                             CheckPoint_Time cpTimeAdd = new CheckPoint_Time();//create separate time-object for each day in case hours ranges for day are set                                              
 
-                            copyTimeObject(cpTime, cpTimeAdd);
+                            cpTimeAdd = cpTime.Clone();
 
                             cpTime.RecurrenceWeekdays.Remove((CheckPoint_Time.Weekdays)daysList.IndexOf(day));//remove day from the common TO because for this day separate TO is created
                             cpTimeAdd.RecurrenceWeekdays.Add((CheckPoint_Time.Weekdays)daysList.IndexOf(day));
@@ -901,19 +925,9 @@ namespace JuniperMigration
             return timesList;                   
         }
 
-        private void copyTimeObject(CheckPoint_Time cpTime, CheckPoint_Time cpTimeAdd)
-        {
-            cpTimeAdd.Name = cpTime.Name;
-            cpTimeAdd.Comments = cpTime.Comments;
-            cpTimeAdd.StartNow = cpTime.StartNow;
-            cpTimeAdd.StartDate = cpTime.StartDate;
-            cpTimeAdd.StartTime = cpTime.StartTime;
-            cpTimeAdd.EndNever = cpTime.EndNever;
-            cpTimeAdd.EndDate = cpTime.EndDate;
-            cpTimeAdd.EndTime = cpTime.EndTime;
-            cpTimeAdd.RecurrencePattern = cpTime.RecurrencePattern;      
-        }
-
+        /// <summary>
+        /// Convert Juniper scheduler start- and stop-time (in format HH:MM:SS) into CheckPoint hours-ranges parameter in required format (HH:MM)
+        /// </summary>
         private void processHoursRanges(List<string> timeRanges, CheckPoint_Time cpTime)
         {
             foreach (string timeRange in timeRanges)
