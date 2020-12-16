@@ -42,6 +42,7 @@ namespace CheckPointObjects
         protected const string CommentsValidityRegex = @"[^A-Za-z0-9 @#*$(){}\[\]_.\-=:,/]";
 
         public const string Any = "any";
+        public const string All = "All";
         public const string All_Internet = "All_Internet";
         public const string icmpProtocol = "icmp-proto";
 
@@ -88,6 +89,20 @@ namespace CheckPointObjects
         protected static string GetSafeName(string name)
         {
             return Regex.Replace(name, NameValidityRegex, "_");
+        }
+		
+		//escaping quote sign in script
+        public List<string> EscapeQuote(List<string> members)
+        {
+            List<string> resultList = new List<string>();
+            foreach (string member in members)
+            {
+                if (member.IndexOf("\'") != -1)
+                    resultList.Add(member.Replace("\'", "\'\\\'\'"));                    
+                else
+                    resultList.Add(member);
+            }
+            return resultList;
         }
 
         protected static string WriteParam(string paramName, bool paramValue, bool defaultValue)
@@ -283,6 +298,8 @@ namespace CheckPointObjects
     public class CheckPoint_NetworkGroup : CheckPointObject
     {
         public List<string> Members = new List<string>();
+		
+		public bool IsPanoramaDeviceGroup = false;
 
         /// <summary>
         /// This property is used to overcome the problematic order of objects creation for 
@@ -496,8 +513,10 @@ namespace CheckPointObjects
 
         public override string ToCLIScript()
         {
+            List<string> members = EscapeQuote(Members);//escaping quote sign in script
+
             return "add application-site-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteListParam("members", Members, false)
+                + WriteListParam("members", members, false)
                 + WriteListParam("tags", Tags, true);
         }
 
@@ -639,6 +658,9 @@ namespace CheckPointObjects
         public bool SourceNegated { get; set; }
         public bool DestinationNegated { get; set; }
 
+        public List<string> Target = new List<string>();//"install-on" parameter of CP rule
+        public bool TargetNegated { get; set; }
+
         private string _conversionComments;
         public string ConversionComments
         {
@@ -686,7 +708,7 @@ namespace CheckPointObjects
             return "add access-rule " + WriteParam("layer", Layer, "") + WriteParam("comments", Comments, "")
                 + WriteListParam("source", (from o in Source select o.Name).ToList(), true)
                 + WriteListParam("destination", (from o in Destination select o.Name).ToList(), true)
-                + WriteListParam("service", (from o in Service select o.Name).ToList(), true)
+                + WriteServicesParams()
                 + WriteParamWithIndexesForApplications()
                 + WriteListParam("time", (from o in Time select o.Name).ToList(), true)
                 + WriteParam("action", actionName, "")
@@ -697,6 +719,7 @@ namespace CheckPointObjects
                 + WriteParam("position", "top", "")
                 + WriteParam("inline-layer", SubPolicyName, "")
                 + WriteParam("name", Name, "")
+                + WriteListParam("install-on", (from o in Target select o).ToList(), true)				
                 + WriteParam("custom-fields.field-1", ConversionComments.Substring(0, Math.Min(ConversionComments.Length, 150)), "");
         }
 
@@ -736,6 +759,10 @@ namespace CheckPointObjects
             {
                 newRule.Time.Add(obj);
             }
+            foreach (string obj in Target)
+            {
+                newRule.Target.Add(obj);
+            }
             CloneApplicationsToRule(newRule);
 
             return newRule;
@@ -772,16 +799,28 @@ namespace CheckPointObjects
             {
                 return true;   // sub-policy's automatic cleanup rule
             }
+            return checkRuleType(ActionType.Drop);// user defined cleanup rule           
+        }
 
+        /// <summary>
+        /// Verifies if the rule allows all traffic (which means rule has source: Any, destination: Any, service: Any and action: Accept)
+        /// </summary>
+        /// <returns></returns>
+        public bool IsAllowAnyRule()
+        {
+            return checkRuleType(ActionType.Accept);// user defined Allow Any rule
+        }
+
+        private bool checkRuleType(ActionType actionType)
+        {
             if ((Source.Count == 1 && Source[0].Name == Any || Source.Count == 0) &&
                 (Destination.Count == 1 && Destination[0].Name == Any || Destination.Count == 0) &&
                 (Service.Count == 1 && Service[0].Name == Any || Service.Count == 0) &&
                 IsApplicationsClean() &&
-                (Action == ActionType.Drop))
+                (Action == actionType))
             {
-                return true;   // user defined cleanup rule
+                return true;
             }
-
             return false;
         }
 
@@ -801,6 +840,11 @@ namespace CheckPointObjects
         protected virtual string WriteParamWithIndexesForApplications()
         {
             return null;
+        }
+		
+        protected virtual string WriteServicesParams()
+        {
+            return WriteListParam("service", (from o in Service select o.Name).ToList(), true);
         }
 
         //CloneApplicationsToRule will be overridden in the derived class if the class needs specific clone implementation for applications
@@ -838,6 +882,11 @@ namespace CheckPointObjects
         {
             return WriteListParamWithIndexes("service", (from o in Application select o.Name).ToList(), false, Service.Count);
         }
+		
+		protected override string WriteServicesParams()
+        {            
+            return WriteListParamWithIndexes("service", (from o in Service select o.Name).ToList(), true, 0);//add indexes to services in case applications present as well
+        }
 
         //specific extension for cloning applications
         protected override void CloneApplicationsToRule(CheckPoint_Rule newRule)
@@ -864,7 +913,7 @@ namespace CheckPointObjects
         //specific extension to check if the applications list contains only ANY parameter.
         protected override bool IsApplicationsClean()
         {
-            return (Application.Count == 1 && Application[0].Name == Any);
+            return (Application.Count == 1 && Application[0].Name == Any || Application.Count == 0);
         }
 
     }
@@ -906,6 +955,8 @@ namespace CheckPointObjects
         public CheckPointObject TranslatedDestination;
         public CheckPointObject TranslatedService;
 
+        public List<string> Target = new List<string>();
+
         public CheckPoint_NAT_Rule()
         {
             Enabled = true;
@@ -923,7 +974,9 @@ namespace CheckPointObjects
                 + WriteParam("comments", Comments, "")
                 + WriteParam("method", Method.ToString().ToLower(), "")
                 + WriteParam("enabled", Enabled, true)
-                + WriteParam("position", "top", "");
+                + WriteParam("position", "top", "")
+                + WriteListParam("install-on", (from o in Target select o).ToList(), true);
+
         }
 
         public override string ToCLIScriptInstruction()
@@ -946,6 +999,7 @@ namespace CheckPointObjects
             newRule.TranslatedService = TranslatedService;
             newRule.ConvertedCommandId = ConvertedCommandId;
             newRule.ConversionIncidentType = ConversionIncidentType;
+            newRule.Target = Target;
 
             return newRule;
         }

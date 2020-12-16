@@ -39,6 +39,9 @@ namespace MigrationBase
         public const string PaloAltoConfigurationFileLabel = "PaloAlto configuration file:";
         public const string PaloAltoProduct = "PaloAlto PAN-OS to Check Point Migration Tool";
         public const string PaloAltoProductDescription = "This tool supports migration of PaloAlto PAN-OS 7.x \nand above configuration files.";
+        public const string PaloAltoPanoramaConfigurationFileLabel = "PaloAlto Panorama configuration files archive:";
+        public const string PaloAltoPanoramaProduct = "PaloAlto Panorama to Check Point Migration Tool";
+        public const string PaloAltoPanoramaProductDescription = "This tool supports migration of PaloAlto Panorama 7.x \nand above configuration files.";
         
         #endregion
 
@@ -72,6 +75,8 @@ namespace MigrationBase
         [Description("Fortinet FortiGate")]
         FortiGate,
         [Description("PaloAlto PAN-OS")]
-        PaloAlto
+        PaloAlto,
+        [Description("PaloAlto Panorama")]
+        PaloAltoPanorama
     }
 }
