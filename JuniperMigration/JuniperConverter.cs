@@ -778,14 +778,14 @@ namespace JuniperMigration
                         }
                         else
                         {
-                            if (scheduler.Name.Length <= 7)
+                            if (scheduler.Name.Length <= 8)
                                 cpTime.Name = scheduler.Name + "_" + postfixIndex++;
                             else
                             {
-                                cpTime.Name = scheduler.Name.Substring(0, 7) + "_" + postfixIndex++;
+                                cpTime.Name = scheduler.Name.Substring(0, 8) + "_" + postfixIndex++;
                                 while (cpTimeRangesNamesUniq.Contains(cpTime.Name))
                                 {
-                                    cpTime.Name = scheduler.Name.Substring(0, 7) + "_" + postfixIndex++;
+                                    cpTime.Name = scheduler.Name.Substring(0, 8) + "_" + postfixIndex++;
                                 }                                
                             }                                
                         }
@@ -820,7 +820,7 @@ namespace JuniperMigration
                 timeName = timeName.Substring(0, 11);
                 while (cpTimeRangesNamesUniq.Contains(timeName))
                 {
-                    timeName = timeName.Substring(0, 9) + "_" + postfixIndex++;
+                    timeName = timeName.Substring(0, 8) + "_" + postfixIndex++;
                 }
                 return timeName;
             }
@@ -897,11 +897,15 @@ namespace JuniperMigration
                             cpTime.RecurrenceWeekdays.Remove((CheckPoint_Time.Weekdays)daysList.IndexOf(day));//remove day from the common TO because for this day separate TO is created
                             cpTimeAdd.RecurrenceWeekdays.Add((CheckPoint_Time.Weekdays)daysList.IndexOf(day));
 
-                            cpTimeAdd.Name = cpTimeAdd.Name + "_" + postfixIndex++;
-
-                            while (cpTimeRangesNamesUniq.Contains(cpTimeAdd.Name))
+                            if (cpTimeAdd.Name.Length <= 8)
+                                cpTimeAdd.Name = cpTimeAdd.Name + "_" + postfixIndex++;
+                            else
                             {
-                                cpTimeAdd.Name = scheduler.Name.Substring(scheduler.Name.Length - 2) + "_" + postfixIndex++;
+                                cpTimeAdd.Name = cpTimeAdd.Name.Substring(0, 8) + "_" + postfixIndex++;
+                                while (cpTimeRangesNamesUniq.Contains(cpTimeAdd.Name))
+                                {
+                                    cpTimeAdd.Name = cpTimeAdd.Name.Substring(0, 8) + "_" + postfixIndex++;
+                                }
                             }
 
                             foreach (string timeRange in scheduler.patternDictionary[day])
