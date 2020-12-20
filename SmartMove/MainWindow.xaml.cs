@@ -433,6 +433,16 @@ namespace SmartMove
                     return;
                 }
             }
+			
+            string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "compressors";
+            string compressorZip = Path.Combine(compressorsDirPath, "zip.exe");
+            string compressorGtar = Path.Combine(compressorsDirPath, "gtar.exe");
+            string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
+            if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
+            {
+                ShowMessageCompressors("", MessageTypes.Error);                
+                return;
+            }
 
             Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
             EnableDisableControls(false);
@@ -862,6 +872,17 @@ namespace SmartMove
             };
 
             messageWindow.ShowDialog();
+        }
+		
+        public static void ShowMessageCompressors(string message, MessageTypes messageType)
+        {
+            var compressorsMessageWindow = new CompressorsMessageWindow
+            {
+                Message = message,
+                MessageType = messageType
+            };
+
+            compressorsMessageWindow.ShowDialog();
         }
 
         #endregion
