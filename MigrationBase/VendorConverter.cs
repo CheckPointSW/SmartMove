@@ -1898,7 +1898,7 @@ namespace MigrationBase
                 }
             }
 			
-			string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "SmartConnector" + Path.DirectorySeparatorChar + "compressors" ;
+			string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "compressors" ;
             string compressorZip = Path.Combine(compressorsDirPath, "zip.exe");
             string compressorGtar = Path.Combine(compressorsDirPath, "gtar.exe");
             string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
