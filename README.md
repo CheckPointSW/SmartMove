@@ -14,7 +14,7 @@ https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewso
 
 * Dowload the files from the support center: 
 https://supportcenter.checkpoint.com/supportcenter/portal?action=portlets.DCFileAction&eventSubmit_doGetdcdetails=&fileid=110747
-* Extract the files into this path inside your project: 'SmartMove\SmartMove\SmartConnector\compressors\\'.
+* Extract the files into this path inside your project: 'SmartMove\SmartMove\compressors\\'.
 * Clean and build the solution.
 
 
