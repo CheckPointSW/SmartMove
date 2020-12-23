@@ -14,7 +14,7 @@ https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewso
 
 * Dowload the required package from the Check Point Support Center: 
 https://supportcenter.checkpoint.com/supportcenter/portal?action=portlets.DCFileAction&eventSubmit_doGetdcdetails=&fileid=110747
-* Extract the downloaded package into this path inside your project: 'SmartMove\SmartMove\compressors\\'.
+* Extract the downloaded package into this path inside your project: ```SmartMove\SmartMove\compressors\```.
 * Rebuild the solution:
   * In Solution Explorer, choose or open the solution. 
   * On the menu bar, choose Build, and then choose Rebuild Solution.
