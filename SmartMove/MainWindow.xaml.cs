@@ -433,16 +433,6 @@ namespace SmartMove
                     return;
                 }
             }
-			
-            string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "compressors";
-            string compressorZip = Path.Combine(compressorsDirPath, "zip.exe");
-            string compressorGtar = Path.Combine(compressorsDirPath, "gtar.exe");
-            string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
-            if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
-            {
-                ShowMessageCompressors("", MessageTypes.Error);                
-                return;
-            }
 
             Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
             EnableDisableControls(false);
@@ -472,6 +462,15 @@ namespace SmartMove
                     vendorParser = new PaloAltoParser();
                     break;
                 case Vendor.PaloAltoPanorama:
+                    string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "compressors";
+                    string compressorZip = Path.Combine(compressorsDirPath, "zip.exe");
+                    string compressorGtar = Path.Combine(compressorsDirPath, "gtar.exe");
+                    string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
+                    if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
+                    {
+                        ShowMessageCompressors("", MessageTypes.Error);
+                        return;
+                    }
                     vendorParser = new PanoramaParser();
                     break;
                 default:
