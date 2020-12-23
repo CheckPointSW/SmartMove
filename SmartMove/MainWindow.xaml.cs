@@ -872,17 +872,6 @@ namespace SmartMove
 
             messageWindow.ShowDialog();
         }
-		
-        public static void ShowMessageCompressors(string message, MessageTypes messageType)
-        {
-            var compressorsMessageWindow = new CompressorsMessageWindow
-            {
-                Message = message,
-                MessageType = messageType
-            };
-
-            compressorsMessageWindow.ShowDialog();
-        }
 
         #endregion
     }

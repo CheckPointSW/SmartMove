@@ -86,16 +86,9 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="CommandLine.cs" />
-    <Compile Include="CompressorsMessageWindow.xaml.cs">
-      <DependentUpon>CompressorsMessageWindow.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="TripleClickSelectsAllTextBehavior.cs" />
     <Page Include="AboutWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="CompressorsMessageWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
