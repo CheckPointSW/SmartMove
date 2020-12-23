@@ -12,11 +12,12 @@ https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewso
 ## Smart Connector and PaloAlto Panorama Instructions
 'Smart Connector' and 'PaloAlto Panorama' are using external reasorces.
 
-* Dowload the files from the support center: 
+* Dowload the required package from the Check Point Support Center: 
 https://supportcenter.checkpoint.com/supportcenter/portal?action=portlets.DCFileAction&eventSubmit_doGetdcdetails=&fileid=110747
-* Extract the files into this path inside your project: 'SmartMove\SmartMove\compressors\\'.
-* Clean and build the solution.
-
+* Extract the downloaded package into this path inside your project: 'SmartMove\SmartMove\compressors\\'.
+* Rebuild the solution:
+  * In Solution Explorer, choose or open the solution. 
+  * On the menu bar, choose Build, and then choose Rebuild Solution.
 
 ## Development Environment
 The tool is developed using Microsoft C# language and .Net framework version 4.5 (WPF application). The project solution file is configured for Microsoft Visual Studio 2012 and above.
