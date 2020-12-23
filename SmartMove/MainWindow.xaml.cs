@@ -468,7 +468,8 @@ namespace SmartMove
                     string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
                     if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
                     {
-                        ShowMessageCompressors("", MessageTypes.Error);
+                        ShowMessage(String.Format("{1}{0}{2}", Environment.NewLine, "The system cannot find the required files. ",
+                        "Please follow"), MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions");
                         return;
                     }
                     vendorParser = new PanoramaParser();
@@ -865,9 +866,16 @@ namespace SmartMove
 
         public static void ShowMessage(string message, MessageTypes messageType)
         {
+            ShowMessage(message, messageType, null, null);
+        }
+        public static void ShowMessage(string message, MessageTypes messageType, string messageLinkText, string messageLinkValue)
+        {
             var messageWindow = new MessageWindow
             {
-                Message = message, MessageType = messageType
+                Message = message,
+                MessageType = messageType,
+                MessageLinkText = messageLinkText,
+                MessageLinkValue = messageLinkValue
             };
 
             messageWindow.ShowDialog();
