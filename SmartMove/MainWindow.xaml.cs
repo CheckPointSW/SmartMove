@@ -31,6 +31,7 @@ using MigrationBase;
 using NetScreenMigration;
 using FortiGateMigration;
 using PaloAltoMigration;
+using PanoramaPaloAltoMigration;
 
 namespace SmartMove
 {
@@ -299,6 +300,13 @@ namespace SmartMove
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
+                case Vendor.PaloAltoPanorama:
+                    ConfigurationFileLabel = SupportedVendors.PaloAltoPanoramaConfigurationFileLabel;
+                    DomainNameTB.Visibility = Visibility.Collapsed;
+                    DomainName.Visibility = Visibility.Collapsed;
+                    SkipUnusedObjects.Visibility = Visibility.Visible;
+                    ConvertUserConf.Visibility = Visibility.Visible;
+                    break;
             }
 
             ConfigFilePath.Text = SourceFolder;
@@ -336,7 +344,10 @@ namespace SmartMove
                     filter = "conf files (*.conf)|*.conf";
                     break;
                 case Vendor.PaloAlto:
-                    filter = "xml files (*.xml)|*.xml";
+                    filter = "xml files (*.xml)|*.xml|All files (*.*)|*.*";
+                    break;
+                case Vendor.PaloAltoPanorama:
+                    filter = "Gzipped tar files (*.tgz)|*.tgz";
                     break;
             }
 
@@ -450,14 +461,33 @@ namespace SmartMove
                 case Vendor.PaloAlto:
                     vendorParser = new PaloAltoParser();
                     break;
+                case Vendor.PaloAltoPanorama:
+                    vendorParser = new PanoramaParser();
+                    break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
             }
+			
+            string vendorFileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
+            string toolVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            string targetFolder = TargetFolderPath.Text + "\\";
+            bool convertNat = ConvertNATConfiguration;
+            string ldapAccountUnit = LDAPAccountUnit.Text.Trim();
 
             try
             {
                 string ciscoFile = ConfigFilePath.Text;
-                await Task.Run(() => vendorParser.Parse(ciscoFile));
+				switch (_supportedVendors.SelectedVendor)
+                {
+                    case Vendor.PaloAltoPanorama:
+                        PanoramaParser panParser = (PanoramaParser)vendorParser;                        
+                        await Task.Run(() => panParser.ParseWithTargetFolder(ciscoFile,targetFolder));
+                        break;
+                    default:
+                        await Task.Run(() => vendorParser.Parse(ciscoFile));
+                        break;
+                }
+
             }
             catch (Exception ex)
             {
@@ -515,13 +545,19 @@ namespace SmartMove
                         ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                     }
                     break;
+                case Vendor.PaloAltoPanorama:
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
+                    }
+                    else if (vendorParser.MajorVersion < 7)
+                    {
+                        ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
+                    }
+                    break;
             }
-
-            string vendorFileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
-            string toolVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            string targetFolder = TargetFolderPath.Text + "\\";
-            bool convertNat = ConvertNATConfiguration;
-            string ldapAccountUnit = LDAPAccountUnit.Text.Trim();
 
             vendorParser.Export(targetFolder + vendorFileName + ".json");
 
@@ -551,6 +587,13 @@ namespace SmartMove
                     paConverter.ConvertUserConf = ConvertUserConfiguration;
                     paConverter.LDAPAccoutUnit = ldapAccountUnit.Trim();
                     vendorConverter = paConverter;
+                    break;
+                case Vendor.PaloAltoPanorama:
+                    PanoramaConverter panoramaConverter = new PanoramaConverter();                    
+                    panoramaConverter.OptimizeConf = SkipUnusedObjectsConversion;
+                    panoramaConverter.ConvertUserConf = ConvertUserConfiguration;
+                    panoramaConverter.LDAPAccoutUnit = ldapAccountUnit.Trim();
+                    vendorConverter = panoramaConverter;
                     break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
@@ -698,6 +741,17 @@ namespace SmartMove
                     ConvertedNATPolicyRulesCount = (paConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", paConverter.RulesInNatLayer()) : " Check report.";
                     ConvertingWarningsCount = (paConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", paConverter.WarningsInConvertedPackage()) : " Check report.";
                     ConvertingErrorsCount = (paConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", paConverter.ErrorsInConvertedPackage()) : " Check report.";
+                    break;
+                case Vendor.PaloAltoPanorama:
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+
+                    PanoramaConverter panoramaConverter = (PanoramaConverter)vendorConverter;
+                    ConvertedPolicyRulesCount = (panoramaConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", panoramaConverter.RulesInConvertedPackage()) : " Check report.";
+                    ConvertedNATPolicyRulesCount = (panoramaConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", panoramaConverter.RulesInNatLayer()) : " Check report.";
+                    ConvertingWarningsCount = (panoramaConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", panoramaConverter.WarningsInConvertedPackage()) : " Check report.";
+                    ConvertingErrorsCount = (panoramaConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", panoramaConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;
                 default:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Collapsed;

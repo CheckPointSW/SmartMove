@@ -819,7 +819,7 @@ genesys-interaction-server;;
 genesys-desktop-sharing;InterCall Unified Meeting - desktop sharing;
 genesys-base;InterCall Unified Meeting;
 ggp;;ggp
-ghostsurf;ghostsurf;
+ghostsurf;;
 gifboom;GifBoom;
 gigaup;Gigaup;
 git;git;
@@ -2026,7 +2026,7 @@ rockwell-factorytalk;;
 rohc;;
 roundcube;Roundcube;
 rover;Rover;
-rpc;;DCE-RPC Protocol
+rpc;DCE-RPC Protocol;
 rpc-over-http;RPC over HTTP;
 rping;;
 rsa-securid-mfa-api;;
@@ -2251,7 +2251,7 @@ snmpv3;;snmp
 snmp-base;;snmp
 snmpv1;;snmp
 snmpv2;;snmp
-snmp-trap;SNMP Trap;
+snmp-trap;;snmp-trap
 snp;;
 snpp;SNPP Protocol;
 soap;;
