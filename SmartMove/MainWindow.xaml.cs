@@ -434,14 +434,6 @@ namespace SmartMove
                 }
             }
 
-            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-            EnableDisableControls(false);
-            ProgressPanel.Visibility = Visibility.Visible;
-            ResultsPanel.Visibility = Visibility.Collapsed;
-            OutputPanel.Visibility = Visibility.Visible;
-
-            UpdateProgress(10, "Parsing configuration file ...");
-
             VendorParser vendorParser;
 
             switch (_supportedVendors.SelectedVendor)
@@ -477,6 +469,14 @@ namespace SmartMove
                 default:
                     throw new InvalidDataException("Unexpected!!!");
             }
+			
+            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+            EnableDisableControls(false);
+            ProgressPanel.Visibility = Visibility.Visible;
+            ResultsPanel.Visibility = Visibility.Collapsed;
+            OutputPanel.Visibility = Visibility.Visible;
+
+            UpdateProgress(10, "Parsing configuration file ...");
 			
             string vendorFileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
             string toolVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
