@@ -4640,6 +4640,7 @@ namespace CiscoMigration
                     newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];
                 }
                 newRule.Layer = optimizedPackage.ParentLayer.Name;
+                newRule.ConversionComments = rule.ConversionComments;
 
                 optimizedPackage.ParentLayer.Rules.Add(newRule);
             }
