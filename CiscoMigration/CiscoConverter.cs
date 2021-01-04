@@ -4119,8 +4119,8 @@ namespace CiscoMigration
 
                             CheckPointObject newRuleDest = null;
                             bool serviceMatchedToo = false;
-							//dont't check added matched NAT rules
-                            if (!cpRule.ConversionComments.StartsWith("Matched NAT rule") && IsFirewallRuleMatchedByNATRule(parentLayerRuleZone, cpNatRule, cpRule, out newRuleDest, out serviceMatchedToo))
+
+                            if (IsFirewallRuleMatchedByNATRule(parentLayerRuleZone, cpNatRule, cpRule, out newRuleDest, out serviceMatchedToo))
                             {
                                 string translatedSourceName = (cpNatRule.TranslatedSource != null) ? cpNatRule.TranslatedSource.Name : "original";
                                 string translatedDestName = (cpNatRule.TranslatedDestination != null) ? cpNatRule.TranslatedDestination.Name : "original";
@@ -4155,19 +4155,19 @@ namespace CiscoMigration
                                     newRule.ConversionComments = "Matched NAT rule ((" + cpNatRule.ConvertedCommandId + ") translated source: " + translatedSourceName + ", translated dest: " + translatedDestName + ")";
                                 }
 
-                                 //don't add duplicated rules
+                                //don't add duplicated rules
                                 bool ruleIsAlreadyAdded = false;
                                 foreach (var rule in subPolicy.Rules)
                                 {
                                     if (newRule.CompareTo(rule)){
-										ruleIsAlreadyAdded = true;
-									}
+										                    ruleIsAlreadyAdded = true;
+									                  }
                                 }
 
                                 // Add a new rule ABOVE the matched rule.
                                 if (!ruleIsAlreadyAdded){
-									subPolicy.Rules.Insert(ruleNumber, newRule);
-								}                            
+                                    subPolicy.Rules.Insert(ruleNumber, newRule);
+                                }
 
                                 if (newRule.ConversionIncidentType != ConversionIncidentType.None)
                                 {

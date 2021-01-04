@@ -595,6 +595,39 @@ namespace CheckPointObjects
         {
             return "create time [" + Name + "]";
         }
+        
+        public CheckPoint_Time Clone()
+        {
+            var newTime = new CheckPoint_Time();
+            
+            newTime.Name = Name;
+            newTime.Comments = Comments;
+            newTime.StartNow = StartNow;
+            newTime.StartDate = StartDate;
+            newTime.StartTime = StartTime;
+            newTime.StartPosix = StartPosix;
+            newTime.EndNever = EndNever;
+            newTime.EndDate = EndDate;
+            newTime.EndTime = EndTime;
+            newTime.EndPosix = EndPosix;
+
+            newTime.HoursRangesEnabled_1 = HoursRangesEnabled_1;
+            newTime.HoursRangesFrom_1 = HoursRangesFrom_1;
+            newTime.HoursRangesTo_1 = HoursRangesTo_1;
+
+            newTime.HoursRangesEnabled_2 = HoursRangesEnabled_2;
+            newTime.HoursRangesFrom_2 = HoursRangesFrom_2;
+            newTime.HoursRangesTo_2 = HoursRangesTo_2;
+
+            newTime.HoursRangesEnabled_3 = HoursRangesEnabled_3;
+            newTime.HoursRangesFrom_3 = HoursRangesFrom_3;
+            newTime.HoursRangesTo_3 = HoursRangesTo_3;
+
+            newTime.RecurrencePattern = RecurrencePattern;
+            newTime.RecurrenceWeekdays = RecurrenceWeekdays;
+
+            return newTime;
+        }
     }
 
     public class CheckPoint_TimeGroup : CheckPointObject

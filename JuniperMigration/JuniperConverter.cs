@@ -21,6 +21,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Globalization;
 using CheckPointObjects;
 using CommonUtils;
 using MigrationBase;
@@ -744,6 +745,222 @@ namespace JuniperMigration
                 AddCheckPointObject(serviceGroup);
             }
         }
+		private void Add_Schedulers()
+        {
+            List<string> cpTimeRangesNamesUniq = new List<string>();
+            foreach (Juniper_Scheduler scheduler in _juniperParser.Filter("_Scheduler"))
+            {
+                List<CheckPoint_Time> timesList = new List<CheckPoint_Time>();//will store time-objects for separate days with different hours-ranges                              
+                
+                int postfixIndex = 1;//postfix of time-object in case Juniper scheduler is split to several objects     
+
+                if (scheduler.StartStopDates.Count == 0)
+                {// check if time object has Start Time
+                    CheckPoint_Time cpTime = new CheckPoint_Time();
+                    cpTime.Comments = "Old Time Object name: " + scheduler.Name;
+                    cpTime.StartNow = true;
+                    cpTime.EndNever = true;
+					cpTime.Name = checkTimeNameLength(scheduler.Name, cpTimeRangesNamesUniq);
+					
+                    Add_TimeObject(scheduler, cpTime, timesList, cpTimeRangesNamesUniq);
+                    foreach (CheckPoint_Time time in timesList)
+                        AddCheckPointObject(time);
+                }
+                else {
+                    foreach (string sdate in scheduler.StartStopDates) //create separate time-object for each start-date
+                    {
+                        CheckPoint_Time cpTime = new CheckPoint_Time();
+                        cpTime.Comments = "Old Time Object name: " + scheduler.Name;
+                        //2020-09-06.01:01;2020-09-08.12:30
+                        if (scheduler.StartStopDates.Count == 1)
+                        {
+                            cpTime.Name = checkTimeNameLength(scheduler.Name, cpTimeRangesNamesUniq);                       
+                        }
+                        else
+                        {
+                            if (scheduler.Name.Length <= 8)
+                                cpTime.Name = scheduler.Name + "_" + postfixIndex++;
+                            else
+                            {
+                                cpTime.Name = scheduler.Name.Substring(0, 8) + "_" + postfixIndex++;
+                                while (cpTimeRangesNamesUniq.Contains(cpTime.Name))
+                                {
+                                    cpTime.Name = scheduler.Name.Substring(0, 8) + "_" + postfixIndex++;
+                                }                                
+                            }                                
+                        }
+                        cpTime.StartNow = false;
+                        DateTime date = DateTime.ParseExact(sdate.Substring(0, sdate.IndexOf(";")), "yyyy-MM-dd.HH:mm", CultureInfo.InvariantCulture);
+                        cpTime.StartDate = date.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture).Trim();
+                        cpTime.StartTime = date.ToString("HH:mm").Trim();
+
+                        cpTime.EndNever = false;
+                        date = DateTime.ParseExact(sdate.Substring(sdate.IndexOf(";") + 1), "yyyy-MM-dd.HH:mm", CultureInfo.InvariantCulture);
+                        cpTime.EndDate = date.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture).Trim();
+                        cpTime.EndTime = date.ToString("HH:mm").Trim();
+                        
+                        Add_TimeObject(scheduler, cpTime, timesList, cpTimeRangesNamesUniq);
+
+                        foreach (CheckPoint_Time time in timesList)
+                            AddCheckPointObject(time);
+                    }                    
+                }  
+            }
+        }
+
+        /// <summary>
+        /// Check the length of time object name.
+        /// CheckPoint time object name is limited to 11 chars. In case it's more than 11 it's either truncated or truncated and completed with postfix so that to be unique.
+        /// </summary>         
+        private string checkTimeNameLength(string timeName, List<string> cpTimeRangesNamesUniq)
+        {
+            int postfixIndex = 1;
+            if (timeName.Length > 11)
+            {
+                timeName = timeName.Substring(0, 11);
+                while (cpTimeRangesNamesUniq.Contains(timeName))
+                {
+                    timeName = timeName.Substring(0, 8) + "_" + postfixIndex++;
+                }
+                return timeName;
+            }
+            else
+            {
+                return timeName;
+            }
+        }
+
+        private List<CheckPoint_Time> Add_TimeObject(Juniper_Scheduler scheduler, CheckPoint_Time cpTime, List<CheckPoint_Time> timesList, List<string> cpTimeRangesNamesUniq)
+        {
+            List<string> daysList = new List<string> { "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday" };
+
+            int postfixIndex = 1;//postfix of time-object in case Juniper scheduler is split to several objects
+
+            bool dailyIsConfigured = false;
+
+            bool daysAreAddedToPattern = false;//used for exclude statement. 
+            //In case some day is excluded from the scheduler, RecurrencePattern is changed to weekly and all days except excluded day are added to RecurrenceWeekdays (need to be done once)
+
+            if (scheduler.patternDictionary.Keys.Count != 0)
+            {
+                foreach (var day in scheduler.patternDictionary.Keys)
+                {
+                    if (day.Equals("daily"))
+                    {
+                        dailyIsConfigured = true;
+                        cpTime.RecurrencePattern = CheckPoint_Time.RecurrencePatternEnum.Daily;
+
+                        processHoursRanges(scheduler.patternDictionary[day], cpTime);
+                        
+                        timesList.Add(cpTime);
+                        cpTimeRangesNamesUniq.Add(cpTime.Name);
+                    }
+                    else
+                    {
+                        cpTime.RecurrencePattern = CheckPoint_Time.RecurrencePatternEnum.Weekly;
+
+                        if (scheduler.patternDictionary[day][0].Equals("all-day"))
+                        {                            
+                            cpTime.RecurrenceWeekdays.Add((CheckPoint_Time.Weekdays)daysList.IndexOf(day));
+                            
+                            timesList.Add(cpTime);
+                            cpTimeRangesNamesUniq.Add(cpTime.Name);
+                        }
+                        else if (scheduler.patternDictionary[day][0].Equals("exclude"))
+                        {
+                            if (!daysAreAddedToPattern && dailyIsConfigured)
+                            {                                
+                                if (!cpTime.RecurrenceWeekdays.Contains(CheckPoint_Time.Weekdays.Sun))
+                                    cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Sun);
+                                if (!cpTime.RecurrenceWeekdays.Contains(CheckPoint_Time.Weekdays.Mon))
+                                    cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Mon);
+                                if (!cpTime.RecurrenceWeekdays.Contains(CheckPoint_Time.Weekdays.Tue))
+                                    cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Tue);
+                                if (!cpTime.RecurrenceWeekdays.Contains(CheckPoint_Time.Weekdays.Wed))
+                                    cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Wed);
+                                if (!cpTime.RecurrenceWeekdays.Contains(CheckPoint_Time.Weekdays.Thu))
+                                    cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Thu);
+                                if (!cpTime.RecurrenceWeekdays.Contains(CheckPoint_Time.Weekdays.Fri))
+                                    cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Fri);
+                                if (!cpTime.RecurrenceWeekdays.Contains(CheckPoint_Time.Weekdays.Sat))
+                                    cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Sat);
+                                daysAreAddedToPattern = true;
+                            }
+                            cpTime.RecurrenceWeekdays.Remove((CheckPoint_Time.Weekdays)daysList.IndexOf(day));
+                        }
+                        else
+                        {
+                            CheckPoint_Time cpTimeAdd = new CheckPoint_Time();//create separate time-object for each day in case hours ranges for day are set                                              
+
+                            cpTimeAdd = cpTime.Clone();
+
+                            cpTime.RecurrenceWeekdays.Remove((CheckPoint_Time.Weekdays)daysList.IndexOf(day));//remove day from the common TO because for this day separate TO is created
+                            cpTimeAdd.RecurrenceWeekdays.Add((CheckPoint_Time.Weekdays)daysList.IndexOf(day));
+
+                            if (cpTimeAdd.Name.Length <= 8)
+                                cpTimeAdd.Name = cpTimeAdd.Name + "_" + postfixIndex++;
+                            else
+                            {
+                                cpTimeAdd.Name = cpTimeAdd.Name.Substring(0, 8) + "_" + postfixIndex++;
+                                while (cpTimeRangesNamesUniq.Contains(cpTimeAdd.Name))
+                                {
+                                    cpTimeAdd.Name = cpTimeAdd.Name.Substring(0, 8) + "_" + postfixIndex++;
+                                }
+                            }
+
+                            foreach (string timeRange in scheduler.patternDictionary[day])
+                            {
+                                processHoursRanges(scheduler.patternDictionary[day], cpTimeAdd);
+                            }
+                            
+                            timesList.Add(cpTimeAdd);
+                            cpTimeRangesNamesUniq.Add(cpTimeAdd.Name);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                cpTime.RecurrencePattern = CheckPoint_Time.RecurrencePatternEnum.None;
+                timesList.Add(cpTime);
+                cpTimeRangesNamesUniq.Add(cpTime.Name);
+            }
+
+            return timesList;                   
+        }
+
+        /// <summary>
+        /// Convert Juniper scheduler start- and stop-time (in format HH:MM:SS) into CheckPoint hours-ranges parameter in required format (HH:MM)
+        /// </summary>
+        private void processHoursRanges(List<string> timeRanges, CheckPoint_Time cpTime)
+        {
+            foreach (string timeRange in timeRanges)
+            {
+                if (timeRange.IndexOf(";") != -1)
+                {
+                    string startTime = timeRange.Substring(0, timeRange.IndexOf(";"));                    
+                    string stopTime = timeRange.Substring(timeRange.IndexOf(";") + 1);
+                    
+                    TimeSpan timeCheck0 = TimeSpan.ParseExact(startTime, "hh\\:mm\\:ss", CultureInfo.InvariantCulture);
+                    TimeSpan timeCheck1 = TimeSpan.ParseExact(stopTime, "hh\\:mm\\:ss", CultureInfo.InvariantCulture);
+
+                    if (TimeSpan.Compare(timeCheck0, timeCheck1) == -1)
+                    {
+                        if (timeRanges.IndexOf(timeRange) == 0)
+                        {
+                            cpTime.HoursRangesEnabled_1 = true;                                                        
+                            cpTime.HoursRangesFrom_1 = timeCheck0.ToString(@"hh\:mm").Trim();                            
+                            cpTime.HoursRangesTo_1 = timeCheck1.ToString(@"hh\:mm").Trim();
+                        } else
+                        {
+                            cpTime.HoursRangesEnabled_2 = true;                            
+                            cpTime.HoursRangesFrom_2 = timeCheck0.ToString(@"hh\:mm").Trim();                            
+                            cpTime.HoursRangesTo_2 = timeCheck1.ToString(@"hh\:mm").Trim();
+                        }                        
+                    }                  
+                }
+            }            
+        }
 
         private void Add_Package()
         {
@@ -1127,6 +1344,18 @@ namespace JuniperMigration
                 }
 
                 cpRule.Destination.Add(cpObject);
+            }
+			
+			//add scheduler
+            foreach (var scheduler in juniperRule.Scheduler)
+            {   
+                cpObject = GetCheckPointObjectOrCreateDummy(scheduler,
+                                                        "Time",
+                                                        juniperRule,
+                                                        "Not applying time-range objects.",
+                                                        "Appropriate time object should be added manually.");
+                cpRule.Time.Add(cpObject);                
+              
             }
 
             // Avoid general "icmp-proto" service duplicates
@@ -3475,6 +3704,9 @@ namespace JuniperMigration
 
                     cpDummyObject = new CheckPoint_ServiceGroup { Name = "_Err_in_service-line_" + juniperObject.LineNumber };
                     break;
+				case "Time":
+                    cpDummyObject = new CheckPoint_Time { Name = cpObjectName};
+                    break;
             }
 
             if (cpDummyObject != null)
@@ -3520,7 +3752,7 @@ namespace JuniperMigration
             {
                 _duplicateNamesLookup.Add(cpObject.Name, new DuplicateNameInfo(true));
             }
-
+            Add_Schedulers();
             Add_NetworkObjects();
             Add_InterfacesAndRoutes();
             Add_or_Modify_InterfaceNetworkGroups();

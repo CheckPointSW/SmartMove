@@ -18,6 +18,7 @@ limitations under the License.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -712,6 +713,62 @@ namespace JuniperMigration
             }
         }
     }
+	
+	public class Juniper_Scheduler : JuniperObject
+    {        
+        public List<string> StartStopDates = new List<string>();
+
+        public Dictionary<string, List<string>> patternDictionary = new Dictionary<string, List<string>>();               
+        
+        public override void Parse(XElement objectNode, string zoneName)
+        {
+            base.Parse(objectNode, zoneName);            
+
+            var startDates = objectNode.Elements("start-date").ToList();
+                       
+            if (startDates.Count > 0)
+            {                
+                List<string> startStop = new List<string>();
+                string startStopDateString;
+                foreach (var startDate in startDates)
+                {
+                    startStopDateString = startDate.Element("start-date").Value + ";" + startDate.Element("stop-date").Value;                 
+                    StartStopDates.Add(startStopDateString);
+                }
+            }
+            
+            List<string> days = new List<string> { "daily", "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday" };            
+
+            foreach (string dayKey in days)
+            {
+                List<string> daysValue = new List<string>();
+                var day = objectNode.Element(dayKey);
+                if (day != null)
+                {
+                    if (day.Element("all-day") != null)
+                    {                        
+                        daysValue.Add("all-day");                        
+                    }
+                    else if (day.Element("exclude") != null)
+                    {                        
+                        daysValue.Add("exclude");                        
+                    }
+                    else if (day.Elements("start-time").ToList() != null)
+                    {
+                        List<string> startStopTime = new List<string>();
+                        string startStopTimeString;
+                        foreach (var startTime in day.Elements("start-time").ToList())
+                        {
+                            startStopTimeString = startTime.Element("start-time-value").Value + ";" + startTime.Element("stop-time").Value;
+                            startStopTime.Add(startStopTimeString);
+                        }                                        
+                        daysValue.AddRange(startStopTime);                        
+                    }
+                    patternDictionary.Add(dayKey, daysValue);
+                }
+            }      
+        }
+    }
 
     public class Juniper_PolicyRule : JuniperObject
     {
@@ -725,6 +782,8 @@ namespace JuniperMigration
         public bool DestinationNegate { get; set; }
         public bool Log { get; set; }
         public ActionType Action { get; set; }
+        public List<string> Scheduler = new List<string>();
+
 
         public override void Parse(XElement objectNode, string zoneName)
         {
@@ -746,6 +805,16 @@ namespace JuniperMigration
                 ConversionIncidentMessage = "Missing action information for policy rule object.";
                 Console.WriteLine(ConversionIncidentMessage);
                 return;
+            }
+			
+			//add scheduler
+            var schedulerNode = objectNode.Elements("scheduler-name");
+
+            if (schedulerNode != null)
+            {
+                foreach (var scheduler in schedulerNode) { 
+                Scheduler.Add(scheduler.Value);                
+                }
             }
 
             var inactiveAttribute = objectNode.Attribute("inactive");
