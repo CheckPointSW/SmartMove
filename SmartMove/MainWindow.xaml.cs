@@ -434,14 +434,6 @@ namespace SmartMove
                 }
             }
 
-            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-            EnableDisableControls(false);
-            ProgressPanel.Visibility = Visibility.Visible;
-            ResultsPanel.Visibility = Visibility.Collapsed;
-            OutputPanel.Visibility = Visibility.Visible;
-
-            UpdateProgress(10, "Parsing configuration file ...");
-
             VendorParser vendorParser;
 
             switch (_supportedVendors.SelectedVendor)
@@ -462,11 +454,29 @@ namespace SmartMove
                     vendorParser = new PaloAltoParser();
                     break;
                 case Vendor.PaloAltoPanorama:
+                    string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "compressors";
+                    string compressorZip = Path.Combine(compressorsDirPath, "zip.exe");
+                    string compressorGtar = Path.Combine(compressorsDirPath, "gtar.exe");
+                    string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
+                    if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
+                    {
+                        ShowMessage(String.Format("{1}{0}{2}", Environment.NewLine, "The system cannot find the required files. ",
+                        "Please follow"), MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions");
+                        return;
+                    }
                     vendorParser = new PanoramaParser();
                     break;
                 default:
                     throw new InvalidDataException("Unexpected!!!");
             }
+			
+            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+            EnableDisableControls(false);
+            ProgressPanel.Visibility = Visibility.Visible;
+            ResultsPanel.Visibility = Visibility.Collapsed;
+            OutputPanel.Visibility = Visibility.Visible;
+
+            UpdateProgress(10, "Parsing configuration file ...");
 			
             string vendorFileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
             string toolVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -856,9 +866,16 @@ namespace SmartMove
 
         public static void ShowMessage(string message, MessageTypes messageType)
         {
+            ShowMessage(message, messageType, null, null);
+        }
+        public static void ShowMessage(string message, MessageTypes messageType, string messageLinkText, string messageLinkValue)
+        {
             var messageWindow = new MessageWindow
             {
-                Message = message, MessageType = messageType
+                Message = message,
+                MessageType = messageType,
+                MessageLinkText = messageLinkText,
+                MessageLinkValue = messageLinkValue
             };
 
             messageWindow.ShowDialog();
