@@ -254,9 +254,9 @@ namespace JuniperMigration
                     }
                     else
                     {
-                    AddCheckPointObject(cpHost);
+                        AddCheckPointObject(cpHost);
+                    }
                 }
-            }
             }
 
             foreach (Juniper_Network network in _juniperParser.Filter("_Network"))
@@ -278,9 +278,9 @@ namespace JuniperMigration
                     }
                     else
                     {
-                    AddCheckPointObject(cpNetwork);
+                        AddCheckPointObject(cpNetwork);
+                    }
                 }
-            }
             }
 
             foreach (Juniper_Range range in _juniperParser.Filter("_Range"))
@@ -302,9 +302,9 @@ namespace JuniperMigration
                     }
                     else
                     {
-                    AddCheckPointObject(cpRange);
+                        AddCheckPointObject(cpRange);
+                    }
                 }
-            }
             }
 
             var groupsWithNonCreatedMembers = new List<CheckPoint_NetworkGroup>();
@@ -1081,7 +1081,7 @@ namespace JuniperMigration
             {
                 bool isZonelessGlobalRule = globalPolicyRule.SourceZones.Count == 1 && globalPolicyRule.SourceZones[0] == JuniperObject.Any &&
                                             globalPolicyRule.DestinationZones.Count == 1 && globalPolicyRule.DestinationZones[0] == JuniperObject.Any;
-                if(isZonelessAllGlobalRules && !isZonelessGlobalRule)
+                if (isZonelessAllGlobalRules && !isZonelessGlobalRule)
                 {
                     isZonelessAllGlobalRules = false;
                 }
@@ -1201,7 +1201,7 @@ namespace JuniperMigration
                             }
                         }
                     }
-					
+
                     // Append the global policy rules BELOW the existing sub-policies.
                     bool isZonelessGlobalRule = globalPolicyRule.SourceZones.Count == 1 && globalPolicyRule.SourceZones[0] == JuniperObject.Any &&
                                                 globalPolicyRule.DestinationZones.Count == 1 && globalPolicyRule.DestinationZones[0] == JuniperObject.Any;
@@ -1346,7 +1346,7 @@ namespace JuniperMigration
                 cpRule.Destination.Add(cpObject);
             }
 			
-			//add scheduler
+            //add scheduler
             foreach (var scheduler in juniperRule.Scheduler)
             {   
                 cpObject = GetCheckPointObjectOrCreateDummy(scheduler,
@@ -3704,7 +3704,7 @@ namespace JuniperMigration
 
                     cpDummyObject = new CheckPoint_ServiceGroup { Name = "_Err_in_service-line_" + juniperObject.LineNumber };
                     break;
-				case "Time":
+                case "Time":
                     cpDummyObject = new CheckPoint_Time { Name = cpObjectName};
                     break;
             }
@@ -3793,7 +3793,7 @@ namespace JuniperMigration
             ConversionIncidentCategoriesCount = _conversionIncidents.GroupBy(error => error.Title).Count();
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
 			
-			CreateSmartConnector();
+            CreateSmartConnector();
         }
         
         public override int RulesInConvertedPackage()
@@ -4101,7 +4101,7 @@ namespace JuniperMigration
                                     file.WriteLine("      <td class='comments'>" + subRule.Comments + "</td>");
                                     file.WriteLine("      <td class='comments'>" + subRule.ConversionComments + "</td>");
                                     file.WriteLine("  </tr>");
-									
+
                                     if(isSubSubPolicy)
                                     {
                                         foreach (CheckPoint_Layer subSubPolicy in package.SubPolicies)

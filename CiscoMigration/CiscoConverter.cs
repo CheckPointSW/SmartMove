@@ -521,7 +521,7 @@ namespace CiscoMigration
         private bool _isIntraInterfaceTrafficAllowed = false;
 
         private Dictionary<string, List<string>> _ciscoTimeNamesToCpTimeNamesDict = new Dictionary<string, List<string>>();
-		
+
         private enum CheckPointDummyObjectType { Host, NetworkGroup, ServiceGroup, OtherService, TimeGroup };
 
         private IEnumerable<CiscoCommand> CiscoAllCommands
@@ -571,7 +571,7 @@ namespace CiscoMigration
                 return _ciscoInterfaceCommands ?? (_ciscoInterfaceCommands = _ciscoParser.Filter("interface"));
             }
         }
-		
+
         private IEnumerable<CiscoCommand> CisciTimeRangeCommands
         {
             get
@@ -579,7 +579,7 @@ namespace CiscoMigration
                 return _ciscoTimeRangeCommands ?? (_ciscoTimeRangeCommands = _ciscoParser.Filter("time-range"));
             }
         }
-		
+
         private IEnumerable<CiscoCommand> CiscoClassMapCommands
         {
             get
@@ -1682,7 +1682,7 @@ namespace CiscoMigration
                 }
             }
         }
-		
+
         private void Add_TimeRanges()
         {
             IEnumerable<CiscoCommand> caTimesList = CisciTimeRangeCommands;
@@ -1735,7 +1735,7 @@ namespace CiscoMigration
                         }
 
                         string periodic = null;
-                        if(caTime.PeriodicsList.Count == 1)
+                        if (caTime.PeriodicsList.Count == 1)
                         {
                             periodic = caTime.PeriodicsList[0];
                         }
@@ -1745,15 +1745,15 @@ namespace CiscoMigration
                 }
             }
         }
-		
+
         private void Add_TimeRange(int caTimeId, string caTimeRangeName, string cpTimeRangeName, string cpStartDateTime, string cpEndDateTime, string period = null)
         {
-            if(!caTimeRangeName.Equals(cpTimeRangeName))
+            if (!caTimeRangeName.Equals(cpTimeRangeName))
             {
                 _conversionIncidents.Add(
                     new ConversionIncident(
-                        caTimeId, 
-                        "TITLE: object is renamed", 
+                        caTimeId,
+                        "TITLE: object is renamed",
                         "DESCRIPTION: object renamed from " + caTimeRangeName + " to " + cpTimeRangeName, 
                         ConversionIncidentType.Informative));
             }
@@ -1903,7 +1903,7 @@ namespace CiscoMigration
         private CheckPoint_Time.Weekdays WeekDayFromCiscoToCP(string weekDayCisco)
         {
             CheckPoint_Time.Weekdays weekDayCP;
-            switch(weekDayCisco)
+            switch (weekDayCisco)
             {
                 case "Monday": weekDayCP = CheckPoint_Time.Weekdays.Mon; break;
                 case "Tuesday": weekDayCP = CheckPoint_Time.Weekdays.Tue; break;
@@ -1916,7 +1916,7 @@ namespace CiscoMigration
 
             return weekDayCP;
         }
-		
+
         private void Add_Package()
         {
             var cpPackage = new CheckPoint_Package();
@@ -2437,7 +2437,7 @@ namespace CiscoMigration
                 _ciscoTimeNamesToCpTimeNamesDict.TryGetValue(ciscoAcl.TimeRangeName, out cpTimeNamesList);
                 if (cpTimeNamesList != null)
                 {
-                    foreach(string cpTimeName in cpTimeNamesList)
+                    foreach (string cpTimeName in cpTimeNamesList)
                     {
                         cpObject = GetCheckPointObjectOrCreateDummy(cpTimeName,
                                                                 CheckPointDummyObjectType.TimeGroup,
@@ -2874,7 +2874,7 @@ namespace CiscoMigration
                             hasGeneralIcmpServiceMember = true;
                         }
 
-                        var dummyObjectType = (ciscoAcl.DestinationProperties.Protocol == ProtocolType.KnownOtherIpProtocol) 
+                        var dummyObjectType = (ciscoAcl.DestinationProperties.Protocol == ProtocolType.KnownOtherIpProtocol)
                             ? CheckPointDummyObjectType.OtherService
                             : CheckPointDummyObjectType.ServiceGroup;
 
@@ -3130,9 +3130,9 @@ namespace CiscoMigration
                     {
                         var otherCiscoInterface = (Cisco_Interface)command;
 
-                        if (string.IsNullOrEmpty(otherCiscoInterface.CiscoId) || 
-                            otherCiscoInterface.CiscoId == ciscoInterface.CiscoId || 
-                            !otherCiscoInterface.HasValidIpAddress() || 
+                        if (string.IsNullOrEmpty(otherCiscoInterface.CiscoId) ||
+                            otherCiscoInterface.CiscoId == ciscoInterface.CiscoId ||
+                            !otherCiscoInterface.HasValidIpAddress() ||
                             otherCiscoInterface.ManagementOnly)
                         {
                             continue;
@@ -3523,8 +3523,8 @@ namespace CiscoMigration
                                                                   (cpNatRule.Service != null && cpNatRule.Service.ConversionIncidentType != ConversionIncidentType.None) ||
                                                                   (cpNatRule.TranslatedService != null && cpNatRule.TranslatedService.ConversionIncidentType != ConversionIncidentType.None);
 
-                        if (cpNatRule.ConversionIncidentType != ConversionIncidentType.None || 
-                            ciscoNat.ConversionIncidentType != ConversionIncidentType.None || 
+                        if (cpNatRule.ConversionIncidentType != ConversionIncidentType.None ||
+                            ciscoNat.ConversionIncidentType != ConversionIncidentType.None ||
                             natRuleObjectHasConversionIncident)
                         {
                             _hasNATConversionIncident = true;
@@ -3799,7 +3799,7 @@ namespace CiscoMigration
                 // we should convert to dynamic NAT rule!!!
                 if (cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Static)
                 {
-                    if ((cpNatRule.Source.GetType() == typeof(CheckPoint_Network) || cpNatRule.Source.GetType() == typeof(CheckPoint_NetworkGroup)) && 
+                    if ((cpNatRule.Source.GetType() == typeof(CheckPoint_Network) || cpNatRule.Source.GetType() == typeof(CheckPoint_NetworkGroup)) &&
                         cpNatRule.TranslatedSource != null && cpNatRule.TranslatedSource.GetType() == typeof(CheckPoint_Host))
                     {
                         cpNatRule.Method = CheckPoint_NAT_Rule.NatMethod.Hide;
@@ -3816,8 +3816,8 @@ namespace CiscoMigration
                                                           (cpNatRule.Service != null && cpNatRule.Service.ConversionIncidentType != ConversionIncidentType.None) ||
                                                           (cpNatRule.TranslatedService != null && cpNatRule.TranslatedService.ConversionIncidentType != ConversionIncidentType.None);
 
-                if (cpNatRule.ConversionIncidentType != ConversionIncidentType.None || 
-                    ciscoNat.ConversionIncidentType != ConversionIncidentType.None || 
+                if (cpNatRule.ConversionIncidentType != ConversionIncidentType.None ||
+                    ciscoNat.ConversionIncidentType != ConversionIncidentType.None ||
                     natRuleObjectHasConversionIncident)
                 {
                     _hasNATConversionIncident = true;
@@ -3877,7 +3877,7 @@ namespace CiscoMigration
 
                     _cpPreorderedNatRules.Add(cpNatMirrorRule);
 
-                    if (cpNatMirrorRule.ConversionIncidentType != ConversionIncidentType.None || 
+                    if (cpNatMirrorRule.ConversionIncidentType != ConversionIncidentType.None ||
                         ciscoNat.ConversionIncidentType != ConversionIncidentType.None)
                     {
                         _hasNATConversionIncident = true;
@@ -4090,7 +4090,7 @@ namespace CiscoMigration
                         for (int ruleNumber = 0; ruleNumber < subPolicy.Rules.Count; ruleNumber++)
                         {
                             var cpRule = subPolicy.Rules[ruleNumber];
-							
+
                             // Do not match on cleanup rule
                             if (cpRule.IsCleanupRule())
                             {
@@ -4159,13 +4159,15 @@ namespace CiscoMigration
                                 bool ruleIsAlreadyAdded = false;
                                 foreach (var rule in subPolicy.Rules)
                                 {
-                                    if (newRule.CompareTo(rule)){
-										                    ruleIsAlreadyAdded = true;
-									                  }
+                                    if (newRule.CompareTo(rule))
+                                    {
+                                        ruleIsAlreadyAdded = true;
+                                    }
                                 }
 
                                 // Add a new rule ABOVE the matched rule.
-                                if (!ruleIsAlreadyAdded){
+                                if (!ruleIsAlreadyAdded)
+                                {
                                     subPolicy.Rules.Insert(ruleNumber, newRule);
                                 }
 
@@ -4401,14 +4403,14 @@ namespace CiscoMigration
             CheckPoint_Package regularPackage = _cpPackages[0];
 
             var optimizedPackage = new CheckPoint_Package();
-            optimizedPackage.Name = _policyPackageOptimizedName;            
-            optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;            
-            optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;            
+            optimizedPackage.Name = _policyPackageOptimizedName;
+            optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;
+            optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;
 
             var regular2OptimizedLayers = new Dictionary<string, string>();
 
-            foreach (CheckPoint_Layer layer in regularPackage.SubPolicies) 
-            {                
+            foreach (CheckPoint_Layer layer in regularPackage.SubPolicies)
+            {
                 string optimizedSubPolicyName = layer.Name + "_opt";
                 
                 CheckPoint_Layer optimizedLayer = RuleBaseOptimizer.Optimize(layer, optimizedSubPolicyName);
@@ -4429,12 +4431,13 @@ namespace CiscoMigration
 
             foreach (CheckPoint_Rule rule in regularPackage.ParentLayer.Rules)
             {
-                CheckPoint_Rule newRule = rule.Clone();                
+                CheckPoint_Rule newRule = rule.Clone();
                 if (newRule.Action == CheckPoint_Rule.ActionType.SubPolicy)
-                {                    
-                    newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];                    
+                {
+                    newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];
                 }
-                newRule.Layer = optimizedPackage.ParentLayer.Name;                
+                newRule.Layer = optimizedPackage.ParentLayer.Name;
+
                 optimizedPackage.ParentLayer.Rules.Add(newRule);
             }
 
@@ -4687,8 +4690,9 @@ namespace CiscoMigration
             const string ruleIdPrefix = "rule_";
 
             foreach (CheckPoint_Package package in _cpPackages)
-            {                
-                string filename = _targetFolder + "\\" + package.Name + ".html";                
+            {
+                string filename = _targetFolder + "\\" + package.Name + ".html";
+
                 using (var file = new StreamWriter(filename, false))
                 {
                     var rulesWithConversionErrors = new Dictionary<string, CheckPoint_Rule>();
@@ -4706,7 +4710,7 @@ namespace CiscoMigration
                     int ruleNumber = 1;
 
                     foreach (CheckPoint_Rule rule in package.ParentLayer.Rules)
-                    {                        
+                    {
                         bool isSubPolicy = false;
                         string action = "";
                         string actionStyle = "";
@@ -4720,7 +4724,7 @@ namespace CiscoMigration
                                 actionStyle = rule.Action.ToString().ToLower();
                                 break;
 
-                            case CheckPoint_Rule.ActionType.SubPolicy:                                
+                            case CheckPoint_Rule.ActionType.SubPolicy:
                                 isSubPolicy = true;
                                 action = "Sub-policy: " + rule.SubPolicyName;
                                 actionStyle = "";
@@ -4767,13 +4771,13 @@ namespace CiscoMigration
                         file.WriteLine("  </tr>");
 
                         if (isSubPolicy)
-                        {                            
+                        {
                             foreach (CheckPoint_Layer subPolicy in package.SubPolicies)
                             {
                                 int subRuleNumber = 1;
-                                
+
                                 foreach (CheckPoint_Rule subRule in subPolicy.Rules)
-                                {                                    
+                                {
                                     if (subRule.Layer == rule.SubPolicyName)
                                     {
                                         bool isSubSubPolicy = false;

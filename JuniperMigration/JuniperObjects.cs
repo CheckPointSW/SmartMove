@@ -714,7 +714,7 @@ namespace JuniperMigration
         }
     }
 	
-	public class Juniper_Scheduler : JuniperObject
+    public class Juniper_Scheduler : JuniperObject
     {        
         public List<string> StartStopDates = new List<string>();
 
@@ -807,7 +807,7 @@ namespace JuniperMigration
                 return;
             }
 			
-			//add scheduler
+            //add scheduler
             var schedulerNode = objectNode.Elements("scheduler-name");
 
             if (schedulerNode != null)

@@ -487,7 +487,7 @@ namespace SmartMove
             try
             {
                 string ciscoFile = ConfigFilePath.Text;
-				switch (_supportedVendors.SelectedVendor)
+		switch (_supportedVendors.SelectedVendor)
                 {
                     case Vendor.PaloAltoPanorama:
                         PanoramaParser panParser = (PanoramaParser)vendorParser;                        

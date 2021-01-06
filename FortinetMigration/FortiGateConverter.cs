@@ -1009,7 +1009,7 @@ namespace FortiGateMigration
             _warningsConvertedPackage = _warningsList.Count;
             _errorsConvertedPackage = _errorsList.Count;
 			
-			CreateSmartConnector();
+            CreateSmartConnector();
 
             // to clean; must be the last!!!
             _cpObjects.ClearRepository();

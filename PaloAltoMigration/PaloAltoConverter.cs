@@ -997,7 +997,7 @@ namespace PaloAltoMigration
             _warningsConvertedPackage = _warningsList.Count;
             _errorsConvertedPackage = _errorsList.Count;
 
-			CreateSmartConnector();
+            CreateSmartConnector();
 
             // to clean; must be the last!!!
             _cpObjects.ClearRepository();
@@ -1074,7 +1074,7 @@ namespace PaloAltoMigration
                 _warningsList.Add(objName + " " + objType.Trim() + " was renamed to " + objNameNew);
                 objName = objNameNew;
             }
-			
+
             objNameNew = GetSafeName(objName);
             if(!objNameNew.Equals(objName))
             {
@@ -2366,7 +2366,7 @@ namespace PaloAltoMigration
                     applicationsFiltering = true;
                     foreach (string paAppName in paSecurityRuleEntry.ApplicationList)
                     {
-						if (cpServicesGroupsDict.ContainsKey(paAppName + "-svc"))//to add mapped PA services from CP application group entry
+                        if (cpServicesGroupsDict.ContainsKey(paAppName + "-svc"))//to add mapped PA services from CP application group entry
                         {
                             cpRuleServiceList.Add(cpServicesGroupsDict[paAppName + "-svc"]);
                         }
@@ -2818,7 +2818,7 @@ namespace PaloAltoMigration
                                     {
                                         cpSourceTranslationList.Add(cpNetGroupsDict[translatedAddress]);
                                     }
-									else if (Regex.IsMatch(translatedAddress, RE_NET_ADDRESS)) //create address or network object for translated address if they were not created before
+                                    else if (Regex.IsMatch(translatedAddress, RE_NET_ADDRESS)) //create address or network object for translated address if they were not created before
                                     {
                                         if (!translatedAddress.Contains("/") || translatedAddress.Contains(NETWORK_NETMASK_WS))
                                         {

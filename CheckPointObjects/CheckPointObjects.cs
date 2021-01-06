@@ -299,7 +299,7 @@ namespace CheckPointObjects
     {
         public List<string> Members = new List<string>();
 		
-		public bool IsPanoramaDeviceGroup = false;
+	public bool IsPanoramaDeviceGroup = false;
 
         /// <summary>
         /// This property is used to overcome the problematic order of objects creation for 
@@ -595,8 +595,8 @@ namespace CheckPointObjects
         {
             return "create time [" + Name + "]";
         }
-        
-        public CheckPoint_Time Clone()
+		
+	public CheckPoint_Time Clone()
         {
             var newTime = new CheckPoint_Time();
             
@@ -916,7 +916,7 @@ namespace CheckPointObjects
             return WriteListParamWithIndexes("service", (from o in Application select o.Name).ToList(), false, Service.Count);
         }
 		
-		protected override string WriteServicesParams()
+	protected override string WriteServicesParams()
         {            
             return WriteListParamWithIndexes("service", (from o in Service select o.Name).ToList(), true, 0);//add indexes to services in case applications present as well
         }
