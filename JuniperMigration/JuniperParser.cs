@@ -56,6 +56,7 @@ namespace JuniperMigration
             ParseInterfaces(configNode);
             ParseRoutes(configNode);
             ParseApplicationsAndGroups(configNode);
+            parseSchedulers(configNode);			
             ParsePolicy(configNode);
             ParseNat(configNode);
             AttachRoutesToInterfacesTopology();
@@ -382,6 +383,18 @@ namespace JuniperMigration
                 juniperObject = new Juniper_Application();
                 juniperObject.Parse(application, null);
                 _juniperObjects.Add(juniperObject);
+            }
+        }
+		
+        private void parseSchedulers(XElement configNode)
+        {
+            var schedulers = configNode.XPathSelectElements("./schedulers/scheduler");
+            foreach (var scheduler in schedulers)
+            {
+                JuniperObject juniperScheduler = new Juniper_Scheduler();                                
+                
+                juniperScheduler.Parse(scheduler, null);
+                _juniperObjects.Add(juniperScheduler);
             }
         }
 

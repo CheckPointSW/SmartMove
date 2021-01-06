@@ -85,8 +85,12 @@
                             </Style>
                         </Image.Style>
                     </Image>
-                    <TextBlock Grid.Column="1" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Message}"
-                               Style="{StaticResource NormalTextBloclStyle}" Margin="0,20,20,20"/>
+                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="0,20,20,20">
+                        <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Message}"/>
+                        <Hyperlink NavigateUri="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageLinkValue}" Click="Link_OnClick">
+                            <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageLinkText}"/>
+                        </Hyperlink>
+                    </TextBlock>
                 </Grid>
                 <Grid x:Name="BottomPanel" Grid.Row="2" Background="White" Focusable="False">
                     <Grid.RowDefinitions>

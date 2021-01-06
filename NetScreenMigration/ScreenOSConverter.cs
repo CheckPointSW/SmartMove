@@ -3577,6 +3577,8 @@ namespace NetScreenMigration
             // Resolve the conversion categories/lines count to report to the user.
             ConversionIncidentCategoriesCount = _conversionIncidents.GroupBy(error => error.Title).Count();
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
+			
+            CreateSmartConnector();
         }
 
         public override int RulesInConvertedPackage()
