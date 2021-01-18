@@ -1113,12 +1113,12 @@ namespace FortiGateMigration
             {
                 FgCommand_Edit fgCommandEdit = (FgCommand_Edit)fgCommandE;
 
-                FgStaticRoute fgStaticRoute = new FgStaticRoute();
-
-                fgStaticRoute.Name = fgCommandEdit.Table.Trim('"').Trim();
-
-                fgStaticRoute.Network = "0.0.0.0";
-                fgStaticRoute.Mask = "255.255.255.255";
+                FgStaticRoute fgStaticRoute = new FgStaticRoute(
+                    name: fgCommandEdit.Table.Trim('"').Trim(), 
+                    network: "0.0.0.0", 
+                    mask: "255.255.255.255", 
+                    gateway: null, 
+                    device: null);
 
                 foreach (FgCommand fgCommandS in fgCommandEdit.SubCommandsList)
                 {
@@ -4780,6 +4780,15 @@ namespace FortiGateMigration
 
     public class FgStaticRoute
     {
+        public FgStaticRoute() { }
+        public FgStaticRoute (string name, string network, string mask, string gateway, string device) : this()
+        {
+            Name = string.IsNullOrEmpty(name) ? string.Empty : name;
+            Network = string.IsNullOrEmpty(network) ? string.Empty : network;
+            Mask = string.IsNullOrEmpty(mask) ? string.Empty : mask;
+            Gateway = string.IsNullOrEmpty(gateway) ? string.Empty : gateway;
+            Device = string.IsNullOrEmpty(device) ? string.Empty : device;
+        }
         public string Name { get; set; }
         public string Network { get; set; }
         public string Mask { get; set; }
