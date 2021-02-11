@@ -563,7 +563,9 @@ namespace CiscoMigration
 
             Network = command.GetParam(1);
             Netmask = command.GetParam(2);
-            if (NetworkUtils.TryParseNetwortWithPrefix(Network, out string sNetwork, out string sMaskLength))
+            string sNetwork;
+            string sMaskLength;
+            if (NetworkUtils.TryParseNetwortWithPrefix(Network, out sNetwork, out sMaskLength))
             {
                 Network = sNetwork;
                 MaskPrefix = sMaskLength;
@@ -773,7 +775,9 @@ namespace CiscoMigration
                     }
                     Netmask = command.GetParam(2);
 
-                    if (NetworkUtils.TryParseNetwortWithPrefix(IpAddress, out string sIp, out string sMaskLenth))
+                    string sIp;
+                    string sMaskLenth;
+                    if (NetworkUtils.TryParseNetwortWithPrefix(IpAddress, out sIp, out sMaskLenth))
                     {
                         IpAddress = sIp;
                         MaskPrefix = sMaskLenth;

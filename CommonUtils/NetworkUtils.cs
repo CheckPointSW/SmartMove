@@ -47,7 +47,8 @@ namespace CommonUtils
                 return false;
             }
 
-            if (IPAddress.TryParse(sIp, out IPAddress ip) && Array.Exists(allowedAddressFamilies, e => e == ip.AddressFamily))
+            IPAddress ip;
+            if (IPAddress.TryParse(sIp, out ip) && Array.Exists(allowedAddressFamilies, e => e == ip.AddressFamily))
             {
                 return true;
             }
@@ -76,7 +77,8 @@ namespace CommonUtils
                 return false;
             }
 
-            if (IPAddress.TryParse(sNetmask, out IPAddress netmask) && Array.Exists(allowedAddressFamilies, e => e == netmask.AddressFamily))
+            IPAddress netmask = null;
+            if (IPAddress.TryParse(sNetmask, out netmask) && Array.Exists(allowedAddressFamilies, e => e == netmask.AddressFamily))
             {
                 return IPNetwork.ValidNetmask(netmask);
             }
@@ -87,7 +89,9 @@ namespace CommonUtils
             sIp = "";
             sMaskLenght = "";
             String[] splitedNetwork = sNetwork.Split('/');
-            if (splitedNetwork.Length == 2 && IPAddress.TryParse(splitedNetwork[0], out IPAddress ipAddr) && int.TryParse(splitedNetwork[1], out int maskLengthNum))
+            IPAddress ipAddr = null;
+            int maskLengthNum = 0;
+            if (splitedNetwork.Length == 2 && IPAddress.TryParse(splitedNetwork[0], out ipAddr) && int.TryParse(splitedNetwork[1], out maskLengthNum))
             {
                 sMaskLenght = Convert.ToString(maskLengthNum);
                 sIp = Convert.ToString(ipAddr);
