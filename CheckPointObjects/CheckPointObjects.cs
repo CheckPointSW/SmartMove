@@ -261,7 +261,7 @@ namespace CheckPointObjects
             }
             else
             {
-                return new IPRanges(new IPRange(IPNetwork.Parse($"{Subnet}/{MaskLenght}")));
+                return new IPRanges(new IPRange(IPNetwork.Parse(String.Format("{0}/{1}", Subnet, MaskLenght))));
             }
         }
 
