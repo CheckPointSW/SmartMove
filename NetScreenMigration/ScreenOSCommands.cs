@@ -253,7 +253,7 @@ namespace NetScreenMigration
         {
             get
             {
-                if (string.IsNullOrEmpty(_mask) || NetworkUtils.IsValidNetmask(_mask))
+                if (string.IsNullOrEmpty(_mask) || NetworkUtils.IsValidNetmaskv4(_mask))
                 {
                     return false;
                 }
@@ -319,7 +319,7 @@ namespace NetScreenMigration
             ObjectName = command.GetParam(3);
 
             string commandParam = command.GetParam(5);
-            if (NetworkUtils.IsValidNetmask(commandParam) || NetworkUtils.IsWildCardNetmask(commandParam))
+            if (NetworkUtils.IsValidNetmaskv4(commandParam) || NetworkUtils.IsWildCardNetmask(commandParam))
             {
                 Netmask = commandParam;
                 if (NetworkUtils.GetMaskLength(Netmask) == 32)
@@ -333,7 +333,7 @@ namespace NetScreenMigration
                     IpAddress = NetworkUtils.GetNetwork(command.GetParam(4), Netmask);
                 }
             }
-            else if (NetworkUtils.IsValidIp(commandParam))
+            else if (NetworkUtils.IsValidIpv4(commandParam))
             {
                 // Complex wild card not supported, e.g 0.255.0.255
                 AddressType = AddressTypeEnum.Network;
@@ -675,8 +675,8 @@ namespace NetScreenMigration
             IpAddressFirst = command.GetParam(3);
             IpAddressLast = command.GetParam(4);
         
-            if (!NetworkUtils.IsValidIp(IpAddressFirst) ||
-                !NetworkUtils.IsValidIp(IpAddressLast) ||
+            if (!NetworkUtils.IsValidIpv4(IpAddressFirst) ||
+                !NetworkUtils.IsValidIpv4(IpAddressLast) ||
                 NetworkUtils.Ip2Number(IpAddressLast) < NetworkUtils.Ip2Number(IpAddressFirst))
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
@@ -917,7 +917,7 @@ namespace NetScreenMigration
                 }
                 else if (commandParam.Length == 1)
                 {
-                    if (NetworkUtils.IsValidIp(commandParam[0]))
+                    if (NetworkUtils.IsValidIpv4(commandParam[0]))
                     {
                         IP = commandParam[0];
                         Mask = command.GetParam(5);
@@ -1024,7 +1024,7 @@ namespace NetScreenMigration
                 Network = commandParam[0];
                 Mask = NetworkUtils.MaskLength2Netmask(int.Parse(commandParam[1]));
 
-                if (!NetworkUtils.IsValidIp(Network))
+                if (!NetworkUtils.IsValidIpv4(Network))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = "ScreenOS route object network or mask is invalid. Ignoring this command";
@@ -1325,7 +1325,7 @@ namespace NetScreenMigration
                 DestNatIp.Add(commandString);
 
                 commandString = command.GetParam(++baseIndex);
-                if (NetworkUtils.IsValidIp(commandString))
+                if (NetworkUtils.IsValidIpv4(commandString))
                 {
                     DestNatIp.Add(commandString);
                     commandString = command.GetParam(++baseIndex);
@@ -1534,7 +1534,7 @@ namespace NetScreenMigration
 
             // Get Mip
             string commandParam = command.GetParam(++paramIndex);
-            if (NetworkUtils.IsValidIp(commandParam))
+            if (NetworkUtils.IsValidIpv4(commandParam))
             {
                 Mip = commandParam;
             }
@@ -1548,7 +1548,7 @@ namespace NetScreenMigration
             // Get IP
             paramIndex += 2;
             commandParam = command.GetParam(paramIndex);
-            if (NetworkUtils.IsValidIp(commandParam))
+            if (NetworkUtils.IsValidIpv4(commandParam))
             {
                 Ip = commandParam;
             }
@@ -1562,7 +1562,7 @@ namespace NetScreenMigration
             // Get Mask
             paramIndex += 2;
             commandParam = command.GetParam(paramIndex);
-            if (NetworkUtils.IsValidNetmask(commandParam))
+            if (NetworkUtils.IsValidNetmaskv4(commandParam))
             {
                 Mask = commandParam;
             }

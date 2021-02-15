@@ -1,4 +1,4 @@
-﻿/********************************************************************
+/********************************************************************
 Copyright (c) 2017, Check Point Software Technologies Ltd.
 All rights reserved.
 
@@ -238,7 +238,7 @@ namespace CiscoMigration
             {
                 Description = command.Text.Trim().Substring(Name().Length + 1);
             }
-            
+
         }
     }
 
@@ -311,7 +311,7 @@ namespace CiscoMigration
             }
 
             commandParam = command.GetParam(2);
-            if (NetworkUtils.IsValidNetmask(commandParam))
+            if (NetworkUtils.IsValidNetmaskv4(commandParam))
             {
                 Netmask = commandParam;
             }
@@ -349,6 +349,7 @@ namespace CiscoMigration
         public string HostAddress { get; set; }
         public string Network { get; set; }
         public string Netmask { get; set; }
+        public string MaskPrefix { get; set; }
         public string RangeFrom { get; set; }
         public string RangeTo { get; set; }
         public bool IsDestination { get; set; }
@@ -411,6 +412,7 @@ namespace CiscoMigration
                         ObjectType = ObjectTypes.Network;
                         Network = ((Cisco_Subnet)child).Network;
                         Netmask = ((Cisco_Subnet)child).Netmask;
+                        MaskPrefix = ((Cisco_Subnet)child).MaskPrefix;
                         found++;
                         break;
 
@@ -551,6 +553,7 @@ namespace CiscoMigration
     {
         public string Network { get; set; }
         public string Netmask { get; set; }
+        public string MaskPrefix { get; set; }
 
         public override string Name() { return "subnet"; }
 
@@ -560,8 +563,14 @@ namespace CiscoMigration
 
             Network = command.GetParam(1);
             Netmask = command.GetParam(2);
-
-            if (!NetworkUtils.IsValidIp(Network) || !NetworkUtils.IsValidNetmask(Netmask))
+            string sNetwork;
+            string sMaskLength;
+            if (NetworkUtils.TryParseNetwortWithPrefix(Network, out sNetwork, out sMaskLength))
+            {
+                Network = sNetwork;
+                MaskPrefix = sMaskLength;
+            }
+            else if (!NetworkUtils.IsValidIpv4(Network) || !NetworkUtils.IsValidNetmaskv4(Netmask))
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Invalid IP subnet (" + Network + "/" + Netmask + "). Using IP subnet 1.1.1.0/255.255.255.0.";
@@ -572,7 +581,7 @@ namespace CiscoMigration
             }
         }
     }
-    
+
     public class Cisco_Range : CiscoCommand
     {
         public string RangeFrom { get; set; }
@@ -716,6 +725,7 @@ namespace CiscoMigration
     {
         public string IpAddress { get; set; }
         public string Netmask { get; set; }
+        public string MaskPrefix { get; set; }
         public string ReferencedObject { get; set; }
 
         public override string Name() { return "network-object"; }
@@ -765,7 +775,14 @@ namespace CiscoMigration
                     }
                     Netmask = command.GetParam(2);
 
-                    if (!NetworkUtils.IsValidIp(IpAddress) || !NetworkUtils.IsValidNetmask(Netmask))
+                    string sIp;
+                    string sMaskLenth;
+                    if (NetworkUtils.TryParseNetwortWithPrefix(IpAddress, out sIp, out sMaskLenth))
+                    {
+                        IpAddress = sIp;
+                        MaskPrefix = sMaskLenth;
+                    }
+                    else if (!NetworkUtils.IsValidIpv4(IpAddress) || !NetworkUtils.IsValidNetmaskv4(Netmask))
                     {
                         ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                         ConversionIncidentMessage = "Invalid IP subnet (" + IpAddress + "/" + Netmask + "). Using IP subnet 1.1.1.0/255.255.255.0.";
@@ -1263,13 +1280,13 @@ namespace CiscoMigration
 
             _timeRangeName = this.GetParam(1);
 
-            foreach(CiscoCommand child in Children)
+            foreach (CiscoCommand child in Children)
             {
-                if(child.FirstWord.Equals("absolute"))
+                if (child.FirstWord.Equals("absolute"))
                 {
                     int startIndex = child.Text.IndexOf("start");
                     int endIndex = child.Text.IndexOf("end");
-                    if(startIndex > -1 && endIndex > -1)
+                    if (startIndex > -1 && endIndex > -1)
                     {
                         _startDateTime = child.Text.Substring("absolute".Length + "start".Length + 2, endIndex - startIndex - "start".Length).Trim();
                         _endDateTime = child.Text.Substring(endIndex + "end".Length).Trim();
@@ -1278,7 +1295,7 @@ namespace CiscoMigration
                     {
                         _startDateTime = child.Text.Substring("absolute".Length + "start".Length + 2).Trim();
                     }
-                    else if(startIndex == -1 && endIndex > -1)
+                    else if (startIndex == -1 && endIndex > -1)
                     {
                         _endDateTime = child.Text.Substring("absolute".Length + "end".Length + 2).Trim();
                     }
@@ -1302,7 +1319,7 @@ namespace CiscoMigration
                         {
                             _periodicsList.Add((Weekdays)startWdIndex + " " + daysTimes_1[1] + " to 23:59");
 
-                            for (int i = startWdIndex+1; i <= endWdIndex-1; i++)
+                            for (int i = startWdIndex + 1; i <= endWdIndex - 1; i++)
                             {
                                 _periodicsList.Add((Weekdays)i + " 0:00 to 23:59");
                             }
@@ -1321,7 +1338,7 @@ namespace CiscoMigration
                                 _periodicsList.Add((Weekdays)i + " 0:00 to 23:59");
                             }
 
-                            for (int i = firstWdIndex; i <= endWdIndex-1; i++)
+                            for (int i = firstWdIndex; i <= endWdIndex - 1; i++)
                             {
                                 _periodicsList.Add((Weekdays)i + " 0:00 to 23:59");
                             }
@@ -1337,7 +1354,7 @@ namespace CiscoMigration
             }
         }
     }
-	
+
     public class Cisco_Interface : CiscoCommand
     {
         public string InterfaceName { get; set; }
@@ -1354,7 +1371,7 @@ namespace CiscoMigration
             public string Network { get; private set; }
             public string Netmask { get; private set; }
 
-            public Subnet (string sIp, string sMask)
+            public Subnet(string sIp, string sMask)
             {
                 Network = sIp;
                 Netmask = sMask;
@@ -1415,7 +1432,7 @@ namespace CiscoMigration
                         IpAddress = ((Cisco_IP)child).IpAddress;
                         Netmask = ((Cisco_IP)child).Netmask;
 
-                        if (NetworkUtils.IsValidIp(IpAddress) && NetworkUtils.IsValidNetmask(Netmask))
+                        if (NetworkUtils.IsValidIpv4(IpAddress) && NetworkUtils.IsValidNetmaskv4(Netmask))
                         {
                             Topology.Add(new Subnet(NetworkUtils.GetNetwork(IpAddress, Netmask), Netmask));
                         }
@@ -1432,7 +1449,7 @@ namespace CiscoMigration
 
         public bool HasValidIpAddress()
         {
-            return NetworkUtils.IsValidIp(IpAddress) && NetworkUtils.IsValidNetmask(Netmask);
+            return NetworkUtils.IsValidIp(IpAddress) && NetworkUtils.IsValidNetmaskv4(Netmask);
         }
     }
 
@@ -1830,7 +1847,7 @@ namespace CiscoMigration
     public class Cisco_AccessList : CiscoCommand
     {
         public enum ActionType { NA, Deny, Permit };
-        
+
         public class SourceDest
         {
             public enum SourceDestType { NA, Any, Any6, ReferenceObject, Host, SubnetAndMask };
@@ -1941,9 +1958,9 @@ namespace CiscoMigration
                 Where = where;
                 WordsCount = 0;
 
-                if (protocol == ProtocolType.Ip || 
-                    protocol == ProtocolType.Tcp || 
-                    protocol == ProtocolType.Udp || 
+                if (protocol == ProtocolType.Ip ||
+                    protocol == ProtocolType.Tcp ||
+                    protocol == ProtocolType.Udp ||
                     protocol == ProtocolType.ReferenceObject)
                 {
                     TcpUdpPortOperator = TcpUdpPortOperatorType.All;

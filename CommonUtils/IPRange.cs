@@ -30,7 +30,7 @@ namespace CommonUtils
         #region Constants
 
         public const string Any = "any";
-        
+
         #endregion
 
         #region Private Members
@@ -39,7 +39,7 @@ namespace CommonUtils
         private IPAddress _toIP;
         private UInt32 _minimum;
         private UInt32 _maximum;
-        
+
         #endregion
 
         #region Properties
@@ -68,7 +68,7 @@ namespace CommonUtils
                 _toIP = IPAddress.Parse(NetworkUtils.Number2Ip(_maximum));
             }
         }
-        
+
         #endregion
 
         #region Construction
@@ -104,7 +104,7 @@ namespace CommonUtils
             _fromIP = ip.Network;
             _toIP = ip.Broadcast;
             _minimum = NetworkUtils.Ip2Number(_fromIP);
-            _maximum = NetworkUtils.Ip2Number(_toIP);
+            _maximum = NetworkUtils.Ip2Number(_toIP == null ? _fromIP : _toIP);
         }
 
         public IPRange(IPAddress from, IPAddress to)
@@ -122,7 +122,7 @@ namespace CommonUtils
             _minimum = min;
             _maximum = max;
         }
-        
+
         #endregion
 
         #region Methods
@@ -146,7 +146,7 @@ namespace CommonUtils
         {
             return string.Format("[{0} - {1}]", _fromIP, _toIP);
         }
-        
+
         #endregion
     }
 
@@ -158,7 +158,7 @@ namespace CommonUtils
         #region Private Members
 
         private List<IPRange> _ranges = null;
-        
+
         #endregion
 
         #region Properties
@@ -167,7 +167,7 @@ namespace CommonUtils
         {
             get { return _ranges ?? (_ranges = new List<IPRange>()); }
         }
-        
+
         #endregion
 
         #region Construction
@@ -185,7 +185,7 @@ namespace CommonUtils
         {
             Ranges.AddRange(ranges);
         }
-        
+
         #endregion
 
         #region Methods
@@ -329,7 +329,7 @@ namespace CommonUtils
 
             return new IPRanges(res);
         }
-        
+
         #endregion
     }
 }
