@@ -1509,7 +1509,7 @@
                         <term>
                             <name>t1</name>
                             <protocol>tcp</protocol>
-                            <destination-port>0</destination-port>
+                            <destination-port>1-65535</destination-port>
                         </term>
                     </application>
                     <junos:comment>#
@@ -1520,7 +1520,7 @@
                         <term>
                             <name>t1</name>
                             <protocol>udp</protocol>
-                            <destination-port>0</destination-port>
+                            <destination-port>1-65535</destination-port>
                         </term>
                     </application>
                     <junos:comment>#

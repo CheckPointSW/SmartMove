@@ -16,6 +16,8 @@ limitations under the License.
 ********************************************************************/
 
 using System.Windows;
+using System.Diagnostics;
+using System.Windows.Documents;
 using System.Windows.Input;
 
 namespace SmartMove
@@ -48,7 +50,28 @@ namespace SmartMove
             DependencyProperty.Register("Message", typeof(string), typeof(MessageWindow), new PropertyMetadata(null));
 
         #endregion
+		
+        #region MessageLink
+        public string MessageLinkText
+        {
+            get { return (string)GetValue(MessageLinkTextProperty); }
+            set { SetValue(MessageLinkTextProperty, value); }
+        }
 
+        public static readonly DependencyProperty MessageLinkTextProperty =
+            DependencyProperty.Register("MessageLinkText", typeof(string), typeof(MessageWindow), new PropertyMetadata(null));
+
+        public string MessageLinkValue
+        {
+            get { return (string)GetValue(MessageLinkValueProperty); }
+            set { SetValue(MessageLinkValueProperty, value); }
+        }
+
+        public static readonly DependencyProperty MessageLinkValueProperty =
+            DependencyProperty.Register("MessageLinkValue", typeof(string), typeof(MessageWindow), new PropertyMetadata(null));
+
+        #endregion
+		
         #region MessageType
 
         public MessageTypes MessageType
@@ -76,6 +99,15 @@ namespace SmartMove
             if (e.ChangedButton == MouseButton.Left && e.LeftButton == MouseButtonState.Pressed)
             {
                 DragMove();
+            }
+        }
+		
+        private void Link_OnClick(object sender, RoutedEventArgs e)
+        {
+            var link = (Hyperlink)sender;
+            if (link.NavigateUri != null)
+            {
+                Process.Start(link.NavigateUri.ToString());
             }
         }
 

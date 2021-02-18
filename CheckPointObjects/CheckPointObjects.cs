@@ -1,4 +1,4 @@
-﻿/********************************************************************
+/********************************************************************
 Copyright (c) 2017, Check Point Software Technologies Ltd.
 All rights reserved.
 
@@ -43,6 +43,7 @@ namespace CheckPointObjects
         protected const string CommentsValidityRegex = @"[^A-Za-z0-9 @#*$(){}\[\]_.\-=:,/]";
 
         public const string Any = "any";
+        public const string All = "All";
         public const string All_Internet = "All_Internet";
         public const string icmpProtocol = "icmp-proto";
 
@@ -89,6 +90,20 @@ namespace CheckPointObjects
         protected static string GetSafeName(string name)
         {
             return Regex.Replace(name, NameValidityRegex, "_");
+        }
+
+        //escaping quote sign in script
+        public List<string> EscapeQuote(List<string> members)
+        {
+            List<string> resultList = new List<string>();
+            foreach (string member in members)
+            {
+                if (member.IndexOf("\'") != -1)
+                    resultList.Add(member.Replace("\'", "\'\\\'\'"));
+                else
+                    resultList.Add(member);
+            }
+            return resultList;
         }
 
         protected static string WriteParam(string paramName, bool paramValue, bool defaultValue)
@@ -235,23 +250,32 @@ namespace CheckPointObjects
     {
         public string Subnet { get; set; }
         public string Netmask { get; set; }
+        public string MaskLenght { get; set; }
 
         public override IPRanges GetIPRanges()
         {
-            return new IPRanges(new IPRange(IPNetwork.Parse(Subnet, Netmask)));
+            if (!string.IsNullOrEmpty(Netmask))
+            {
+                return new IPRanges(new IPRange(IPNetwork.Parse(Subnet, Netmask)));
+            }
+            else
+            {
+                return new IPRanges(new IPRange(IPNetwork.Parse(String.Format("{0}/{1}", Subnet, MaskLenght))));
+            }
         }
 
         public override string ToCLIScript()
         {
             return "add network " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("subnet", Subnet, "")
-                + WriteParam("subnet-mask", Netmask , "")
+                + WriteParam("subnet-mask", Netmask, "")
+                + WriteParam("mask-length", MaskLenght, "")
                 + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
         {
-            return "create network [" + Name + "]: subnet [" + Subnet + "] mask [" + Netmask + "]";
+            return "create network [" + Name + "]: subnet [" + Subnet + "] mask [" + Netmask + "] mask-lenght [" + MaskLenght + "]";
         }
     }
 
@@ -282,6 +306,8 @@ namespace CheckPointObjects
     public class CheckPoint_NetworkGroup : CheckPointObject
     {
         public List<string> Members = new List<string>();
+
+        public bool IsPanoramaDeviceGroup = false;
 
         /// <summary>
         /// This property is used to overcome the problematic order of objects creation for 
@@ -499,8 +525,10 @@ namespace CheckPointObjects
 
         public override string ToCLIScript()
         {
+            List<string> members = EscapeQuote(Members);//escaping quote sign in script
+
             return "add application-site-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteListParam("members", Members, false)
+                + WriteListParam("members", members, false)
                 + WriteListParam("tags", Tags, true);
         }
 
@@ -524,7 +552,7 @@ namespace CheckPointObjects
         public string EndDate { get; set; }
         public string EndTime { get; set; }
         public double EndPosix { get; set; }
-        
+
         public bool HoursRangesEnabled_1 { get; set; }
         public string HoursRangesFrom_1 { get; set; }
         public string HoursRangesTo_1 { get; set; }
@@ -544,25 +572,25 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add time " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                
-                + WriteParam("start-now", StartNow.ToString().ToLower(), "") 
-                + WriteParam("start.date", StartDate, "") 
+
+                + WriteParam("start-now", StartNow.ToString().ToLower(), "")
+                + WriteParam("start.date", StartDate, "")
                 + WriteParam("start.time", StartTime, "")
                 + WriteParam("start.posix", (StartPosix > 0 ? "" + StartPosix : ""), "")
 
-                + WriteParam("end-never", EndNever.ToString().ToLower(), "") 
-                + WriteParam("end.date", EndDate, "") 
+                + WriteParam("end-never", EndNever.ToString().ToLower(), "")
+                + WriteParam("end.date", EndDate, "")
                 + WriteParam("end.time", EndTime, "")
                 + WriteParam("end.posix", (EndPosix > 0 ? "" + EndPosix : ""), "")
 
-                + WriteParam("hours-ranges.1.enabled", (HoursRangesEnabled_1 ? HoursRangesEnabled_1.ToString().ToLower() : ""), "") 
-                + WriteParam("hours-ranges.1.from", HoursRangesFrom_1, "") 
+                + WriteParam("hours-ranges.1.enabled", (HoursRangesEnabled_1 ? HoursRangesEnabled_1.ToString().ToLower() : ""), "")
+                + WriteParam("hours-ranges.1.from", HoursRangesFrom_1, "")
                 + WriteParam("hours-ranges.1.to", HoursRangesTo_1, "")
 
                 + WriteParam("hours-ranges.2.enabled", (HoursRangesEnabled_2 ? HoursRangesEnabled_2.ToString().ToLower() : ""), "")
                 + WriteParam("hours-ranges.2.from", HoursRangesFrom_2, "")
-                + WriteParam("hours-ranges.2.to", HoursRangesTo_2, "") 
-                
+                + WriteParam("hours-ranges.2.to", HoursRangesTo_2, "")
+
                 + WriteParam("hours-ranges.3.enabled", (HoursRangesEnabled_3 ? HoursRangesEnabled_3.ToString().ToLower() : ""), "")
                 + WriteParam("hours-ranges.3.from", HoursRangesFrom_3, "")
                 + WriteParam("hours-ranges.3.to", HoursRangesTo_3, "")
@@ -578,6 +606,39 @@ namespace CheckPointObjects
         public override string ToCLIScriptInstruction()
         {
             return "create time [" + Name + "]";
+        }
+
+        public CheckPoint_Time Clone()
+        {
+            var newTime = new CheckPoint_Time();
+
+            newTime.Name = Name;
+            newTime.Comments = Comments;
+            newTime.StartNow = StartNow;
+            newTime.StartDate = StartDate;
+            newTime.StartTime = StartTime;
+            newTime.StartPosix = StartPosix;
+            newTime.EndNever = EndNever;
+            newTime.EndDate = EndDate;
+            newTime.EndTime = EndTime;
+            newTime.EndPosix = EndPosix;
+
+            newTime.HoursRangesEnabled_1 = HoursRangesEnabled_1;
+            newTime.HoursRangesFrom_1 = HoursRangesFrom_1;
+            newTime.HoursRangesTo_1 = HoursRangesTo_1;
+
+            newTime.HoursRangesEnabled_2 = HoursRangesEnabled_2;
+            newTime.HoursRangesFrom_2 = HoursRangesFrom_2;
+            newTime.HoursRangesTo_2 = HoursRangesTo_2;
+
+            newTime.HoursRangesEnabled_3 = HoursRangesEnabled_3;
+            newTime.HoursRangesFrom_3 = HoursRangesFrom_3;
+            newTime.HoursRangesTo_3 = HoursRangesTo_3;
+
+            newTime.RecurrencePattern = RecurrencePattern;
+            newTime.RecurrenceWeekdays = RecurrenceWeekdays;
+
+            return newTime;
         }
     }
 
@@ -611,7 +672,7 @@ namespace CheckPointObjects
 
         public override string ToCLIScript()
         {
-            if(Networks.Count == 0)
+            if (Networks.Count == 0)
             {
                 Networks.Add("any");
             }
@@ -642,6 +703,9 @@ namespace CheckPointObjects
         public bool SourceNegated { get; set; }
         public bool DestinationNegated { get; set; }
 
+        public List<string> Target = new List<string>();//"install-on" parameter of CP rule
+        public bool TargetNegated { get; set; }
+
         private string _conversionComments;
         public string ConversionComments
         {
@@ -665,7 +729,7 @@ namespace CheckPointObjects
             DestinationNegated = false;
             ConversionComments = "";
         }
-        
+
         public override string ToCLIScript()
         {
             string actionName = "";
@@ -689,7 +753,7 @@ namespace CheckPointObjects
             return "add access-rule " + WriteParam("layer", Layer, "") + WriteParam("comments", Comments, "")
                 + WriteListParam("source", (from o in Source select o.Name).ToList(), true)
                 + WriteListParam("destination", (from o in Destination select o.Name).ToList(), true)
-                + WriteListParam("service", (from o in Service select o.Name).ToList(), true)
+                + WriteServicesParams()
                 + WriteParamWithIndexesForApplications()
                 + WriteListParam("time", (from o in Time select o.Name).ToList(), true)
                 + WriteParam("action", actionName, "")
@@ -700,6 +764,7 @@ namespace CheckPointObjects
                 + WriteParam("position", "top", "")
                 + WriteParam("inline-layer", SubPolicyName, "")
                 + WriteParam("name", Name, "")
+                + WriteListParam("install-on", (from o in Target select o).ToList(), true)
                 + WriteParam("custom-fields.field-1", ConversionComments.Substring(0, Math.Min(ConversionComments.Length, 150)), "");
         }
 
@@ -723,7 +788,7 @@ namespace CheckPointObjects
             newRule.ConvertedCommandId = ConvertedCommandId;
             newRule.ConversionIncidentType = ConversionIncidentType;
 
-            foreach(CheckPointObject obj in Source)
+            foreach (CheckPointObject obj in Source)
             {
                 newRule.Source.Add(obj);
             }
@@ -739,6 +804,10 @@ namespace CheckPointObjects
             {
                 newRule.Time.Add(obj);
             }
+            foreach (string obj in Target)
+            {
+                newRule.Target.Add(obj);
+            }
             CloneApplicationsToRule(newRule);
 
             return newRule;
@@ -747,7 +816,7 @@ namespace CheckPointObjects
         public bool CompareTo(CheckPoint_Rule other)
         {
             if (Enabled != other.Enabled ||
-                Action != other.Action || 
+                Action != other.Action ||
                 Track != other.Track ||
                 SourceNegated != other.SourceNegated ||
                 DestinationNegated != other.DestinationNegated)
@@ -775,16 +844,28 @@ namespace CheckPointObjects
             {
                 return true;   // sub-policy's automatic cleanup rule
             }
+            return checkRuleType(ActionType.Drop);// user defined cleanup rule           
+        }
 
-            if ((Source.Count == 1 && Source[0].Name == Any) &&
-                (Destination.Count == 1 && Destination[0].Name == Any) &&
-                (Service.Count == 1 && Service[0].Name == Any) && 
+        /// <summary>
+        /// Verifies if the rule allows all traffic (which means rule has source: Any, destination: Any, service: Any and action: Accept)
+        /// </summary>
+        /// <returns></returns>
+        public bool IsAllowAnyRule()
+        {
+            return checkRuleType(ActionType.Accept);// user defined Allow Any rule
+        }
+
+        private bool checkRuleType(ActionType actionType)
+        {
+            if ((Source.Count == 1 && Source[0].Name == Any || Source.Count == 0) &&
+                (Destination.Count == 1 && Destination[0].Name == Any || Destination.Count == 0) &&
+                (Service.Count == 1 && Service[0].Name == Any || Service.Count == 0) &&
                 IsApplicationsClean() &&
-                (Action == ActionType.Drop))
+                (Action == actionType))
             {
-                return true;   // user defined cleanup rule
+                return true;
             }
-
             return false;
         }
 
@@ -804,6 +885,11 @@ namespace CheckPointObjects
         protected virtual string WriteParamWithIndexesForApplications()
         {
             return null;
+        }
+
+        protected virtual string WriteServicesParams()
+        {
+            return WriteListParam("service", (from o in Service select o.Name).ToList(), true);
         }
 
         //CloneApplicationsToRule will be overridden in the derived class if the class needs specific clone implementation for applications
@@ -842,10 +928,16 @@ namespace CheckPointObjects
             return WriteListParamWithIndexes("service", (from o in Application select o.Name).ToList(), false, Service.Count);
         }
 
+        protected override string WriteServicesParams()
+        {
+            return WriteListParamWithIndexes("service", (from o in Service select o.Name).ToList(), true, 0);//add indexes to services in case applications present as well
+        }
+
         //specific extension for cloning applications
         protected override void CloneApplicationsToRule(CheckPoint_Rule newRule)
         {
-            if (newRule is CheckPoint_RuleWithApplication) {
+            if (newRule is CheckPoint_RuleWithApplication)
+            {
                 foreach (CheckPointObject obj in Application)
                 {
                     ((CheckPoint_RuleWithApplication)newRule).Application.Add(obj);
@@ -860,14 +952,14 @@ namespace CheckPointObjects
             {
                 return CompareLists(Application, ((CheckPoint_RuleWithApplication)other).Application);
             }
-           
+
             return false;
         }
 
         //specific extension to check if the applications list contains only ANY parameter.
         protected override bool IsApplicationsClean()
         {
-            return (Application.Count == 1 && Application[0].Name == Any);
+            return (Application.Count == 1 && Application[0].Name == Any || Application.Count == 0);
         }
 
     }
@@ -909,6 +1001,8 @@ namespace CheckPointObjects
         public CheckPointObject TranslatedDestination;
         public CheckPointObject TranslatedService;
 
+        public List<string> Target = new List<string>();
+
         public CheckPoint_NAT_Rule()
         {
             Enabled = true;
@@ -926,7 +1020,9 @@ namespace CheckPointObjects
                 + WriteParam("comments", Comments, "")
                 + WriteParam("method", Method.ToString().ToLower(), "")
                 + WriteParam("enabled", Enabled, true)
-                + WriteParam("position", "top", "");
+                + WriteParam("position", "top", "")
+                + WriteListParam("install-on", (from o in Target select o).ToList(), true);
+
         }
 
         public override string ToCLIScriptInstruction()
@@ -949,6 +1045,7 @@ namespace CheckPointObjects
             newRule.TranslatedService = TranslatedService;
             newRule.ConvertedCommandId = ConvertedCommandId;
             newRule.ConversionIncidentType = ConversionIncidentType;
+            newRule.Target = Target;
 
             return newRule;
         }
@@ -956,8 +1053,8 @@ namespace CheckPointObjects
 
     public class CheckPoint_Package : CheckPointObject
     {
-        public string NameOfAccessLayer 
-        { 
+        public string NameOfAccessLayer
+        {
             get { return Name + " Network"; }
         }
 
@@ -987,3 +1084,4 @@ namespace CheckPointObjects
         }
     }
 }
+

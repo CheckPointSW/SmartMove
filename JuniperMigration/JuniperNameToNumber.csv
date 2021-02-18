@@ -79,3 +79,5 @@ who,513
 xdmcp,177
 zephyr-clt,2103
 zephyr-hm,2104
+junos-tcp-any,1-65535
+junos-udp-any,1-65535
