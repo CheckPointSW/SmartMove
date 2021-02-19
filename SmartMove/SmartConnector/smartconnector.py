@@ -4,6 +4,7 @@ import sys
 import argparse
 import json
 import os
+import operator
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
 from cpapi import APIClient, APIClientArgs
@@ -169,21 +170,15 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
         printStatus(res_add_obj_with_ip, "REPORT: " + userObjectNameInitial + " is added as " + payload['name'])
         if res_add_obj_with_ip.success is False:
             if isIpDuplicated(res_add_obj_with_ip) and not isIgnoreWarnings:
-                res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": True,
-                                                                                "type": userObjectType})
+                res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": True, "type": userObjectType})
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
                     if len(res_get_obj_with_ip.data) > 0:
                         for serverObject in res_get_obj_with_ip.data:
-                            if isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst:
-                                mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
-                                break
-                            if isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst:
-                                mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
-                                break
                             mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
-                        printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
-                            userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
+                            if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
+                                break
+                        printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
                         isFinished = True
                     else:
                         isIgnoreWarnings = True
@@ -310,6 +305,7 @@ def processNetworks(client, userNetworks):
     printMessageProcessObjects("networks")
     publishCounter = 0
     mergedNetworksNamesMap = {}
+    userNetworks = sorted(userNetworks, key=sort_by_mask, reverse=True)
     if len(userNetworks) == 0:
         return mergedNetworksNamesMap
     for userNetwork in userNetworks:
@@ -330,6 +326,12 @@ def processNetworks(client, userNetworks):
         printStatus(None, "")
     publishUpdate(publishCounter, True)
     return mergedNetworksNamesMap
+
+
+
+# a helper function for sorting networks by mask
+def sort_by_mask(network):
+    return network['Netmask']
 
 
 # processing and adding to server the CheckPoint Ranges
