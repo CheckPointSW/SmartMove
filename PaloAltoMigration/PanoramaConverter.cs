@@ -1352,7 +1352,14 @@ namespace PanoramaPaloAltoMigration
                             cpNetwork.Comments = paAddressEntry.Description;
                             cpNetwork.Tags = paAddressEntry.TagMembers;
                             cpNetwork.Subnet = paAddressEntry.IpNetmask.Substring(0, indexSlash);
-                            cpNetwork.Netmask = IPNetwork.Parse(paAddressEntry.IpNetmask).Netmask.ToString();
+                            if (NetworkUtils.IsValidIpv6(cpNetwork.Subnet))
+                            {
+                                cpNetwork.MaskLenght = paAddressEntry.IpNetmask.Substring(indexSlash + 1);
+                            }
+                            else
+                            {
+                                cpNetwork.Netmask = IPNetwork.Parse(paAddressEntry.IpNetmask).Netmask.ToString();
+                            }
                             cpAddressesDict[paAddressEntry.Name] = cpNetwork;
                         }
                         else if (indexSlash == -1)
@@ -2873,6 +2880,7 @@ namespace PanoramaPaloAltoMigration
                                     cpLayer.ApplicationsAndUrlFiltering = false;
 
                                     cpPackage.SubPolicies.Add(cpLayer);
+                                    validatePackage(cpPackage);
 
                                     CheckPoint_Rule cpGroupRule = new CheckPoint_Rule();
                                     cpGroupRule.Name = cpGroupRuleName;
