@@ -986,9 +986,7 @@ namespace MigrationBase
                             obj.MembersPublishIndex = i;
 
                             //index for comments
-                            int index = i + groupsMaxBulkSize;
-                            if (index > obj.Members.Count)
-                                index = obj.Members.Count;
+                            int index = ((i + groupsMaxBulkSize) > obj.Members.Count) ? obj.Members.Count : i + groupsMaxBulkSize;
 
                             file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj, index));
 
@@ -1194,15 +1192,13 @@ namespace MigrationBase
                     int objectsCount = 0;
                     foreach (CheckPoint_ServiceGroup obj in _cpServiceGroups)
                     {
+                        //if a group has more then max size for publish - generate part of group divided by small groups.
                         obj.MembersMaxPublishSize = groupsMaxBulkSize;
                         for (int i = 0; i < obj.Members.Count; i += groupsMaxBulkSize)
                         {
                             obj.MembersPublishIndex = i;
 
-                            //if a group has more then max size for publish - generate part of group divided by small groups.
-                            int index = i + groupsMaxBulkSize;
-                            if (index > obj.Members.Count)
-                                index = obj.Members.Count;
+                            int index = ((i + groupsMaxBulkSize) > obj.Members.Count) ? obj.Members.Count : i + groupsMaxBulkSize;
                             file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj, index));
 
                             objectsCount++;
