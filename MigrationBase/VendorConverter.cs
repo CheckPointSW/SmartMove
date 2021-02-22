@@ -1196,7 +1196,10 @@ namespace MigrationBase
                         {
                             obj.MembersPublishIndex = i;
 
-                            file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+                            int index = i + groupsMaxBulkSize;
+                            if (index > obj.Members.Count)
+                                index = obj.Members.Count;
+                            file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj, index));
 
                             objectsCount++;
                             if (objectsCount % publishLatency == 0)
