@@ -979,14 +979,17 @@ namespace MigrationBase
                             continue;
                         }
 
+                        //if a group has more then max size for publish - generate part of group divided by small groups.
                         obj.MembersMaxPublishSize = groupsMaxBulkSize;
                         for (int i = 0; i < obj.Members.Count; i += groupsMaxBulkSize)
                         {
                             obj.MembersPublishIndex = i;
 
+                            //index for comments
                             int index = i + groupsMaxBulkSize;
                             if (index > obj.Members.Count)
                                 index = obj.Members.Count;
+
                             file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj, index));
 
                             objectsCount++;
@@ -1196,6 +1199,7 @@ namespace MigrationBase
                         {
                             obj.MembersPublishIndex = i;
 
+                            //if a group has more then max size for publish - generate part of group divided by small groups.
                             int index = i + groupsMaxBulkSize;
                             if (index > obj.Members.Count)
                                 index = obj.Members.Count;
