@@ -153,30 +153,6 @@ namespace CheckPointObjects
 
             return sb.ToString();
         }
-
-        protected static string WriteListParamWithIndexes(string paramName, List<string> paramValues, bool useSafeNames, int i = 0)
-        {
-            if (paramValues.Count == 0)
-            {
-                return "";
-            }
-
-            string str = "";
-
-            foreach (string paramValue in paramValues)
-            {
-                string val = paramValue;
-                if (useSafeNames)
-                {
-                    val = GetSafeName(paramValue);
-                }
-
-                str += string.Format("{0}.{1} \"{2}\" ", paramName, i, val);
-                i++;
-            }
-
-            return str;
-        }
     }
 
     public class CheckPoint_PredifinedObject : CheckPointObject
@@ -600,7 +576,7 @@ namespace CheckPointObjects
                 + WriteParam("recurrence.pattern", ((RecurrenceWeekdays.Count > 0 || RecurrencePattern == RecurrencePatternEnum.Weekly) ? "Weekly" : ""), "")
                 + WriteParam("recurrence.pattern", ((RecurrencePattern == RecurrencePatternEnum.Daily) ? "Daily" : ""), "")
                 + WriteParam("recurrence.pattern", ((RecurrencePattern == RecurrencePatternEnum.Monthly) ? "Monthly" : ""), "")
-                + WriteListParamWithIndexes("recurrence.weekdays", (from o in RecurrenceWeekdays select o.ToString()).ToList(), true)
+                + WriteListParam("recurrence.weekdays", (from o in RecurrenceWeekdays select o.ToString()).ToList(), true)
 
                 + WriteListParam("tags", Tags, true);
         }
@@ -927,12 +903,14 @@ namespace CheckPointObjects
         //and then applications without safe names with the right index so it will be continue the services indexing.
         protected override string WriteParamWithIndexesForApplications()
         {
-            return WriteListParamWithIndexes("service", (from o in Application select o.Name).ToList(), false, Service.Count);
+            var list = (from o in Application select o.Name).ToList();
+            return WriteListParam("service", list, false, Service.Count, list.Count);
         }
 
         protected override string WriteServicesParams()
         {
-            return WriteListParamWithIndexes("service", (from o in Service select o.Name).ToList(), true, 0);//add indexes to services in case applications present as well
+            var list = (from o in Service select o.Name).ToList();
+            return WriteListParam("service", list, true, 0, list.Count);//add indexes to services in case applications present as well
         }
 
         //specific extension for cloning applications
