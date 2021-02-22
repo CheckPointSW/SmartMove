@@ -136,6 +136,16 @@ def addUserObjectToServer(client, apiCommand, payload, userObjectNamePostfix=1, 
         if res_add_obj.success is False:
             if not changeName:
                 break
+            if apiCommand == "add-access-layer":
+                res_get_obj_with_name = client.api_query("show access-layer name \"{}\"".format(userObjectNameInitial))
+                if res_get_obj_with_name.success is True:
+                    if serverObject['tags']['domain']['domain-type'] == "domain":
+                        addedObject = serverObject
+                        printStatus(None, "REPORT: " + "CP object " + addedObject["name"] + " is used instead of " + payload["name"])
+                        isObjectAdded = True
+                        continue
+                else:
+                   isObjectAdded = True 
             if isNameDuplicated(res_add_obj):
                 payload['name'] = userObjectNameInitial + '_' + str(userObjectNamePostfix)
                 userObjectNamePostfix += 1
