@@ -1352,14 +1352,7 @@ namespace PanoramaPaloAltoMigration
                             cpNetwork.Comments = paAddressEntry.Description;
                             cpNetwork.Tags = paAddressEntry.TagMembers;
                             cpNetwork.Subnet = paAddressEntry.IpNetmask.Substring(0, indexSlash);
-                            if (NetworkUtils.IsValidIpv6(cpNetwork.Subnet))
-                            {
-                                cpNetwork.MaskLenght = paAddressEntry.IpNetmask.Substring(indexSlash + 1);
-                            }
-                            else
-                            {
-                                cpNetwork.Netmask = IPNetwork.Parse(paAddressEntry.IpNetmask).Netmask.ToString();
-                            }
+                            cpNetwork.Netmask = IPNetwork.Parse(paAddressEntry.IpNetmask).Netmask.ToString();
                             cpAddressesDict[paAddressEntry.Name] = cpNetwork;
                         }
                         else if (indexSlash == -1)
