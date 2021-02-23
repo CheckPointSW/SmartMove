@@ -1,0 +1,9 @@
+diff a/PaloAltoMigration/PaloAltoMigration.csproj b/PaloAltoMigration/PaloAltoMigration.csproj	(rejected hunks)
+@@ -71,6 +71,7 @@
+     </ProjectReference>
+   </ItemGroup>
+   <ItemGroup>
++    <None Include="packages.config" />
+     <None Include="PA_Apps_CP.csv">
+       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+     </None>
