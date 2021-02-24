@@ -156,26 +156,7 @@ namespace CheckPointObjects
 
         protected static string WriteListParamWithIndexes(string paramName, List<string> paramValues, bool useSafeNames, int i = 0)
         {
-            if (paramValues.Count == 0)
-            {
-                return "";
-            }
-
-            string str = "";
-
-            foreach (string paramValue in paramValues)
-            {
-                string val = paramValue;
-                if (useSafeNames)
-                {
-                    val = GetSafeName(paramValue);
-                }
-
-                str += string.Format("{0}.{1} \"{2}\" ", paramName, i, val);
-                i++;
-            }
-
-            return str;
+            return WriteListParam(paramName, paramValues, useSafeNames, i, paramValues.Count);
         }
     }
 
