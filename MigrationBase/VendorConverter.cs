@@ -1484,7 +1484,7 @@ namespace MigrationBase
                 file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "Network Groups", _cpNetworkGroups.Count());
                 foreach (CheckPoint_NetworkGroup obj in _cpNetworkGroups)
                 {
-                    if (obj.Members.Count > 100)
+                    if (obj.Members.Count > groupsMaxBulkSize)
                     {
                         obj.MembersMaxPublishSize = groupsMaxBulkSize;
                         for (int i = 0; i < obj.Members.Count; i += groupsMaxBulkSize)
@@ -1588,7 +1588,7 @@ namespace MigrationBase
                 file.WriteLine("<h2> {0} Objects (x{1}) </h2>", "Service Groups", _cpServiceGroups.Count());
                 foreach (CheckPoint_ServiceGroup obj in _cpServiceGroups)
                 {
-                    if (obj.Members.Count > 100)
+                    if (obj.Members.Count > groupsMaxBulkSize)
                     {
                         obj.MembersMaxPublishSize = groupsMaxBulkSize;
                         for (int i = 0; i < obj.Members.Count; i += groupsMaxBulkSize)
