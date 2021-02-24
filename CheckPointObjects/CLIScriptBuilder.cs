@@ -157,9 +157,9 @@ namespace CheckPointObjects
             return "mgmt_cli publish -s id.txt";
         }
 
-        public static string GenerateObjectScript(CheckPointObject cpObject, int? currentIndex = null)
+        public static string GenerateObjectScript(CheckPointObject cpObject)
         {
-            string scriptInstruction = cpObject.ToCLIScriptInstruction(currentIndex);
+            string scriptInstruction = cpObject.ToCLIScriptInstruction();
 
             var sb = new StringBuilder();
 

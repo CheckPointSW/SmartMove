@@ -85,7 +85,7 @@ namespace CheckPointObjects
 
         public abstract string ToCLIScript();
 
-        public abstract string ToCLIScriptInstruction(int? currentIndex = null);
+        public abstract string ToCLIScriptInstruction();
 
         protected static string GetSafeName(string name)
         {
@@ -147,11 +147,35 @@ namespace CheckPointObjects
             int maxIndex = ((firstIndex + maxSize) < paramValues.Count) ? (firstIndex + maxSize) : paramValues.Count;
             for (int i = firstIndex; i < maxIndex; i++)
             {
-                string value = !useSafeNames ? paramValues[i] : GetSafeName(paramValues[i]);
+                string value = useSafeNames ? GetSafeName(paramValues[i]) : paramValues[i];
                 sb.AppendFormat("{0}.{1} \"{2}\" ", paramName, i, value);
             }
 
             return sb.ToString();
+        }
+
+        protected static string WriteListParamWithIndexes(string paramName, List<string> paramValues, bool useSafeNames, int i = 0)
+        {
+            if (paramValues.Count == 0)
+            {
+                return "";
+            }
+
+            string str = "";
+
+            foreach (string paramValue in paramValues)
+            {
+                string val = paramValue;
+                if (useSafeNames)
+                {
+                    val = GetSafeName(paramValue);
+                }
+
+                str += string.Format("{0}.{1} \"{2}\" ", paramName, i, val);
+                i++;
+            }
+
+            return str;
         }
     }
 
@@ -162,7 +186,7 @@ namespace CheckPointObjects
             return "";
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "";
         }
@@ -176,7 +200,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create zone [" + Name + "]";
         }
@@ -194,7 +218,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create domain [" + Name + "]";
         }
@@ -216,7 +240,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create host [" + Name + "] with ip-address [" + IpAddress + "]";
         }
@@ -249,7 +273,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create network [" + Name + "]: subnet [" + Subnet + "] mask [" + Netmask + "] mask-lenght [" + MaskLenght + "]";
         }
@@ -273,7 +297,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create address range [" + Name + "]: from [" + RangeFrom + "] to [" + RangeTo + "]";
         }
@@ -300,9 +324,10 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
-            return (MembersPublishIndex == 0 ? "create " : "update ") + "network group [" + Name + "]: " + currentIndex + "/" + Members.Count + " members";
+            int index = ((MembersPublishIndex + MembersMaxPublishSize) > Members.Count) ? Members.Count : MembersPublishIndex + MembersMaxPublishSize;
+            return (MembersPublishIndex == 0 ? "create " : "update ") + "network group [" + Name + "]: " + index + "/" + Members.Count + " members";
         }
 
     }
@@ -320,7 +345,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create group with exclusion [" + Name + "]: Include: " + Include + ", Except: " + Except;
         }
@@ -337,7 +362,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create simple gateway [" + Name + "] with ip-address [" + IpAddress + "]";
         }
@@ -358,7 +383,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create udp service [" + Name + "]: port [" + Port + "]";
         }
@@ -379,7 +404,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create tcp service [" + Name + "]: port [" + Port + "]";
         }
@@ -400,7 +425,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create sctp service [" + Name + "]: port [" + Port + "]";
         }
@@ -419,7 +444,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create icmp service [" + Name + "]: type [" + Type + "] code [" + Code + "]";
         }
@@ -436,7 +461,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create rpc service [" + Name + "]: program-number [" + ProgramNumber + "]";
         }
@@ -453,7 +478,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create dce-rpc service [" + Name + "]: interface-uuid [" + InterfaceUuid + "]";
         }
@@ -471,7 +496,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create other service [" + Name + "]: IP protocol [" + IpProtocol + "]";
         }
@@ -490,9 +515,11 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
-            return (MembersPublishIndex == 0 ? "create " : "update ") + "service group [" + Name + "]: " + currentIndex + "/" + Members.Count + " members";
+            //index for comments
+            int index = ((MembersPublishIndex + MembersMaxPublishSize) > Members.Count) ? Members.Count : MembersPublishIndex + MembersMaxPublishSize;
+            return (MembersPublishIndex == 0 ? "create " : "update ") + "service group [" + Name + "]: " + index + "/" + Members.Count + " members";
         }
         
     }
@@ -510,7 +537,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create application group [" + Name + "]: " + Members.Count + " members";
         }
@@ -576,12 +603,12 @@ namespace CheckPointObjects
                 + WriteParam("recurrence.pattern", ((RecurrenceWeekdays.Count > 0 || RecurrencePattern == RecurrencePatternEnum.Weekly) ? "Weekly" : ""), "")
                 + WriteParam("recurrence.pattern", ((RecurrencePattern == RecurrencePatternEnum.Daily) ? "Daily" : ""), "")
                 + WriteParam("recurrence.pattern", ((RecurrencePattern == RecurrencePatternEnum.Monthly) ? "Monthly" : ""), "")
-                + WriteListParam("recurrence.weekdays", (from o in RecurrenceWeekdays select o.ToString()).ToList(), true)
+                + WriteListParamWithIndexes("recurrence.weekdays", (from o in RecurrenceWeekdays select o.ToString()).ToList(), true)
 
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create time [" + Name + "]";
         }
@@ -631,7 +658,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create time group [" + Name + "]: " + Members.Count + " members";
         }
@@ -660,7 +687,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create access role [" + Name + "]: " + Users.Count + " users";
         }
@@ -746,7 +773,7 @@ namespace CheckPointObjects
                 + WriteParam("custom-fields.field-1", ConversionComments.Substring(0, Math.Min(ConversionComments.Length, 150)), "");
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "";
         }
@@ -903,14 +930,12 @@ namespace CheckPointObjects
         //and then applications without safe names with the right index so it will be continue the services indexing.
         protected override string WriteParamWithIndexesForApplications()
         {
-            var list = (from o in Application select o.Name).ToList();
-            return WriteListParam("service", list, false, Service.Count, list.Count);
+            return WriteListParamWithIndexes("service", (from o in Application select o.Name).ToList(), false, Service.Count);
         }
 
         protected override string WriteServicesParams()
         {
-            var list = (from o in Service select o.Name).ToList();
-            return WriteListParam("service", list, true, 0, list.Count);//add indexes to services in case applications present as well
+            return WriteListParamWithIndexes("service", (from o in Service select o.Name).ToList(), true, 0);//add indexes to services in case applications present as well
         }
 
         //specific extension for cloning applications
@@ -959,7 +984,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create layer [" + Name + "]";
         }
@@ -1005,7 +1030,7 @@ namespace CheckPointObjects
 
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "";
         }
@@ -1048,7 +1073,7 @@ namespace CheckPointObjects
                 + WriteListParam("tags", Tags, true);
         }
 
-        public override string ToCLIScriptInstruction(int? currentIndex = null)
+        public override string ToCLIScriptInstruction()
         {
             return "create package [" + Name + "]";
         }

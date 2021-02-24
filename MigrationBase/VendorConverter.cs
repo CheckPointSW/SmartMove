@@ -985,10 +985,7 @@ namespace MigrationBase
                         {
                             obj.MembersPublishIndex = i;
 
-                            //index for comments
-                            int index = ((i + groupsMaxBulkSize) > obj.Members.Count) ? obj.Members.Count : i + groupsMaxBulkSize;
-
-                            file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj, index));
+                            file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
 
                             objectsCount++;
                             if (objectsCount % publishLatency == 0)
@@ -1198,8 +1195,7 @@ namespace MigrationBase
                         {
                             obj.MembersPublishIndex = i;
 
-                            int index = ((i + groupsMaxBulkSize) > obj.Members.Count) ? obj.Members.Count : i + groupsMaxBulkSize;
-                            file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj, index));
+                            file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
 
                             objectsCount++;
                             if (objectsCount % publishLatency == 0)
