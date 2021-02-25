@@ -339,9 +339,10 @@ def processNetworks(client, userNetworks):
         }
         if isIPV4:
             payload['subnet4'] = userNetwork['Subnet4']
-            payload['subnet-mask']: userNetwork['Netmask'],
+            payload['subnet-mask'] = userNetwork['Netmask'],
         if isIPV6:
             payload['subnet6'] = userNetwork['Subnet6']
+            payload['mask-length6'] = userNetwork['Subnet6']
         initialMapLength = len(mergedNetworksNamesMap)
         mergedNetworksNamesMap = addCpObjectWithIpToServer(client, payload, "network", userNetwork['Subnet4'] if isIPV4 else None, userNetwork['Subnet6'] if isIPV6 else None, mergedNetworksNamesMap)
         if initialMapLength == len(mergedNetworksNamesMap):
@@ -374,13 +375,27 @@ def processRanges(client, userRanges):
     res_get_ranges = client.api_query("show-address-ranges")
     printStatus(res_get_ranges, None)
     for serverRange in res_get_ranges.data:
-        key = serverRange['ipv4-address-first'] + '_' + serverRange['ipv4-address-last']
-        if isServerObjectGlobal(serverRange) and key not in serverRangesMapGlobal:
-            serverRangesMapGlobal[key] = serverRange['name']
-        elif isServerObjectLocal(serverRange) and key not in serverRangesMapLocal:
-            serverRangesMapLocal[key] = serverRange['name']
-        elif key not in serverRangesMapGlobal and key not in serverRangesMapLocal and key not in serverRangesMap:
-            serverRangesMap[key] = serverRange['name']
+        isIPV4 = False
+        isIPV6 = False
+        if serverRange['ipv4-address-first'] != '':
+            isIPV4 = True
+        if serverRange['ipv6-address-first'] != '':
+            isIPV6 = True
+        key4 = serverRange['ipv4-address-first'] + '_' + serverRange['ipv4-address-last']
+        key6 = serverRange['ipv6-address-first'] + '_' + serverRange['ipv6-address-last']
+        if isServerObjectGlobal(serverRange) and key4 not in serverRangesMapGlobal and isIPV4:
+            serverRangesMapGlobal[key4] = serverRange['name']
+        elif isServerObjectLocal(serverRange) and key4 not in serverRangesMapLocal:
+            serverRangesMapLocal[key4] = serverRange['name']
+        elif key4 not in serverRangesMapGlobal and key4 not in serverRangesMapLocal and key4 not in serverRangesMap and isIPV4:
+            serverRangesMap[key4] = serverRange['name']
+
+        if isServerObjectGlobal(serverRange) and key6 not in serverRangesMapGlobal and isIPV4:
+            serverRangesMapGlobal[key6] = serverRange['name']
+        elif isServerObjectLocal(serverRange) and key6 not in serverRangesMapLocal:
+            serverRangesMapLocal[key6] = serverRange['name']
+        elif key6 not in serverRangesMapGlobal and key6 not in serverRangesMapLocal and key6 not in serverRangesMap and isIPV6:
+            serverRangesMap[key6] = serverRange['name']
     printStatus(None, "")
     if sys.version_info >= (3, 0):
         serverRangesMap = serverRangesMap.copy()
@@ -400,11 +415,23 @@ def processRanges(client, userRanges):
     for userRange in userRanges:
         printStatus(None, "processing range: " + userRange['Name'])
         userRangeNameInitial = userRange['Name']
-        key = userRange['RangeFrom'] + '_' + userRange['RangeTo']
-        if key in serverRangesMap:
-            printStatus(None, None,
-                        "More than one range has the same ip: '" + userRange['RangeFrom'] + "' and '" + userRange[
-                            'RangeTo'] + "'")
+        key4 = userRange['RangeFrom4'] + '_' + userRange['RangeTo4']
+        key6 = userRange['RangeFrom6'] + '_' + userRange['RangeTo6']
+        isIPV4 = False
+        isIPV6 = False
+        if userRange['RangeFrom4'] != '':
+            isIPV4 = True
+        if userRange['RangeFrom6'] != '':
+            isIPV6 = True
+        if  ( isIPV4 and key4 in serverRangesMap) or ( isIPV6 and key6 in serverRangesMap):
+            printStatus(None, None, "More than one range has the same ip: {} {} {}{} {} {} {}".format(
+                                                                                                    userRange['RangeFrom4'] if isIPV4 else "",
+                                                                                                    "to" if isIPV4 else "",
+                                                                                                    userRange['RangeTo4'] if isIPV4 else "",
+                                                                                                    "," if isIPV4 and isIPV6 else "",
+                                                                                                    userRange['RangeFrom6'] if isIPV6 else "",
+                                                                                                    "to" if isIPV6 else "",
+                                                                                                    userRange['RangeTo6'] if isIPV6 else "", ) )
             mergedRangesNamesMap[userRangeNameInitial] = serverRangesMap[key]
             printStatus(None, "REPORT: " + "CP object " + mergedRangesNamesMap[
                 userRangeNameInitial] + " is used instead of " + userRangeNameInitial)
@@ -415,19 +442,29 @@ def processRanges(client, userRanges):
                 while userRange['Name'] in serverRangesMap.values():
                     userRange['Name'] = userRangeNameInitial + '_' + str(userRangeNamePostfix)
                     userRangeNamePostfix += 1
+
             payload = {
                 "name": userRange['Name'],
-                "ip-address-first": userRange['RangeFrom'],
-                "ip-address-last": userRange['RangeTo'],
                 "comments": userRange['Comments'],
                 "tags": userRange['Tags'],
                 "ignore-warnings": True
             }
+             if isIPV4:
+                payload['ipv4-address-first'] = userRange['RangeFrom']
+                payload['ipv4-address-last'] = userRange['RangeTo'],
+            if isIPV6:
+                payload['ipv6-address-first'] = userRange['RangeFrom']
+                payload['ipv6-address-last'] = userRange['RangeTo']
+
             addedRange = addUserObjectToServer(client, "add-address-range", payload, userRangeNamePostfix)
             if addedRange is not None:
                 mergedRangesNamesMap[userRangeNameInitial] = addedRange['name']
-                key = addedRange['ipv4-address-first'] + '_' + addedRange['ipv4-address-last']
-                serverRangesMap[key] = addedRange['name']
+                if isIPV4:
+                    key = addedRange['ipv4-address-first'] + '_' + addedRange['ipv4-address-last']
+                    serverRangesMap[key] = addedRange['name']
+                if isIPV6:
+                    key = addedRange['ipv6-address-first'] + '_' + addedRange['ipv6-address-last']
+                    serverRangesMap[key] = addedRange['name']
                 printStatus(None, "REPORT: " + userRangeNameInitial + " is added as " + addedRange['name'])
                 publishCounter = publishUpdate(publishCounter, False)
             else:
