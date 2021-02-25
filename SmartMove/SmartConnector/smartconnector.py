@@ -320,11 +320,11 @@ def processNetworks(client, userNetworks):
             "tags": userNetwork['Tags']
         }
         if ipaddress.ip_address(userNetwork['Subnet']).version == 4:
-            payload["subnet4"]: userNetwork['Subnet'],
-            payload["subnet-mask"]: userNetwork['Netmask'],
+            payload["subnet4"] = userNetwork['Subnet']
+            payload["subnet-mask"] = userNetwork['Netmask']
         else:
-            payload["subnet6"]: userNetwork['Subnet'],
-            payload["mask-length6"]: userNetwork['MaskLength'],
+            payload["subnet6"] = userNetwork['Subnet']
+            payload["mask-length6"] = userNetwork['MaskLength']
         initialMapLength = len(mergedNetworksNamesMap)
         mergedNetworksNamesMap = addCpObjectWithIpToServer(client, payload, "network", userNetwork['Subnet'], mergedNetworksNamesMap)
         if initialMapLength == len(mergedNetworksNamesMap):
