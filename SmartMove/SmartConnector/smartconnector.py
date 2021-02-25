@@ -293,8 +293,8 @@ def processHosts(client, userHosts):
     if len(userHosts) == 0:
         return mergedHostsNamesMap
     for userHost in userHosts:
-        isIPV4 = True if "Ipv4Address" in userHost else False
-        isIPV6 = True if "Ipv6Address" in userHost else False
+        isIPV4 = True if userHost["Ipv4Address"] != "" else False
+        isIPV6 = True if userHost["Ipv6Address"] != "" else False
         payload = {
             "name": userHost['Name'],
             "comments": userHost['Comments'],
@@ -330,8 +330,8 @@ def processNetworks(client, userNetworks):
     if len(userNetworks) == 0:
         return mergedNetworksNamesMap
     for userNetwork in userNetworks:
-        isIPV4 = True if "Subnet4" in userNetwork else False
-        isIPV6 = True if "Subnet6" in userNetwork else False
+        isIPV4 = True if userNetwork["Subnet4"] != "" else False
+        isIPV6 = True if userNetwork["Subnet6"] != "" else False
         payload = {
             "name": userNetwork['Name'],
             "comments": userNetwork['Comments'],
@@ -375,12 +375,9 @@ def processRanges(client, userRanges):
     res_get_ranges = client.api_query("show-address-ranges")
     printStatus(res_get_ranges, None)
     for serverRange in res_get_ranges.data:
-        isIPV4 = False
-        isIPV6 = False
-        if serverRange['ipv4-address-first'] != '':
-            isIPV4 = True
-        if serverRange['ipv6-address-first'] != '':
-            isIPV6 = True
+        isIPV4 = True if userRange['RangeFrom4'] != '' else False
+        isIPV6 = True if userRange['RangeFrom6'] != '' else False
+
         key4 = serverRange['ipv4-address-first'] + '_' + serverRange['ipv4-address-last']
         key6 = serverRange['ipv6-address-first'] + '_' + serverRange['ipv6-address-last']
         if isServerObjectGlobal(serverRange) and key4 not in serverRangesMapGlobal and isIPV4:
@@ -415,14 +412,13 @@ def processRanges(client, userRanges):
     for userRange in userRanges:
         printStatus(None, "processing range: " + userRange['Name'])
         userRangeNameInitial = userRange['Name']
+
         key4 = userRange['RangeFrom4'] + '_' + userRange['RangeTo4']
         key6 = userRange['RangeFrom6'] + '_' + userRange['RangeTo6']
-        isIPV4 = False
-        isIPV6 = False
-        if userRange['RangeFrom4'] != '':
-            isIPV4 = True
-        if userRange['RangeFrom6'] != '':
-            isIPV6 = True
+
+        isIPV4 = True if userRange['RangeFrom4'] != '' else False
+        isIPV6 = True if userRange['RangeFrom6'] != '' else False
+
         if  ( isIPV4 and key4 in serverRangesMap) or ( isIPV6 and key6 in serverRangesMap):
             printStatus(None, None, "More than one range has the same ip: {} {} {}{} {} {} {}".format(
                                                                                                     userRange['RangeFrom4'] if isIPV4 else "",
@@ -539,16 +535,23 @@ def processSimpleGateways(client, userSimpleGateways):
     for userSimpleGateway in userSimpleGateways:
         printStatus(None, "processing simple getway: " + userSimpleGateway['Name'])
         userSimpleGatewayNameInitial = userSimpleGateway['Name']
-        addedSimpleGateway = addUserObjectToServer(
-            client,
-            "add-simple-gateway",
-            {
+        isIPV4 = True if "IpAddress4" in userNetwork else False
+        isIPV6 = True if "IpAddress6" in userNetwork else False
+        
+        payload = {
                 "name": userSimpleGateway['Name'],
                 "ip-address": userSimpleGateway['IpAddress'],
                 "comments": userSimpleGateway['Comments'],
                 "tags": userSimpleGateway['Tags']
             }
-        )
+
+        if isIPV4:
+            payload['ip4-address'] = userSimpleGateway['Ipv4Address']
+        if isIPV6:
+            payload['ip6-address'] = userSimpleGateway['Ipv6Address']
+
+        addedSimpleGateway = addUserObjectToServer( client, "add-simple-gateway", payload )
+
         if addedSimpleGateway is not None:
             mergedSimpleGatewaysNamesMap[userSimpleGatewayNameInitial] = addedSimpleGateway['name']
             printStatus(None, "REPORT: " + userSimpleGatewayNameInitial + " is added as " + addedSimpleGateway['name'])
