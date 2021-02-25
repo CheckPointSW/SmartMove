@@ -4,6 +4,7 @@ import sys
 import argparse
 import json
 import os
+import ipaddress
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
 from cpapi import APIClient, APIClientArgs
@@ -147,57 +148,6 @@ def addUserObjectToServer(client, apiCommand, payload, userObjectNamePostfix=1, 
     return addedObject
 
 
-# adding to server the object which contains fields with IP: hosts, networks
-# adjusting the name if object with the name exists at server: <initial_object_name>_<postfix>
-# using the object from server side if object exsits with the same IP at server
-# client - client object
-# payload - JSON representation of "new" object
-# userObjectType - the type of object: host or network
-# userObjectIp - IP which will be used as filter in request to server
-# mergedObjectsNamesMap - the map which contains name of user's object (key) and name of resulting object (value)
-# ---
-# returns: updated mergedObjectsNamesMap
-def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mergedObjectsNamesMap):
-    printStatus(None, "processing " + userObjectType + ": " + payload['name'])
-    userObjectNameInitial = payload['name']
-    userObjectNamePostfix = 1
-    isFinished = False
-    isIgnoreWarnings = False
-    while not isFinished:
-        payload["ignore-warnings"] = isIgnoreWarnings
-        res_add_obj_with_ip = client.api_call("add-" + userObjectType, payload)
-        printStatus(res_add_obj_with_ip, "REPORT: " + userObjectNameInitial + " is added as " + payload['name'])
-        if res_add_obj_with_ip.success is False:
-            if isIpDuplicated(res_add_obj_with_ip) and not isIgnoreWarnings:
-                res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": True,
-                                                                                "type": userObjectType})
-                printStatus(res_get_obj_with_ip, None)
-                if res_get_obj_with_ip.success is True:
-                    if len(res_get_obj_with_ip.data) > 0:
-                        for serverObject in res_get_obj_with_ip.data:
-                            if isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst:
-                                mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
-                                break
-                            if isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst:
-                                mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
-                                break
-                            mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
-                        printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
-                            userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
-                        isFinished = True
-                    else:
-                        isIgnoreWarnings = True
-                else:
-                    isFinished = True
-            elif isNameDuplicated(res_add_obj_with_ip):
-                payload['name'] = userObjectNameInitial + '_' + str(userObjectNamePostfix)
-                userObjectNamePostfix += 1
-            else:
-                isFinished = True
-        else:
-            mergedObjectsNamesMap[userObjectNameInitial] = payload['name']
-            isFinished = True
-    return mergedObjectsNamesMap
 
 
 # processing and adding to server the groups which contains list of members
@@ -265,6 +215,67 @@ def processDomains(client, userDomains):
     return mergedDomainsNamesMap
 
 
+
+# adding to server the object which contains fields with IP: hosts, networks
+# adjusting the name if object with the name exists at server: <initial_object_name>_<postfix>
+# using the object from server side if object exsits with the same IP at server
+# client - client object
+# payload - JSON representation of "new" object
+# userObjectType - the type of object: host or network
+# userObjectIp - IP which will be used as filter in request to server
+# mergedObjectsNamesMap - the map which contains name of user's object (key) and name of resulting object (value)
+# ---
+# returns: updated mergedObjectsNamesMap
+def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIpv4, userObjectIpv6, mergedObjectsNamesMap):
+    printStatus(None, "processing " + userObjectType + ": " + payload['name'])
+    userObjectNameInitial = payload['name']
+    userObjectNamePostfix = 1
+    isFinished = False
+    isIgnoreWarnings = False
+    while not isFinished:
+        payload["ignore-warnings"] = isIgnoreWarnings
+        res_add_obj_with_ip = client.api_call("add-" + userObjectType, payload)
+        printStatus(res_add_obj_with_ip, "REPORT: " + userObjectNameInitial + " is added as " + payload['name'])
+        if res_add_obj_with_ip.success is False:
+            if isIpDuplicated(res_add_obj_with_ip) and not isIgnoreWarnings:
+                filterIp = ""
+                if userObjectIpv4 not None and userObjectIpv6 not None:
+                    filterIp = "{} OR {}".format(userObjectIpv4, userObjectIpv6)
+                elif userObjectIpv4 not None:
+                    filterIp = "{userObjectIpv4}"
+                else:
+                    filterIp = "{userObjectIpv6}"
+                res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": filterIp, "ip-only": True,
+                                                                                "type": userObjectType})
+                printStatus(res_get_obj_with_ip, None)
+                if res_get_obj_with_ip.success is True:
+                    if len(res_get_obj_with_ip.data) > 0:
+                        for serverObject in res_get_obj_with_ip.data:
+                            if isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst:
+                                mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
+                                break
+                            if isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst:
+                                mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
+                                break
+                            mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
+                        printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
+                            userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
+                        isFinished = True
+                    else:
+                        isIgnoreWarnings = True
+                else:
+                    isFinished = True
+            elif isNameDuplicated(res_add_obj_with_ip):
+                payload['name'] = userObjectNameInitial + '_' + str(userObjectNamePostfix)
+                userObjectNamePostfix += 1
+            else:
+                isFinished = True
+        else:
+            mergedObjectsNamesMap[userObjectNameInitial] = payload['name']
+            isFinished = True
+    return mergedObjectsNamesMap
+
+
 # processing and adding to server the CheckPoint Hosts
 # adjusting the name if host with the name exists at server: <initial_object_name>_<postfix>
 # if host contains existing IP address then Host object from server will be used instead
@@ -276,19 +287,25 @@ def processDomains(client, userDomains):
 def processHosts(client, userHosts):
     printMessageProcessObjects("hosts")
     publishCounter = 0
+    
+    isIPV6 = 
     mergedHostsNamesMap = {}
     if len(userHosts) == 0:
         return mergedHostsNamesMap
     for userHost in userHosts:
+        isIPV4 = True if "Ipv4Address" in userHost else False
+        isIPV6 = True if "Ipv6Address" in userHost else False
         payload = {
             "name": userHost['Name'],
-            "ip-address": userHost['IpAddress'],
             "comments": userHost['Comments'],
             "tags": userHost['Tags']
         }
+        if isIPV4:
+            payload['ipv4-address'] = userHost['Ipv4Address']
+        if isIPV6:
+            payload['ipv6-address'] = userHost['Ipv6Address']
         initialMapLength = len(mergedHostsNamesMap)
-        mergedHostsNamesMap = addCpObjectWithIpToServer(client, payload, "host", userHost['IpAddress'],
-                                                        mergedHostsNamesMap)
+        mergedHostsNamesMap = addCpObjectWithIpToServer(client, payload, "host", userHost['Ipv4Address'] if isIPV4 else None, userHost['Ipv6Address'] if isIPV6 else None, mergedHostsNamesMap)
         if initialMapLength == len(mergedHostsNamesMap):
             printStatus(None, "REPORT: " + userHost['Name'] + ' is not added.')
         else:
@@ -313,16 +330,20 @@ def processNetworks(client, userNetworks):
     if len(userNetworks) == 0:
         return mergedNetworksNamesMap
     for userNetwork in userNetworks:
+        isIPV4 = True if "Subnet4" in userNetwork else False
+        isIPV6 = True if "Subnet6" in userNetwork else False
         payload = {
             "name": userNetwork['Name'],
-            "subnet4": userNetwork['Subnet'],
-            "subnet-mask": userNetwork['Netmask'],
             "comments": userNetwork['Comments'],
             "tags": userNetwork['Tags']
         }
+        if isIPV4:
+            payload['subnet4'] = userNetwork['Subnet4']
+            payload['subnet-mask']: userNetwork['Netmask'],
+        if isIPV6:
+            payload['subnet6'] = userNetwork['Subnet6']
         initialMapLength = len(mergedNetworksNamesMap)
-        mergedNetworksNamesMap = addCpObjectWithIpToServer(client, payload, "network", userNetwork['Subnet'],
-                                                           mergedNetworksNamesMap)
+        mergedNetworksNamesMap = addCpObjectWithIpToServer(client, payload, "network", userNetwork['Subnet4'] if isIPV4 else None, userNetwork['Subnet6'] if isIPV6 else None, mergedNetworksNamesMap)
         if initialMapLength == len(mergedNetworksNamesMap):
             printStatus(None, "REPORT: " + userNetwork['Name'] + ' is not added.')
         else:
