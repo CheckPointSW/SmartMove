@@ -979,6 +979,15 @@ namespace MigrationBase
                             continue;
                         }
 
+                        //if a group has no members
+                        if (obj.Members.Count == 0)
+                        {
+                            file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                            continue;
+                        }
+
                         //if a group has more then max size for publish - generate part of group divided by small groups.
                         obj.MembersMaxPublishSize = groupsMaxBulkSize;
                         for (int i = 0; i < obj.Members.Count; i += groupsMaxBulkSize)
@@ -1189,6 +1198,15 @@ namespace MigrationBase
                     int objectsCount = 0;
                     foreach (CheckPoint_ServiceGroup obj in _cpServiceGroups)
                     {
+                        //if a group has no members
+                        if (obj.Members.Count == 0)
+                        {
+                            file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
+
+                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                            continue;
+                        }
+
                         //if a group has more then max size for publish - generate part of group divided by small groups.
                         obj.MembersMaxPublishSize = groupsMaxBulkSize;
                         for (int i = 0; i < obj.Members.Count; i += groupsMaxBulkSize)
@@ -1203,14 +1221,6 @@ namespace MigrationBase
                                 file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
                             }
                         }
-
-                        /* file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
-
-                        objectsCount++;
-                        if (objectsCount % publishLatency == 0)
-                        {
-                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
-                        } */
                     }
                     file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
                 }
