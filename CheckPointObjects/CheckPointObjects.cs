@@ -152,7 +152,7 @@ namespace CheckPointObjects
             int maxIndex = ((firstIndex + maxSize) < paramValues.Count) ? (firstIndex + maxSize) : paramValues.Count;
             for (int i = firstIndex; i < maxIndex; i++)
             {
-                string value = useSafeNames ? paramValues[i] : GetSafeName(paramValues[i]);
+                string value = useSafeNames ? GetSafeName(paramValues[i]) : paramValues[i];
                 sb.AppendFormat("{0}{1}.{2} \"{3}\" ", paramName, suffix, i, value);
             }
 
@@ -161,26 +161,7 @@ namespace CheckPointObjects
 
         protected static string WriteListParamWithIndexes(string paramName, List<string> paramValues, bool useSafeNames, int i = 0)
         {
-            if (paramValues.Count == 0)
-            {
-                return "";
-            }
-
-            string str = "";
-
-            foreach (string paramValue in paramValues)
-            {
-                string val = paramValue;
-                if (useSafeNames)
-                {
-                    val = GetSafeName(paramValue);
-                }
-
-                str += string.Format("{0}.{1} \"{2}\" ", paramName, i, val);
-                i++;
-            }
-
-            return str;
+            return WriteListParam(paramName, paramValues, useSafeNames, i, paramValues.Count);
         }
     }
 
@@ -331,8 +312,10 @@ namespace CheckPointObjects
 
         public override string ToCLIScriptInstruction()
         {
-            return (MembersPublishIndex == 0 ? "create " : "update ") + "network group [" + Name + "]: " + Members.Count + " members";
+            int index = ((MembersPublishIndex + MembersMaxPublishSize) > Members.Count) ? Members.Count : MembersPublishIndex + MembersMaxPublishSize;
+            return (MembersPublishIndex == 0 ? "create " : "update ") + "network group [" + Name + "]: " + index + "/" + Members.Count + " members";
         }
+
     }
 
     public class CheckPoint_GroupWithExclusion : CheckPointObject
@@ -523,8 +506,11 @@ namespace CheckPointObjects
 
         public override string ToCLIScriptInstruction()
         {
-            return (MembersPublishIndex == 0 ? "create " : "update ") + "service group [" + Name + "]: " + Members.Count + " members";
+            //index for comments
+            int index = ((MembersPublishIndex + MembersMaxPublishSize) > Members.Count) ? Members.Count : MembersPublishIndex + MembersMaxPublishSize;
+            return (MembersPublishIndex == 0 ? "create " : "update ") + "service group [" + Name + "]: " + index + "/" + Members.Count + " members";
         }
+        
     }
 
     public class CheckPoint_ApplicationGroup : CheckPointObject
