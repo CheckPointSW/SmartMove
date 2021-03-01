@@ -1287,7 +1287,7 @@ namespace MigrationBase
 
                 if (_cpAccessRoles.Count > 0)
                 {
-                    file.WriteLine("if [ $NUSE -ne 0 ]; then");
+                    file.WriteLine("if [[ $NUSE -ne 0 ]]; then");
 
                     file.WriteLine("  " + CLIScriptBuilder.GenerateInstructionScript(string.Format("Create {0} Objects (x{1}) ", "Access Role", _cpAccessRoles.Count)));
                     int objectsCount = 0;
