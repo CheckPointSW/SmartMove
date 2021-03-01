@@ -984,7 +984,11 @@ namespace MigrationBase
                         {
                             file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
 
-                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                            objectsCount++;
+                            if (objectsCount % publishLatency == 0)
+                            {
+                                file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                            }
                             continue;
                         }
 
@@ -1203,7 +1207,11 @@ namespace MigrationBase
                         {
                             file.WriteLine(CLIScriptBuilder.GenerateObjectScript(obj));
 
-                            file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                            objectsCount++;
+                            if (objectsCount % publishLatency == 0)
+                            {
+                                file.WriteLine(CLIScriptBuilder.GeneratePublishScript());
+                            }
                             continue;
                         }
 
