@@ -1071,6 +1071,7 @@ namespace JuniperMigration
                 }
 
                 package.SubPolicies.Add(cpLayer);
+                validatePackage(package);
             }
         }
 
@@ -1108,6 +1109,7 @@ namespace JuniperMigration
                 cpSubLayer4GlobalRules.Name = cpRule4GlobalLayer.SubPolicyName;
 
                 package.SubPolicies.Insert(0, cpSubLayer4GlobalRules); // insert at the begging becuase Global Rules should be created before all policy
+                validatePackage(package);
 
                 foreach (var globalPolicyRule in _juniperParser.GetGlobalPolicyRules())
                 {
@@ -1256,6 +1258,7 @@ namespace JuniperMigration
                                 cpLayer.Tag = ",";   // this info is needed later for global policy rules - in this case this sub-policy will be skipped!!!
 
                                 package.SubPolicies.Add(cpLayer);
+                                validatePackage(package);
 
                                 // 3. Create a new rule and add to this sub-policy
                                 var cpRule = Juniper_To_CPRule(globalPolicyRule, cpLayer.Name, sourceZone, destZone);
