@@ -513,8 +513,17 @@ namespace SmartMove
             }
             catch (Exception ex)
             {
-               
-                Console.WriteLine(string.Format("Could not convert configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+
+                if (ex is InvalidDataException && ex.Message != null && ex.Message.Contains("Policy exceeds the maximum number"))
+                {
+                    Console.WriteLine(String.Format("{1}{0}{2}{0}{3}", Environment.NewLine, "SmartMove is unable to convert the provided policy.",
+                                                        "Reason: Policy exceeds the maximum number of supported policy layers.",
+                                                        "To assure the smooth conversion of your data, it is recommended to contact Check Point Professional Services by sending an e-mail to ps@checkpoint.com"));
+                }
+                else
+                {
+                    Console.WriteLine(string.Format("Could not convert configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                }
                 return;
             }                     
             

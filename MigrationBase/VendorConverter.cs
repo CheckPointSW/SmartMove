@@ -53,6 +53,7 @@ namespace MigrationBase
         protected const string HtmlCPLogoImageSource = "src='data:image/png;base64,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'";
         protected const int publishLatency = 100;
         protected const int groupsMaxBulkSize = 100;
+        protected const int SubPoliciesMaxNumber = 249;
 
         #endregion
 
@@ -1349,6 +1350,14 @@ namespace MigrationBase
             }
         }
 
+        protected void validatePackage(CheckPoint_Package package)
+        {
+            if (package?.SubPolicies != null && package.SubPolicies.Count > SubPoliciesMaxNumber)
+            {
+                throw new InvalidDataException("Policy exceeds the maximum number of supported policy layers.");
+            }
+        }
+
         protected void CreatePackagesScript()
         {
             const int publishLatency = 100;
@@ -1356,6 +1365,7 @@ namespace MigrationBase
 
             foreach (CheckPoint_Package package in _cpPackages)
             {
+                validatePackage(package);
                 ++packageNumber;
 
                 string filename = _targetFolder + "\\" + package.Name + ".sh";
