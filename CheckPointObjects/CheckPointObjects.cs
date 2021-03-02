@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using CommonUtils;
 
@@ -127,7 +128,17 @@ namespace CheckPointObjects
 
         protected static string WriteListParam(string paramName, List<string> paramValues, bool useSafeNames)
         {
-            if (paramValues.Count == 0)
+            return WriteListParam(paramName, paramValues, useSafeNames, 0, paramValues.Count);
+        }
+
+        protected static string WriteListParam(string paramName, List<string> paramValues, bool useSafeNames, int firstIndex, int maxSize)
+        {
+            return WriteListParam(paramName, paramValues, useSafeNames, firstIndex, maxSize, "");
+        }
+
+        protected static string WriteListParam(string paramName, List<string> paramValues, bool useSafeNames, int firstIndex, int maxSize, string suffix)
+        {
+            if (paramValues.Count == 0 || firstIndex >= paramValues.Count || maxSize <= 0)
             {
                 return "";
             }
@@ -137,46 +148,20 @@ namespace CheckPointObjects
                 return WriteParam(paramName, paramValues[0], "");
             }
 
-            string str = "";
-            int i = 0;
-
-            foreach (string paramValue in paramValues)
+            var sb = new StringBuilder("");
+            int maxIndex = ((firstIndex + maxSize) < paramValues.Count) ? (firstIndex + maxSize) : paramValues.Count;
+            for (int i = firstIndex; i < maxIndex; i++)
             {
-                string val = paramValue;
-                if (useSafeNames)
-                {
-                    val = GetSafeName(paramValue);
-                }
-
-                str += string.Format("{0}.{1} \"{2}\" ", paramName, i, val);
-                i++;
+                string value = useSafeNames ? GetSafeName(paramValues[i]) : paramValues[i];
+                sb.AppendFormat("{0}{1}.{2} \"{3}\" ", paramName, suffix, i, value);
             }
 
-            return str;
+            return sb.ToString();
         }
 
         protected static string WriteListParamWithIndexes(string paramName, List<string> paramValues, bool useSafeNames, int i = 0)
         {
-            if (paramValues.Count == 0)
-            {
-                return "";
-            }
-
-            string str = "";
-
-            foreach (string paramValue in paramValues)
-            {
-                string val = paramValue;
-                if (useSafeNames)
-                {
-                    val = GetSafeName(paramValue);
-                }
-
-                str += string.Format("{0}.{1} \"{2}\" ", paramName, i, val);
-                i++;
-            }
-
-            return str;
+            return WriteListParam(paramName, paramValues, useSafeNames, i, paramValues.Count);
         }
     }
 
@@ -315,18 +300,22 @@ namespace CheckPointObjects
         /// GroupWithExclusion and NetworkGroup types cross-referencing each other.
         /// </summary>
         public bool CreateAfterGroupsWithExclusion { get; set; }
+        public int MembersPublishIndex { get; set; } = 0;
+        public int MembersMaxPublishSize { get; set; } = Int32.MaxValue;
 
         public override string ToCLIScript()
         {
-            return "add group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteListParam("members", Members, true)
+            return (MembersPublishIndex == 0 ? "add " : "set ") + "group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteListParam("members", Members, true, MembersPublishIndex, MembersMaxPublishSize, MembersPublishIndex == 0 ? "" : ".add")
                 + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
         {
-            return "create network group [" + Name + "]: " + Members.Count + " members";
+            int index = ((MembersPublishIndex + MembersMaxPublishSize) > Members.Count) ? Members.Count : MembersPublishIndex + MembersMaxPublishSize;
+            return (MembersPublishIndex == 0 ? "create " : "update ") + "network group [" + Name + "]: " + index + "/" + Members.Count + " members";
         }
+
     }
 
     public class CheckPoint_GroupWithExclusion : CheckPointObject
@@ -377,6 +366,7 @@ namespace CheckPointObjects
                 + WriteParam("port", Port, "")
                 + WriteParam("source-port", SourcePort, "")
                 + WriteParam("session-timeout", SessionTimeout, "0")
+                + ((SessionTimeout != null && !SessionTimeout.Equals("0")) ? WriteParam("use-default-session-timeout", "false", "") : "")
                 + WriteListParam("tags", Tags, true);
         }
 
@@ -398,6 +388,7 @@ namespace CheckPointObjects
                 + WriteParam("port", Port, "")
                 + WriteParam("source-port", SourcePort, "")
                 + WriteParam("session-timeout", SessionTimeout, "0")
+                + ((SessionTimeout != null && !SessionTimeout.Equals("0")) ? WriteParam("use-default-session-timeout", "false", "") : "")
                 + WriteListParam("tags", Tags, true);
         }
 
@@ -419,6 +410,7 @@ namespace CheckPointObjects
                 + WriteParam("port", Port, "")
                 + WriteParam("source-port", SourcePort, "")
                 + WriteParam("session-timeout", SessionTimeout, "0")
+                + ((SessionTimeout != null && !SessionTimeout.Equals("0")) ? WriteParam("use-default-session-timeout", "false", "") : "")
                 + WriteListParam("tags", Tags, true);
         }
 
@@ -502,18 +494,23 @@ namespace CheckPointObjects
     public class CheckPoint_ServiceGroup : CheckPointObject
     {
         public List<string> Members = new List<string>();
+        public int MembersPublishIndex { get; set; } = 0;
+        public int MembersMaxPublishSize { get; set; } = Int32.MaxValue;
 
         public override string ToCLIScript()
         {
-            return "add service-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteListParam("members", Members, true)
+            return (MembersPublishIndex == 0 ? "add " : "set ") + "service-group " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
+                + WriteListParam("members", Members, true, MembersPublishIndex, MembersMaxPublishSize, MembersPublishIndex == 0 ? "" : ".add")
                 + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
         {
-            return "create service group [" + Name + "]: " + Members.Count + " members";
+            //index for comments
+            int index = ((MembersPublishIndex + MembersMaxPublishSize) > Members.Count) ? Members.Count : MembersPublishIndex + MembersMaxPublishSize;
+            return (MembersPublishIndex == 0 ? "create " : "update ") + "service group [" + Name + "]: " + index + "/" + Members.Count + " members";
         }
+        
     }
 
     public class CheckPoint_ApplicationGroup : CheckPointObject
@@ -984,7 +981,7 @@ namespace CheckPointObjects
 
     public class CheckPoint_NAT_Rule : CheckPointObject
     {
-        public enum NatMethod { Static, Hide };
+        public enum NatMethod { Static, Hide, Nat64, Nat46 };
 
         public bool Enabled { get; set; }
         public string Package { get; set; }
