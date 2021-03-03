@@ -2000,8 +2000,8 @@ namespace MigrationBase
             string compressorZip = Path.Combine(compressorsDirPath, "zip.exe");
             string compressorGtar = Path.Combine(compressorsDirPath, "gtar.exe");
             string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
-            if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
-                isGeneratingSC = false;
+            //if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
+            //    isGeneratingSC = false;
 
             if (isGeneratingSC)
             {

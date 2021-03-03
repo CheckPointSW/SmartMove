@@ -4,6 +4,7 @@ import sys
 import argparse
 import json
 import os
+import re
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
 from cpapi import APIClient, APIClientArgs
@@ -389,7 +390,7 @@ def processNetworks(client, userNetworks):
             payload["subnet-mask"] = userNetwork['Netmask']
         else:
             payload["subnet6"] = userNetwork['Subnet']
-            payload["mask-length6"] = userNetwork['MaskPrefix']
+            payload["mask-length6"] = userNetwork['MaskLength']
         initialMapLength = len(mergedNetworksNamesMap)
         mergedNetworksNamesMap = addCpObjectWithIpToServer(client, payload, "network", userNetwork['Subnet'], mergedNetworksNamesMap)
         if initialMapLength == len(mergedNetworksNamesMap):
