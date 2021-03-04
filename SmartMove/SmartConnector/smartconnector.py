@@ -383,13 +383,12 @@ def processNetworks(client, userNetworks):
         payload = {
             "name": userNetwork['Name'],
             "comments": userNetwork['Comments'],
-            "tags": userNetwork['Tags']
+            "tags": userNetwork['Tags'],
+            "subnet": userNetwork['Subnet']
         }
         if is_valid_ipv4(userNetwork['Subnet']):
-            payload["subnet4"] = userNetwork['Subnet']
             payload["subnet-mask"] = userNetwork['Netmask']
         else:
-            payload["subnet6"] = userNetwork['Subnet']
             payload["mask-length6"] = userNetwork['MaskLength']
         initialMapLength = len(mergedNetworksNamesMap)
         mergedNetworksNamesMap = addCpObjectWithIpToServer(client, payload, "network", userNetwork['Subnet'], mergedNetworksNamesMap)
@@ -1048,6 +1047,17 @@ def processPackage(client, userPackage, mergedNetworkObjectsMap, mergedServiceOb
                            mergedServiceObjectsMap, mergedTimesGroupsNamesMap, mergedTimesNamesMap)
     return addedPackage
 
+# resolver for nat method type
+# typeValue - number of type [ static, hide, nat64, nat46 ]
+def getMethodType(typeValue):
+    _type = "static"
+    if typeValue == 1:
+        _type = "hide"
+    elif typeValue == 2:
+        _type = "nat64"
+    elif typeValue == 3:
+        _type = "nat46"
+    return _type
 
 # processing and adding to server the CheckPoint NAT rules
 # NAT rules are added if package has been added
@@ -1100,7 +1110,7 @@ def processNatRules(client, addedPackage, userNatRules, mergedNetworkObjectsMap,
             "position": "bottom",
             "comments": userNatRule['Comments'],
             "enabled": userNatRule['Enabled'],
-            "method": "static" if userNatRule['Method'] == 0 else "hide",
+            "method": getMethodType(userNatRule['Method']),
             "original-source": sourceOrig,
             "original-destination": destinationOrig,
             "original-service": serviceOrig,
