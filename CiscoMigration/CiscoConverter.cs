@@ -988,11 +988,13 @@ namespace CiscoMigration
             foreach (CiscoCommand command in CiscoAclCommands)
             {
                 var ciscoAcl = (Cisco_AccessList)command;
-                CheckIcmp6Service(ciscoAcl);
                 if (ciscoAcl.IsRemark)
                 {
                     continue;
                 }
+
+                //if there is icmp6 service we need to create an 'other service' with name IPv6-ICMP. At this place checks if we have requirements for this service and create his if yes
+                CheckIcmp6Service(ciscoAcl);
 
                 CiscoNetwork source;
                 CiscoNetwork dest;
