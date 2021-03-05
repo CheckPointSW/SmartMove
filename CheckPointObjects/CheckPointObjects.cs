@@ -477,6 +477,15 @@ namespace CheckPointObjects
     {
         public string IpProtocol { get; set; }
 
+        public CheckPoint_OtherService() : base() { }
+        public CheckPoint_OtherService (string name, string ipprotocol, string comments, List<string> tags) : base()
+        {
+            Name = name;
+            IpProtocol = ipprotocol;
+            Comments = comments;
+            Tags = tags;
+        }
+
         public override string ToCLIScript()
         {
             return "add service-other " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")

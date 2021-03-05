@@ -988,6 +988,7 @@ namespace CiscoMigration
             foreach (CiscoCommand command in CiscoAclCommands)
             {
                 var ciscoAcl = (Cisco_AccessList)command;
+                CheckIcmp6Service(ciscoAcl);
                 if (ciscoAcl.IsRemark)
                 {
                     continue;
@@ -1018,6 +1019,31 @@ namespace CiscoMigration
                 {
                     dest = new CiscoNetwork(ciscoAcl.Id, ciscoAcl.Destination.Subnet, ciscoAcl.Destination.Netmask);
                     _ciscoNetworkObjects.Add(dest);
+                }
+            }
+        }
+
+        private void CheckIcmp6Service(Cisco_AccessList accesslist)
+        {
+            foreach (string word in accesslist.Text.Split(' '))
+            {
+                if (word.Equals("icmp6"))
+                {
+                    CheckPoint_OtherService icmp6 = new CheckPoint_OtherService("IPv6-ICMP", "58", "", new List<string>());
+                    if (_cpOtherServices.Count > 0)
+                    {
+                        foreach (CheckPoint_OtherService service in _cpOtherServices)
+                        {
+                            if (service.Name.Equals(icmp6.Name))
+                                return;
+                        }
+                        _cpOtherServices.Add(icmp6);
+                    }
+                    else
+                    {
+                        _cpOtherServices.Add(icmp6);
+                    }
+                    return;
                 }
             }
         }
