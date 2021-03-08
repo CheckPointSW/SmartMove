@@ -3901,7 +3901,7 @@ namespace CiscoMigration
             var isSourceHost = false;
             var isSourceNetwork = false;
             var isSourceIpv6 = false;
-            if (natRule?.Source != null)
+            if (natRule != null && natRule.Source != null)
             {
                 isSourceHost = natRule.Source is CheckPoint_Host;
                 isSourceNetwork = natRule.Source is CheckPoint_Network;
@@ -3925,7 +3925,7 @@ namespace CiscoMigration
             var isTranslatedSourceHost = false;
             var isTranslatedSourceNetwork = false;
             var isTranslatedSourceIpv4 = false;
-            if (natRule?.TranslatedSource != null)
+            if (natRule != null && natRule.TranslatedSource != null)
             {
                 isTranslatedSourceHost = natRule.TranslatedSource is CheckPoint_Host;
                 isTranslatedSourceNetwork = natRule.TranslatedSource is CheckPoint_Network;
@@ -3977,7 +3977,7 @@ namespace CiscoMigration
             var isSourceHost = false;
             var isSourceNetwork = false;
             var isSourceIpv4 = false;
-            if (natRule?.Source != null)
+            if (natRule != null && natRule.Source != null)
             {
                 isSourceHost = natRule.Source is CheckPoint_Host;
                 isSourceNetwork = natRule.Source is CheckPoint_Network;
@@ -4001,7 +4001,7 @@ namespace CiscoMigration
             var isTranslatedSourceHost = false;
             var isTranslatedSourceNetwork = false;
             var isTranslatedSourceIpv6 = false;
-            if (natRule?.TranslatedSource != null)
+            if (natRule != null && natRule.TranslatedSource != null)
             {
                 isTranslatedSourceHost = natRule.TranslatedSource is CheckPoint_Host;
                 isTranslatedSourceNetwork = natRule.TranslatedSource is CheckPoint_Network;

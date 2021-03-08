@@ -300,8 +300,14 @@ namespace CheckPointObjects
         /// GroupWithExclusion and NetworkGroup types cross-referencing each other.
         /// </summary>
         public bool CreateAfterGroupsWithExclusion { get; set; }
-        public int MembersPublishIndex { get; set; } = 0;
-        public int MembersMaxPublishSize { get; set; } = Int32.MaxValue;
+        public int MembersPublishIndex { get; set; }
+        public int MembersMaxPublishSize { get; set; }
+
+        public CheckPoint_NetworkGroup() : base()
+        {
+            MembersPublishIndex = 0;
+            MembersMaxPublishSize = Int32.MaxValue;
+        }
 
         public override string ToCLIScript()
         {
@@ -494,8 +500,14 @@ namespace CheckPointObjects
     public class CheckPoint_ServiceGroup : CheckPointObject
     {
         public List<string> Members = new List<string>();
-        public int MembersPublishIndex { get; set; } = 0;
-        public int MembersMaxPublishSize { get; set; } = Int32.MaxValue;
+        public int MembersPublishIndex { get; set; }
+        public int MembersMaxPublishSize { get; set; } 
+
+        public CheckPoint_ServiceGroup() : base()
+        {
+            MembersPublishIndex = 0;
+            MembersMaxPublishSize = Int32.MaxValue;
+        }
 
         public override string ToCLIScript()
         {
