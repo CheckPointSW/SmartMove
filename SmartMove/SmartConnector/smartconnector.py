@@ -136,6 +136,18 @@ def addUserObjectToServer(client, apiCommand, payload, userObjectNamePostfix=1, 
         if res_add_obj.success is False:
             if not changeName:
                 break
+            if apiCommand == "add-access-layer":
+                res_get_obj_with_name = client.api_query("show access-layers")
+                if res_get_obj_with_name.success is True:
+                    for serverObject in res_get_obj_with_name.data['access-layers']:
+                        if serverObject['name'] == userObjectNameInitial and ((isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst)):
+                            addedObject = serverObject
+                            printStatus(None, "REPORT: " + "CP object " + addedObject["name"] + " is used instead of " + userObjectNameInitial)
+                            isObjectAdded = True
+                            break
+                    printStatus(None, "REPORT: " + "CP object " + addedObject["name"] + " is not added ")
+                if isObjectAdded:
+                    break
             if isNameDuplicated(res_add_obj):
                 payload['name'] = userObjectNameInitial + '_' + str(userObjectNamePostfix)
                 userObjectNamePostfix += 1
