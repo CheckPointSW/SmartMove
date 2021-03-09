@@ -46,6 +46,7 @@ namespace CheckPointObjects
         public const string All = "All";
         public const string All_Internet = "All_Internet";
         public const string icmpProtocol = "icmp-proto";
+        public const string icmp6Protocol = "IPv6-ICMP";
 
         public string Name { get; set; }
 
