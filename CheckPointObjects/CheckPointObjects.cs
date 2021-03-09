@@ -46,6 +46,7 @@ namespace CheckPointObjects
         public const string All = "All";
         public const string All_Internet = "All_Internet";
         public const string icmpProtocol = "icmp-proto";
+        public const string icmp6Protocol = "IPv6-ICMP";
 
         public string Name { get; set; }
 
@@ -476,6 +477,15 @@ namespace CheckPointObjects
     public class CheckPoint_OtherService : CheckPointObject
     {
         public string IpProtocol { get; set; }
+
+        public CheckPoint_OtherService() : base() { }
+        public CheckPoint_OtherService (string name, string ipprotocol, string comments, List<string> tags) : base()
+        {
+            Name = name;
+            IpProtocol = ipprotocol;
+            Comments = comments;
+            Tags = tags;
+        }
 
         public override string ToCLIScript()
         {
