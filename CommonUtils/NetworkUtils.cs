@@ -84,16 +84,16 @@ namespace CommonUtils
             }
             return false;
         }
-        public static bool TryParseNetwortWithPrefix(String sNetwork, out String sIp, out String sMaskLength)
+        public static bool TryParseNetwortWithPrefix(String sNetwork, out String sIp, out String sMaskLenght)
         {
             sIp = "";
-            sMaskLength = "";
+            sMaskLenght = "";
             String[] splitedNetwork = sNetwork.Split('/');
             IPAddress ipAddr = null;
             int maskLengthNum = 0;
             if (splitedNetwork.Length == 2 && IPAddress.TryParse(splitedNetwork[0], out ipAddr) && int.TryParse(splitedNetwork[1], out maskLengthNum))
             {
-                sMaskLength = Convert.ToString(maskLengthNum);
+                sMaskLenght = Convert.ToString(maskLengthNum);
                 sIp = Convert.ToString(ipAddr);
                 return true;
             }
