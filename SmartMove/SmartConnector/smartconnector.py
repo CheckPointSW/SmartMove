@@ -305,7 +305,7 @@ def processNetworks(client, userNetworks):
     printMessageProcessObjects("networks")
     publishCounter = 0
     mergedNetworksNamesMap = {}
-    userNetworks = sorted(userNetworks, key=sort_by_mask, reverse=True)
+    userNetworks = sorted(userNetworks, key=lambda K: (K['Netmask'], K['MaskLength']) , reverse=True)
     if len(userNetworks) == 0:
         return mergedNetworksNamesMap
     for userNetwork in userNetworks:
@@ -327,11 +327,6 @@ def processNetworks(client, userNetworks):
     publishUpdate(publishCounter, True)
     return mergedNetworksNamesMap
 
-
-
-# a helper function for sorting networks by mask
-def sort_by_mask(network):
-    return network['Netmask']
 
 
 # processing and adding to server the CheckPoint Ranges
