@@ -236,7 +236,12 @@ namespace CheckPointObjects
     {
         public string Subnet { get; set; }
         public string Netmask { get; set; }
-        public string MaskLength { get; set; } = "";
+        public string MaskLength { get; set; }
+
+        public CheckPoint_Network() : base()
+        {
+            MaskLength = "";
+        }
 
         public override IPRanges GetIPRanges()
         {
