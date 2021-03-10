@@ -236,7 +236,7 @@ namespace CheckPointObjects
     {
         public string Subnet { get; set; }
         public string Netmask { get; set; }
-        public string MaskLenght { get; set; }
+        public string MaskLength { get; set; } = "";
 
         public override IPRanges GetIPRanges()
         {
@@ -246,7 +246,7 @@ namespace CheckPointObjects
             }
             else
             {
-                return new IPRanges(new IPRange(IPNetwork.Parse(String.Format("{0}/{1}", Subnet, MaskLenght))));
+                return new IPRanges(new IPRange(IPNetwork.Parse(String.Format("{0}/{1}", Subnet, MaskLength))));
             }
         }
 
@@ -255,13 +255,13 @@ namespace CheckPointObjects
             return "add network " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
                 + WriteParam("subnet", Subnet, "")
                 + WriteParam("subnet-mask", Netmask, "")
-                + WriteParam("mask-length", MaskLenght, "")
+                + WriteParam("mask-length", MaskLength, "")
                 + WriteListParam("tags", Tags, true);
         }
 
         public override string ToCLIScriptInstruction()
         {
-            return "create network [" + Name + "]: subnet [" + Subnet + "] mask [" + Netmask + "] mask-lenght [" + MaskLenght + "]";
+            return "create network [" + Name + "]: subnet [" + Subnet + "] mask [" + Netmask + "] mask-lenght [" + MaskLength + "]";
         }
     }
 
