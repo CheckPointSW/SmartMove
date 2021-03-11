@@ -23,7 +23,7 @@ using CommonUtils;
 
 namespace CiscoMigration
 {
-    public enum ProtocolType { NA, Ip, Icmp, Udp, Tcp, KnownOtherIpProtocol, ReferenceObject };
+    public enum ProtocolType { NA, Ip, Icmp, Udp, Tcp, KnownOtherIpProtocol, ReferenceObject, Icmp6 };
     public enum TcpUdpPortOperatorType { NA, All, Lt, Gt, Eq, Neq, Range, ReferenceObject };
     public enum ServiceDirection { Source, Destination };
 
@@ -342,7 +342,7 @@ namespace CiscoMigration
 
     public class Cisco_Object : CiscoCommand
     {
-        public enum ObjectTypes { NA, Fqdn, Host, Network, Range, TcpService, UdpService, IcmpService, KnownOtherService };
+        public enum ObjectTypes { NA, Fqdn, Host, Network, Range, TcpService, UdpService, IcmpService, KnownOtherService, Icmp6Service };
 
         public ObjectTypes ObjectType { get; set; }
         public string Fqdn { get; set; }
@@ -477,6 +477,10 @@ namespace CiscoMigration
 
                         case "icmp":
                             ObjectType = ObjectTypes.IcmpService;
+                            break;
+
+                        case "icmp6":
+                            ObjectType = ObjectTypes.Icmp6Service;
                             break;
 
                         case "tcp":
@@ -648,9 +652,15 @@ namespace CiscoMigration
                     break;
 
                 case "icmp":
-                case "icmp6":
                     IsDestination = true;
                     Protocol = "icmp";
+                    Operator = "eq";
+                    Port = CiscoKnownServices.ConvertIcmpServiceToType(command.GetParam(2));
+                    break;
+
+                case "icmp6":
+                    IsDestination = true;
+                    Protocol = "icmp6";
                     Operator = "eq";
                     Port = CiscoKnownServices.ConvertIcmpServiceToType(command.GetParam(2));
                     break;
@@ -877,9 +887,15 @@ namespace CiscoMigration
                     break;
 
                 case "icmp":
-                case "icmp6":
                     IsDestination = true;
                     Protocol = "icmp";
+                    Operator = "eq";
+                    Port = CiscoKnownServices.ConvertIcmpServiceToType(command.GetParam(2));
+                    break;
+
+                case "icmp6":
+                    IsDestination = true;
+                    Protocol = "icmp6";
                     Operator = "eq";
                     Port = CiscoKnownServices.ConvertIcmpServiceToType(command.GetParam(2));
                     break;
@@ -979,7 +995,7 @@ namespace CiscoMigration
 
     public class Cisco_GroupObject : CiscoCommand
     {
-        public enum Group_Type { NA, Service, Protocol, Icmp, Network };
+        public enum Group_Type { NA, Service, Protocol, Icmp, Network, Icmp6 };
 
         private Dictionary<string, CiscoCommand> _ciscoIds;
 
@@ -2036,7 +2052,7 @@ namespace CiscoMigration
                         }
                     }
                 }
-                else if (protocol == ProtocolType.Icmp)
+                else if (protocol == ProtocolType.Icmp || protocol == ProtocolType.Icmp6)
                 {
                     if (words.Count > 0)
                     {
@@ -2289,8 +2305,11 @@ namespace CiscoMigration
                     break;
 
                 case "icmp":
-                case "icmp6":
                     Protocol = ProtocolType.Icmp;
+                    break;
+
+                case "icmp6":
+                    Protocol = ProtocolType.Icmp6;
                     break;
 
                 case "udp":

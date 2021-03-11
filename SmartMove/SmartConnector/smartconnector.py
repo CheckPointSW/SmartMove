@@ -4,6 +4,7 @@ import sys
 import argparse
 import json
 import os
+import re
 import operator
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
@@ -293,6 +294,72 @@ def processHosts(client, userHosts):
     return mergedHostsNamesMap
 
 
+def is_valid_ipv4(ip):
+    pattern = re.compile(r"""
+        ^
+        (?:
+          # Dotted variants:
+          (?:
+            # Decimal 1-255 (no leading 0's)
+            [3-9]\d?|2(?:5[0-5]|[0-4]?\d)?|1\d{0,2}
+          |
+            0x0*[0-9a-f]{1,2}  # Hexadecimal 0x0 - 0xFF (possible leading 0's)
+          |
+            0+[1-3]?[0-7]{0,2} # Octal 0 - 0377 (possible leading 0's)
+          )
+          (?:                  # Repeat 0-3 times, separated by a dot
+            \.
+            (?:
+              [3-9]\d?|2(?:5[0-5]|[0-4]?\d)?|1\d{0,2}
+            |
+              0x0*[0-9a-f]{1,2}
+            |
+              0+[1-3]?[0-7]{0,2}
+            )
+          ){0,3}
+        |
+          0x0*[0-9a-f]{1,8}    # Hexadecimal notation, 0x0 - 0xffffffff
+        |
+          0+[0-3]?[0-7]{0,10}  # Octal notation, 0 - 037777777777
+        |
+          # Decimal notation, 1-4294967295:
+          429496729[0-5]|42949672[0-8]\d|4294967[01]\d\d|429496[0-6]\d{3}|
+          42949[0-5]\d{4}|4294[0-8]\d{5}|429[0-3]\d{6}|42[0-8]\d{7}|
+          4[01]\d{8}|[1-3]\d{0,9}|[4-9]\d{0,8}
+        )
+        $
+    """, re.VERBOSE | re.IGNORECASE)
+    return pattern.match(ip) is not None
+
+def is_valid_ipv6(ip):
+    pattern = re.compile(r"""
+        ^
+        \s*                         # Leading whitespace
+        (?!.*::.*::)                # Only a single whildcard allowed
+        (?:(?!:)|:(?=:))            # Colon iff it would be part of a wildcard
+        (?:                         # Repeat 6 times:
+            [0-9a-f]{0,4}           #   A group of at most four hexadecimal digits
+            (?:(?<=::)|(?<!::):)    #   Colon unless preceeded by wildcard
+        ){6}                        #
+        (?:                         # Either
+            [0-9a-f]{0,4}           #   Another group
+            (?:(?<=::)|(?<!::):)    #   Colon unless preceeded by wildcard
+            [0-9a-f]{0,4}           #   Last group
+            (?: (?<=::)             #   Colon iff preceeded by exacly one colon
+             |  (?<!:)              #
+             |  (?<=:) (?<!::) :    #
+             )                      # OR
+         |                          #   A v4 address with NO leading zeros 
+            (?:25[0-4]|2[0-4]\d|1\d\d|[1-9]?\d)
+            (?: \.
+                (?:25[0-4]|2[0-4]\d|1\d\d|[1-9]?\d)
+            ){3}
+        )
+        \s*                         # Trailing whitespace
+        $
+    """, re.VERBOSE | re.IGNORECASE | re.DOTALL)
+    return pattern.match(ip) is not None
+
 # processing and adding to server the CheckPoint Networks
 # adjusting the name if network with the name exists at server: <initial_object_name>_<postfix>
 # if network contains existing IP subnet then Network object from server will be used instead
@@ -311,14 +378,16 @@ def processNetworks(client, userNetworks):
     for userNetwork in userNetworks:
         payload = {
             "name": userNetwork['Name'],
-            "subnet4": userNetwork['Subnet'],
-            "subnet-mask": userNetwork['Netmask'],
             "comments": userNetwork['Comments'],
-            "tags": userNetwork['Tags']
+            "tags": userNetwork['Tags'],
+            "subnet": userNetwork['Subnet']
         }
+        if is_valid_ipv4(userNetwork['Subnet']):
+            payload["subnet-mask"] = userNetwork['Netmask']
+        else:
+            payload["mask-length6"] = userNetwork['MaskLength']
         initialMapLength = len(mergedNetworksNamesMap)
-        mergedNetworksNamesMap = addCpObjectWithIpToServer(client, payload, "network", userNetwork['Subnet'],
-                                                           mergedNetworksNamesMap)
+        mergedNetworksNamesMap = addCpObjectWithIpToServer(client, payload, "network", userNetwork['Subnet'], mergedNetworksNamesMap)
         if initialMapLength == len(mergedNetworksNamesMap):
             printStatus(None, "REPORT: " + userNetwork['Name'] + ' is not added.')
         else:
@@ -351,12 +420,16 @@ def processRanges(client, userRanges):
     printStatus(res_get_ranges, None)
     for serverRange in res_get_ranges.data:
         key = serverRange['ipv4-address-first'] + '_' + serverRange['ipv4-address-last']
+        if serverRange['ipv4-address-first'] == "":
+            key = serverRange['ipv6-address-first'] + '_' + serverRange['ipv6-address-last']
+
         if isServerObjectGlobal(serverRange) and key not in serverRangesMapGlobal:
             serverRangesMapGlobal[key] = serverRange['name']
         elif isServerObjectLocal(serverRange) and key not in serverRangesMapLocal:
             serverRangesMapLocal[key] = serverRange['name']
         elif key not in serverRangesMapGlobal and key not in serverRangesMapLocal and key not in serverRangesMap:
             serverRangesMap[key] = serverRange['name']
+
     printStatus(None, "")
     if sys.version_info >= (3, 0):
         serverRangesMap = serverRangesMap.copy()
@@ -403,6 +476,8 @@ def processRanges(client, userRanges):
             if addedRange is not None:
                 mergedRangesNamesMap[userRangeNameInitial] = addedRange['name']
                 key = addedRange['ipv4-address-first'] + '_' + addedRange['ipv4-address-last']
+                if addedRange['ipv4-address-first'] == "":
+                    key = addedRange['ipv6-address-first'] + '_' + addedRange['ipv6-address-last']
                 serverRangesMap[key] = addedRange['name']
                 printStatus(None, "REPORT: " + userRangeNameInitial + " is added as " + addedRange['name'])
                 publishCounter = publishUpdate(publishCounter, False)
@@ -969,6 +1044,17 @@ def processPackage(client, userPackage, mergedNetworkObjectsMap, mergedServiceOb
                            mergedServiceObjectsMap, mergedTimesGroupsNamesMap, mergedTimesNamesMap)
     return addedPackage
 
+# resolver for nat method type
+# typeValue - number of type [ static, hide, nat64, nat46 ]
+def getMethodType(typeValue):
+    _type = "static"
+    if typeValue == 1:
+        _type = "hide"
+    elif typeValue == 2:
+        _type = "nat64"
+    elif typeValue == 3:
+        _type = "nat46"
+    return _type
 
 # processing and adding to server the CheckPoint NAT rules
 # NAT rules are added if package has been added
@@ -1021,7 +1107,7 @@ def processNatRules(client, addedPackage, userNatRules, mergedNetworkObjectsMap,
             "position": "bottom",
             "comments": userNatRule['Comments'],
             "enabled": userNatRule['Enabled'],
-            "method": "static" if userNatRule['Method'] == 0 else "hide",
+            "method": getMethodType(userNatRule['Method']),
             "original-source": sourceOrig,
             "original-destination": destinationOrig,
             "original-service": serviceOrig,
