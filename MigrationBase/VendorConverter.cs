@@ -1352,7 +1352,7 @@ namespace MigrationBase
 
         protected void validatePackage(CheckPoint_Package package)
         {
-            if (package?.SubPolicies != null && package.SubPolicies.Count > SubPoliciesMaxNumber)
+            if (package != null && package.SubPolicies != null && package.SubPolicies.Count > SubPoliciesMaxNumber)
             {
                 throw new InvalidDataException("Policy exceeds the maximum number of supported policy layers.");
             }
