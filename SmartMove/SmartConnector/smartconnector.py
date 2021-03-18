@@ -6,6 +6,7 @@ import json
 import os
 import re
 import operator
+import uuid
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
 from cpapi import APIClient, APIClientArgs
@@ -996,8 +997,11 @@ def addAccessRules(client, userRules, userLayerName, skipCleanUpRule, mergedNetw
 def processPackage(client, userPackage, mergedNetworkObjectsMap, mergedServiceObjectsMap, mergedTimesGroupsNamesMap,
                    mergedTimesNamesMap):
     printMessageProcessObjects("package")
+    allExistingLayers = {}
     addedPackage = None
     if userPackage is not None:
+        original_package_name = userPackage['Name']
+        userPackage['Name'] = userPackage['Name'] + "_" + str(uuid.uuid4().hex[:3].upper())
         publishCounter = 0
         printStatus(None, "processing package: " + userPackage['Name'])
         addedPackage = addUserObjectToServer(
@@ -1018,7 +1022,15 @@ def processPackage(client, userPackage, mergedNetworkObjectsMap, mergedServiceOb
         publishCounter = publishUpdate(publishCounter, True)
         if userPackage['SubPolicies'] is not None:
             for userSubLayer in userPackage['SubPolicies']:
+                originalName = userSubLayer['Name']
+                userSubLayer['Name'] = userSubLayer['Name'] + "_" + str(uuid.uuid4().hex[:3].upper())
+                allExistingLayers[originalName] = userSubLayer['Name']
+                for rule in userSubLayer['Rules']:
+                    rule['Layer'] = userSubLayer['Name']
+                    if rule['SubPolicyName'] != "":
+                        rule['SubPolicyName'] = allExistingLayers[rule['SubPolicyName']]
                 printStatus(None, "processing access layer: " + userSubLayer['Name'])
+                    
                 addedSubLayer = addUserObjectToServer(
                     client,
                     "add-access-layer",
@@ -1040,6 +1052,11 @@ def processPackage(client, userPackage, mergedNetworkObjectsMap, mergedServiceOb
                 addAccessRules(client, userSubLayer['Rules'], userSubLayer['Name'], False, mergedNetworkObjectsMap,
                                mergedServiceObjectsMap, mergedTimesGroupsNamesMap, mergedTimesNamesMap)
         if userPackage['ParentLayer'] is not None:
+            userPackage['ParentLayer']['Name'] = userPackage['ParentLayer']['Name'].replace(original_package_name, userPackage['Name'])
+            for parentRule in userPackage['ParentLayer']['Rules']:
+                parentRule['Layer'] = userPackage['ParentLayer']['Name']
+                if parentRule['SubPolicyName'] != "":
+                    parentRule['SubPolicyName'] = allExistingLayers[parentRule['SubPolicyName']]
             addAccessRules(client, userPackage['ParentLayer']['Rules'], "parent", True, mergedNetworkObjectsMap,
                            mergedServiceObjectsMap, mergedTimesGroupsNamesMap, mergedTimesNamesMap)
     return addedPackage
@@ -1072,6 +1089,7 @@ def processNatRules(client, addedPackage, userNatRules, mergedNetworkObjectsMap,
         return
     publishCounter = 0
     for i, userNatRule in enumerate(userNatRules):
+        userNatRule['Package'] = addedPackage['name']
         printStatus(None, "processing nat rule: #" + str(i))
         sourceOrig = ""
         if userNatRule['Source'] is not None:
