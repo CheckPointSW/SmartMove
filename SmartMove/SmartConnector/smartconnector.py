@@ -176,13 +176,13 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                 res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": True, "type": userObjectType})
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
-                    if len(res_get_obj_with_ip.data) > 0:
+                    if len(res_get_obj_with_ip.data['objects']) > 0:
                         if userObjectType == "host":
-                            mergedObjectsNamesMap[userObjectNameInitial] = res_get_obj_with_ip.data[0]['name']
+                            mergedObjectsNamesMap[userObjectNameInitial] = res_get_obj_with_ip.data['objects'][0]['name']
                             printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
                             isFinished = True
                             break
-                        for serverObject in res_get_obj_with_ip.data:
+                        for serverObject in res_get_obj_with_ip.data['objects']:
                             mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
                             if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
                                 break
