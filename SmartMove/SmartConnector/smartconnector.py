@@ -95,6 +95,8 @@ def isIpDuplicated(res_add_obj):
         messagePrefixes = ("Multiple objects have the same IP address",)
         messagePrefixes += ("More than one network have the same IP",)
         messagePrefixes += ("More than one network has the same IP",)
+        messagePrefixes += ("More than one object have the same IPv6",)
+        messagePrefixes += ("More than one object has the same IPv6",)
         for msg in res_add_obj.data['warnings']:
             if msg['message'].startswith(messagePrefixes):
                 isIpDuplicated = True
@@ -174,8 +176,13 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                 res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": True, "type": userObjectType})
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
-                    if len(res_get_obj_with_ip.data) > 0:
-                        for serverObject in res_get_obj_with_ip.data:
+                    if len(res_get_obj_with_ip.data['objects']) > 0:
+                        if userObjectType == "host":
+                            mergedObjectsNamesMap[userObjectNameInitial] = res_get_obj_with_ip.data['objects'][0]['name']
+                            printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
+                            isFinished = True
+                            break
+                        for serverObject in res_get_obj_with_ip.data['objects']:
                             mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
                             if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
                                 break
