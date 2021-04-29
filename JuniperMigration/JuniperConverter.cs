@@ -1099,7 +1099,7 @@ namespace JuniperMigration
                 cpRule4GlobalLayer.Track = CheckPoint_Rule.TrackTypes.None;
                 cpRule4GlobalLayer.Time.Add(_cpObjects.GetObject(CheckPointObject.Any));
                 cpRule4GlobalLayer.Service.Add(_cpObjects.GetObject(CheckPointObject.Any));
-                cpRule4GlobalLayer.SubPolicyName = "Global Rules";
+                cpRule4GlobalLayer.SubPolicyName = GlobalRulesSubpolicyName;
 
                 package.ParentLayer.Rules.Add(cpRule4GlobalLayer);
 
