@@ -177,18 +177,21 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                 res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": True, "type": userObjectType})
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
-                    if len(res_get_obj_with_ip.data['objects']) > 0:
-                        if userObjectType == "host":
-                            mergedObjectsNamesMap[userObjectNameInitial] = res_get_obj_with_ip.data['objects'][0]['name']
+                    if len(res_get_obj_with_ip.data) > 0:
+                        if userObjectType == "network" and next((x for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet']), None) is None:
+                            isIgnoreWarnings = True
+                        else:
+                            if userObjectType == "host":
+                                mergedObjectsNamesMap[userObjectNameInitial] = res_get_obj_with_ip.data[0]['name']
+                                printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
+                                isFinished = True
+                            break
+                            for serverObject in res_get_obj_with_ip.data:
+                                mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
+                                if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
+                                    break
                             printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
                             isFinished = True
-                            break
-                        for serverObject in res_get_obj_with_ip.data['objects']:
-                            mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
-                            if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
-                                break
-                        printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
-                        isFinished = True
                     else:
                         isIgnoreWarnings = True
                 else:
@@ -1048,7 +1051,7 @@ def processPackage(client, userPackage, mergedNetworkObjectsMap, mergedServiceOb
                     if rule['SubPolicyName'] != "":
                         rule['SubPolicyName'] = allExistingLayers[rule['SubPolicyName']]
                 printStatus(None, "processing access layer: " + userSubLayer['Name'])
-                    
+
                 addedSubLayer = addUserObjectToServer(
                     client,
                     "add-access-layer",
