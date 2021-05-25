@@ -2584,6 +2584,7 @@ namespace PaloAltoMigration
                                     cpLayer.ApplicationsAndUrlFiltering = false;
 
                                     cpPackage.SubPolicies.Add(cpLayer);
+                                    validatePackage(cpPackage);
 
                                     CheckPoint_Rule cpGroupRule = new CheckPoint_Rule();
                                     cpGroupRule.Name = cpGroupRuleName;

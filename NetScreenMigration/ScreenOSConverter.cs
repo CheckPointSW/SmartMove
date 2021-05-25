@@ -51,19 +51,19 @@ namespace NetScreenMigration
             public static bool IsMask(string maskLength)
             {
                 int n;
-                return (int.TryParse(maskLength, out n) && NetworkUtils.IsValidNetmask(NetworkUtils.MaskLength2Netmask(n)));
+                return (int.TryParse(maskLength, out n) && NetworkUtils.IsValidNetmaskv4(NetworkUtils.MaskLength2Netmask(n)));
             }
 
             public static bool IsHost(string host)
             {
                 string[] hostArray = host.Split('/');
-                return (hostArray.Length == 2 && NetworkUtils.IsValidIp(hostArray[0]) && IsMask(hostArray[1]) && int.Parse(hostArray[1]) == 32);
+                return (hostArray.Length == 2 && NetworkUtils.IsValidIpv4(hostArray[0]) && IsMask(hostArray[1]) && int.Parse(hostArray[1]) == 32);
             }
 
             public static bool IsNetwork(string host)
             {
                 string[] hostArray = host.Split('/');
-                return (hostArray.Length == 2 && NetworkUtils.IsValidIp(hostArray[0]) && IsMask(hostArray[1]) && int.Parse(hostArray[1]) < 32);
+                return (hostArray.Length == 2 && NetworkUtils.IsValidIpv4(hostArray[0]) && IsMask(hostArray[1]) && int.Parse(hostArray[1]) < 32);
             }
 
             public static bool IsIPv6(string ip)
@@ -1250,7 +1250,7 @@ namespace NetScreenMigration
             return cpRange;
         }
 
-        private CheckPointObject GetSrcObjectByNameFromPolicy(string srcName, PolicyCommandSimplifier policy, bool isNAT= false)
+        private CheckPointObject GetSrcObjectByNameFromPolicy(string srcName, PolicyCommandSimplifier policy, bool isNAT = false)
         {
             CheckPointObject cpObject;
             string sourceName = srcName;
@@ -1311,7 +1311,7 @@ namespace NetScreenMigration
             }
             else
             {
-                srcOrig = GetSrcObjectByNameFromPolicy(policy.SrcAddr.First(), policy,true);
+                srcOrig = GetSrcObjectByNameFromPolicy(policy.SrcAddr.First(), policy, true);
             }
 
             return srcOrig;
@@ -2366,6 +2366,7 @@ namespace NetScreenMigration
                 cpLayer.Value.Rules.Add(cpInterBlockRule);
 
                 package.SubPolicies.Add(cpLayer.Value);
+                validatePackage(package);
             }
         }
 
@@ -2424,6 +2425,7 @@ namespace NetScreenMigration
                 cpLayer.Rules.Add(cpCleanupRule);
 
                 package.SubPolicies.Add(cpLayer);
+                validatePackage(package);
             }
         }
 
@@ -3503,6 +3505,7 @@ namespace NetScreenMigration
                     }
                     cpLayer.Rules.Last().Name = "Sub-Policy Cleanup rule";
                     _cpPackages[0].SubPolicies.Insert(firstGlobal,cpLayer);
+                    validatePackage(_cpPackages[0]);
                 }
             }
         }

@@ -150,7 +150,7 @@ namespace JuniperMigration
             int pos = ipPrefixText.IndexOf('/');
             IpAddress = (pos == -1) ? ipPrefixText : ipPrefixText.Substring(0, pos);
 
-            if (!NetworkUtils.IsValidIp(IpAddress))
+            if (!NetworkUtils.IsValidIpv4(IpAddress))
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("Invalid IP address '{0}' for host object. Using IP 1.1.1.1.", IpAddress);
@@ -183,7 +183,7 @@ namespace JuniperMigration
 
             IpAddress = ipPrefixParts[0];
 
-            if (!NetworkUtils.IsValidIp(IpAddress))
+            if (!NetworkUtils.IsValidIpv4(IpAddress))
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("Invalid IP address '{0}' for network object. Using subnet 1.1.1.0/255.255.255.0.", IpAddress);
@@ -235,7 +235,7 @@ namespace JuniperMigration
             {
                 RangeFrom = fromNode.Value;
 
-                if (!NetworkUtils.IsValidIp(RangeFrom))
+                if (!NetworkUtils.IsValidIpv4(RangeFrom))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid starting IP range '{0}' for range object. Using IP 0.0.0.0.", RangeFrom);
@@ -253,7 +253,7 @@ namespace JuniperMigration
             {
                 RangeTo = toNode.Value;
 
-                if (!NetworkUtils.IsValidIp(RangeTo))
+                if (!NetworkUtils.IsValidIpv4(RangeTo))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid ending IP range '{0}' for range object. Using IP 255.255.255.255.", RangeTo);
@@ -336,7 +336,7 @@ namespace JuniperMigration
                 }
 
                 string[] ipInfo = ipNode.Value.Split('/');
-                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIp(ipInfo[0]))
+                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIpv4(ipInfo[0]))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for interface object.", ipNode.Value);
@@ -415,7 +415,7 @@ namespace JuniperMigration
             }
 
             string[] ipInfo = ipNode.Value.Split('/');
-            if (ipInfo.Length != 2 || !NetworkUtils.IsValidIp(ipInfo[0]))
+            if (ipInfo.Length != 2 || !NetworkUtils.IsValidIpv4(ipInfo[0]))
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for route object. Using IP 1.1.1.1.", ipNode.Value);
@@ -431,7 +431,7 @@ namespace JuniperMigration
 
             if (nextHopNode != null)
             {
-                if (!string.IsNullOrEmpty(nextHopNode.Value) && NetworkUtils.IsValidIp(nextHopNode.Value))
+                if (!string.IsNullOrEmpty(nextHopNode.Value) && NetworkUtils.IsValidIpv4(nextHopNode.Value))
                 {
                     nextHopAddress = nextHopNode.Value;
                 }
@@ -445,7 +445,7 @@ namespace JuniperMigration
             }
             else if (qualifiedNextHopNode != null)
             {
-                if (!string.IsNullOrEmpty(qualifiedNextHopNode.Value) && NetworkUtils.IsValidIp(qualifiedNextHopNode.Value))
+                if (!string.IsNullOrEmpty(qualifiedNextHopNode.Value) && NetworkUtils.IsValidIpv4(qualifiedNextHopNode.Value))
                 {
                     nextHopAddress = qualifiedNextHopNode.Value;
                 }
@@ -974,7 +974,7 @@ namespace JuniperMigration
             }
 
             string[] ipInfo = ipNode.Value.Split('/');
-            if (ipInfo.Length != 2 || !NetworkUtils.IsValidIp(ipInfo[0]))
+            if (ipInfo.Length != 2 || !NetworkUtils.IsValidIpv4(ipInfo[0]))
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for NAT pool object.", ipNode.Value);
@@ -1014,7 +1014,7 @@ namespace JuniperMigration
                 else
                 {
                     string[] rangeToInfo = rangeToNode.Value.Split('/');
-                    if (rangeToInfo.Length != 2 || !NetworkUtils.IsValidIp(rangeToInfo[0]) || rangeToInfo[1] != "32")
+                    if (rangeToInfo.Length != 2 || !NetworkUtils.IsValidIpv4(rangeToInfo[0]) || rangeToInfo[1] != "32")
                     {
                         ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                         ConversionIncidentMessage = string.Format("Invalid ending IP range '{0}' for destination NAT pool object. Using IP 255.255.255.255.", rangeToNode.Value);
@@ -1056,7 +1056,7 @@ namespace JuniperMigration
             if (hostAddressBaseNode != null && !string.IsNullOrEmpty(hostAddressBaseNode.Value))
             {
                 string[] ipInfo = hostAddressBaseNode.Value.Split('/');
-                if (ipInfo.Length == 2 && NetworkUtils.IsValidIp(ipInfo[0]))
+                if (ipInfo.Length == 2 && NetworkUtils.IsValidIpv4(ipInfo[0]))
                 {
                     HostAddressBase = ipInfo[0];
                 }
@@ -1160,7 +1160,7 @@ namespace JuniperMigration
             foreach (var sourceAddressNode in sourceAddressNodes)
             {
                 string[] ipInfo = sourceAddressNode.Value.Split('/');
-                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIp(ipInfo[0]))
+                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIpv4(ipInfo[0]))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for source NAT rule's source address object.", sourceAddressNode.Value);
@@ -1191,7 +1191,7 @@ namespace JuniperMigration
             foreach (var destAddressNode in destAddressNodes)
             {
                 string[] ipInfo = destAddressNode.Value.Split('/');
-                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIp(ipInfo[0]))
+                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIpv4(ipInfo[0]))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for source NAT rule's destination address object.", destAddressNode.Value);
@@ -1286,7 +1286,7 @@ namespace JuniperMigration
             foreach (var sourceAddressNode in sourceAddressNodes)
             {
                 string[] ipInfo = sourceAddressNode.Value.Split('/');
-                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIp(ipInfo[0]))
+                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIpv4(ipInfo[0]))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for destination NAT rule's source address object.", sourceAddressNode.Value);
@@ -1311,7 +1311,7 @@ namespace JuniperMigration
             foreach (var destAddressNode in destAddressNodes)
             {
                 string[] ipInfo = destAddressNode.Value.Split('/');
-                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIp(ipInfo[0]))
+                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIpv4(ipInfo[0]))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for destination NAT rule's destination address object.", destAddressNode.Value);
@@ -1401,7 +1401,7 @@ namespace JuniperMigration
             foreach (var sourceAddressNode in sourceAddressNodes)
             {
                 string[] ipInfo = sourceAddressNode.Value.Split('/');
-                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIp(ipInfo[0]))
+                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIpv4(ipInfo[0]))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for static NAT rule's source address object.", sourceAddressNode.Value);
@@ -1436,7 +1436,7 @@ namespace JuniperMigration
             foreach (var destAddressNode in destAddressNodes)
             {
                 string[] ipInfo = destAddressNode.Value.Split('/');
-                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIp(ipInfo[0]))
+                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIpv4(ipInfo[0]))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for static NAT rule's destination address object.", destAddressNode.Value);
@@ -1465,7 +1465,7 @@ namespace JuniperMigration
             if (prefixNode != null)
             {
                 string[] ipInfo = prefixNode.Value.Split('/');
-                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIp(ipInfo[0]))
+                if (ipInfo.Length != 2 || !NetworkUtils.IsValidIpv4(ipInfo[0]))
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for static NAT rule's prefix object.", prefixNode.Value);
