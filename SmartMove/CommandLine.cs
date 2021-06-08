@@ -94,15 +94,15 @@ namespace SmartMove
         {
             Console.WriteLine("SmartMove command usage:");
             Console.WriteLine();
-            Console.WriteLine("SmartMove.exe [–f config_file_name] [-v vendor] [-t target_folder] [-d domain] [-n] [-u LDAP_Account_unit] [-i]");
+            Console.WriteLine("SmartMove.exe [–s config_file_name] [-v vendor] [-t target_folder] [-d domain] [-n] [-l LDAP_Account_unit] [-i]");
             Console.WriteLine();
             Console.WriteLine("Options:");
-            Console.WriteLine("\t" + "-f" + "\t" + "full path to vendor configuration file");
-            Console.WriteLine("\t" + "-v" + "\t" + "vendor for conversion (available options: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama)");
-            Console.WriteLine("\t" + "-t" + "\t" + "migration output folder");
-            Console.WriteLine("\t" + "-d" + "\t" + "domain name (for CiscoASA, JuniperSRX, JuniperSSG only)");
-            Console.WriteLine("\t" + "-n" + "\t" + "convert NAT configuration");
-            Console.WriteLine("\t" + "-u" + "\t" + "LDAP Account unit for convert user configuration option (for FortiNet, PaloAlto and Panorama only)");
+            Console.WriteLine("\t" + "-s | --source" + "\t" + "full path to vendor configuration file");
+            Console.WriteLine("\t" + "-v | --vendor" + "\t" + "vendor for conversion (available options: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama)");
+            Console.WriteLine("\t" + "-t | --target" + "\t" + "migration output folder");
+            Console.WriteLine("\t" + "-d | --domain" + "\t" + "domain name (for CiscoASA, JuniperSRX, JuniperSSG only)");
+            Console.WriteLine("\t" + "-n | --nat" + "\t" + "convert NAT configuration");
+            Console.WriteLine("\t" + "-l | --ldap" + "\t" + "LDAP Account unit for convert user configuration option (for FortiNet, PaloAlto and Panorama only)");
             Console.WriteLine("\t" + "-i" + "\t" + "do not import unused objects (for FortiNet, PaloAlto and Panorama only)");
             Console.WriteLine();
             Console.WriteLine("Example:");
@@ -122,20 +122,20 @@ namespace SmartMove
             if (String.IsNullOrEmpty(commandLine.Vendor))
             {
                 Console.WriteLine("Option -v is mandatory but not specified.", MessageTypes.Error);
-                Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                 return 0;
             }
             if (String.IsNullOrEmpty(commandLine.ConfigFileName))
             {
                 Console.WriteLine("Option -f is mandatory but not specified.", MessageTypes.Error);
-                Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                 return 0;
             }
             if (!fullVendorsList.Contains(commandLine.Vendor))
              {               
                  Console.WriteLine("Specified vendor \"" + commandLine.Vendor + "\" is not available.", MessageTypes.Error);
                 Console.WriteLine("Available options are: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama", MessageTypes.Error);
-                 Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                 Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                  return 0;
              }
             if (vendorsList1.Contains(commandLine.Vendor))
@@ -143,14 +143,14 @@ namespace SmartMove
                 if (commandLine.ConvertUserConfiguration == true)
                  {
                      Console.WriteLine("Option -u is not valid for vendor " + commandLine.Vendor + "!");
-                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                     Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                     return 0;
                 }
                         
                 if (commandLine.DontImportUnusedObjects == true)
                  {
                      Console.WriteLine("Option -i is not valid for vendor " + commandLine.Vendor + "!");
-                     Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                     Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                     return 0;
                 }                    
                  
@@ -160,7 +160,7 @@ namespace SmartMove
                 if (commandLine.ConvertUserConfiguration == true && commandLine.LdapAccountUnit == null)
                 {
                     Console.WriteLine("Value for option -u is not specified!");
-                    Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                    Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                     return 0;
                 }
                     
@@ -221,11 +221,14 @@ namespace SmartMove
          */
         public CommandLine Parse(string[] args)
         {                    
+            //set default values
+
              for (int i = 0; i < args.Length; i++)
              {                
                 switch (args[i])
                 {
-                    case "-f":
+                    case "-s":
+                    case "--source":
                         {
                             if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
                             {                         
@@ -249,6 +252,7 @@ namespace SmartMove
                             break;
                         }
                     case "-v":
+                    case "--vendor":
                         {
                             if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
                                 this.vendor = args[i + 1];
@@ -257,6 +261,7 @@ namespace SmartMove
                             break;
                         }
                     case "-t":
+                    case "--target":
                         {
                             if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
                                 this.targetFolder = args[i + 1]; 
@@ -265,6 +270,7 @@ namespace SmartMove
                             break;
                         }
                     case "-d":
+                    case "--domain":
                         {
                             if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
                                 this.domain = args[i + 1];
@@ -273,11 +279,13 @@ namespace SmartMove
                             break;
                         }
                     case "-n":
+                    case "--nat":
                         {
                             this.convertNat = true;
                             break;
                         }
-                    case "-u":
+                    case "-l":
+                    case "--ldap":
                         {
                             if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
                             {
