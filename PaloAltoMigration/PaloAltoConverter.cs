@@ -46,6 +46,8 @@ namespace PaloAltoMigration
 
         private Dictionary<string, string> cpPredefServicesTypes = new Dictionary<string, string>();
 
+        private string outputFormat = "";
+
         #endregion
 
         #region Constants
@@ -731,14 +733,15 @@ namespace PaloAltoMigration
 
         #region Converter
 
-        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName)
+        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName, string outputFormat = "json")
         {
             _paParser = (PaloAltoParser)vendorParser;
             if (_paParser == null)
             {
                 throw new InvalidDataException("Unexpected!!!");
             }
-            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName);
+            this.outputFormat = outputFormat;
+            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
 
         protected override bool AddCheckPointObject(CheckPointObject cpObject)
@@ -759,7 +762,7 @@ namespace PaloAltoMigration
             return false;
         }
 
-        public override void Convert(bool convertNat)
+        public override Dictionary<string, int> Convert(bool convertNat)
         {
             string targetFileNameMain = _vendorFileName;
             string targetFolderMain = _targetFolder;
@@ -884,6 +887,8 @@ namespace PaloAltoMigration
 
             ObjectsScriptFile = _targetFolder;
             PolicyScriptFile = _targetFolder;
+
+            return new Dictionary<string, int>() { { "errors", ErrorsInConvertedPackage() }, { "warnings", WarningsInConvertedPackage() } };
         }
 
         public void ConvertPaVsysEntry(string targetFolderNew, string targetFileNameNew, PA_VsysEntry paVsysEntry,

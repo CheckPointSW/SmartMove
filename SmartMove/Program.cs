@@ -19,7 +19,7 @@ namespace SmartMove
                 CommandLine commandLine = new CommandLine(args);                
 
                 //display command help
-                if (args[0].Equals("-help") || args[0].Equals("/?"))
+                if (args[0].Equals("--help") || args[0].Equals("/?") || args[0].Equals("-h"))
                 {
                     return commandLine.DisplayHelp();
                 }

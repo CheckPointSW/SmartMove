@@ -169,6 +169,7 @@ namespace JuniperMigration
         private List<CheckPointObject> _cpNetworkObjectsInMultipleZones = new List<CheckPointObject>();
         private List<CheckPoint_NAT_Rule> _cpPreorderedNatRules = new List<CheckPoint_NAT_Rule>();
         private Dictionary<int, List<CheckPoint_Rule>> _natMatchedFirewallRules = new Dictionary<int, List<CheckPoint_Rule>>();
+        private string _outputFormat;
 
         private IEnumerable<JuniperObject> _juniperZones;
         public IEnumerable<JuniperObject> JuniperZones
@@ -3735,18 +3736,19 @@ namespace JuniperMigration
 
         #region Public Methods
 
-        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName)
+        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName, string outputFormat = "json")
         {
             _juniperParser = (JuniperParser)vendorParser;
             if (_juniperParser == null)
             {
                 throw new InvalidDataException("Unexpected!!!");
             }
+            _outputFormat = outputFormat;
 
-            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName);
+            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
 
-        public override void Convert(bool convertNat)
+        public override Dictionary<string, int> Convert(bool convertNat)
         {
             RaiseConversionProgress(20, "Converting obects ...");
             _cpObjects.Initialize();   // must be first!!!
@@ -3797,8 +3799,9 @@ namespace JuniperMigration
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
 			
             CreateSmartConnector();
+            return new Dictionary<string, int>() { { "warnings", ConversionIncidentCategoriesCount } };
         }
-        
+
         public override int RulesInConvertedPackage()
         {
             return _cpPackages[0].TotalRules();

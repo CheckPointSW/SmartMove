@@ -522,6 +522,7 @@ namespace CiscoMigration
         private IList<CiscoCommand> _ciscoSshCommands;
         private Cisco_Hostname _ciscoHostnameCommand;
         private List<Cisco_AccessList> _ciscoGlobalAclCommands = new List<Cisco_AccessList>();
+        private string _outputFormat;
 
         private List<CheckPoint_NAT_Rule> _cpPreorderedNatRules = new List<CheckPoint_NAT_Rule>();
 
@@ -4522,10 +4523,7 @@ namespace CiscoMigration
                     return true;
                 }
 
-                if (fwRule.Service.Count == 0)
-                {
-                    // TODO: ???
-                }
+                if (fwRule.Service.Count == 0) {}
                 else if (fwRule.Service.Count == 1 && fwRule.Service[0].Name == CheckPointObject.Any)
                 {
                     // There is only one service in FW rule and it is "any", no matter what NAT rule service is...
@@ -4683,18 +4681,19 @@ namespace CiscoMigration
 
         #region Public Methods
 
-        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName)
+        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName, string outputFormat = "json")
         {
             _ciscoParser = (CiscoParser)vendorParser;
             if (_ciscoParser == null)
             {
                 throw new InvalidDataException("Unexpected!!!");
             }
+            this._outputFormat = outputFormat;
 
-            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName);
+            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
 
-        public override void Convert(bool convertNat)
+        public override Dictionary<string, int> Convert(bool convertNat)
         {
             RaiseConversionProgress(20, "Converting obects ...");
             _cpObjects.Initialize();   // must be first!!!
@@ -4748,6 +4747,7 @@ namespace CiscoMigration
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
 
             CreateSmartConnector();
+            return new Dictionary<string, int>() { { "warnings", ConversionIncidentCategoriesCount } };
         }
 
         public override int RulesInConvertedPackage()

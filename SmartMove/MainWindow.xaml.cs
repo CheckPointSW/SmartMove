@@ -617,7 +617,8 @@ namespace SmartMove
                     throw new InvalidDataException("Unexpected!!!");
             }
 
-            vendorConverter.Initialize(vendorParser, ConfigFilePath.Text, toolVersion, targetFolder, DomainName.Text);
+            //here outputformat was set to 'json' by default manually because there is no an option for it on GUI
+            vendorConverter.Initialize(vendorParser, ConfigFilePath.Text, toolVersion, targetFolder, DomainName.Text, "json");
             vendorConverter.ConversionProgress += OnConversionProgress;
 
             try

@@ -669,6 +669,19 @@ namespace NetScreenMigration
             }
         }
 
+        private string _outputFormat { get; set; }
+        private string OutputFormat { 
+            get 
+            { 
+                return _outputFormat; 
+            } 
+            set
+            {
+                _outputFormat = value;
+            }
+        }
+
+
         protected override string GetVendorName()
         {
             return Vendor.JuniperScreenOS.ToString();
@@ -3514,18 +3527,18 @@ namespace NetScreenMigration
 
         #region Public Methods
 
-        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName)
+        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName, string outputFormat = "json")
         {
             _screenOSParser = (ScreenOSParser)vendorParser;
             if (_screenOSParser == null)
             {
                 throw new InvalidDataException("Unexpected!!!");
             }
-
-            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName);
+            OutputFormat = outputFormat;
+            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
 
-        public override void Convert(bool convertNat = false)
+        public override Dictionary<string, int> Convert(bool convertNat = false)
         {
             RaiseConversionProgress(20, "Converting obects ...");
             _cpObjects.Initialize();   // must be first!!!
@@ -3582,6 +3595,7 @@ namespace NetScreenMigration
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
 			
             CreateSmartConnector();
+            return new Dictionary<string, int>() { { "warnings", ConversionIncidentCategoriesCount } };
         }
 
         public override int RulesInConvertedPackage()

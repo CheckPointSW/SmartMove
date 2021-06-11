@@ -19,6 +19,7 @@ namespace FortiGateMigration
         public bool OptimizeConf { get; set; } //check if Optimized configuration is requested
         public bool ConvertUserConf { get; set; } //check if User converion is requested
         public string LDAPAccoutUnit { get; set; } //read LDAP Account Unit Name for gethering users
+        public string OutputFormat { get; set; } //json or text format for output file
 
         #endregion
 
@@ -31,7 +32,7 @@ namespace FortiGateMigration
         private List<string> _errorsList = new List<string>(); //storing conversion errors for config or each VDOM
         private List<string> _warningsList = new List<string>(); //storing conversion warnings for config or each VDOM
 
-        private Dictionary<string, List<CheckPointObject>> _localMapperFgCp = new Dictionary<string,List<CheckPointObject>>(); //storing map of FG names to CheckPoint objects
+        private Dictionary<string, List<CheckPointObject>> _localMapperFgCp = new Dictionary<string, List<CheckPointObject>>(); //storing map of FG names to CheckPoint objects
 
         private Dictionary<string, List<CheckPoint_Host>> _interfacesMapperFgCp = new Dictionary<string, List<CheckPoint_Host>>(); //storing information about interfaces
 
@@ -83,14 +84,15 @@ namespace FortiGateMigration
         #endregion
 
         //Initialization method... stupid method because you must to initialize CheckPoint Objects Store in convert. (from Cisco converter)
-        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName)
+        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName, string outputFormat = "json")
         {
             _fortiGateParser = (FortiGateParser)vendorParser;
             if (_fortiGateParser == null)
             {
                 throw new InvalidDataException("Unexpected!!!");
             }
-            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName);
+            OutputFormat = outputFormat;
+            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
 
         protected override bool AddCheckPointObject(CheckPointObject cpObject)
@@ -477,7 +479,7 @@ namespace FortiGateMigration
         public void CreateCatalogObjects()
         {
             string filename = this.ObjectsHtmlFile;
-            
+
             using (var file = new StreamWriter(filename, false))
             {
                 file.WriteLine("<html>");
@@ -624,10 +626,11 @@ namespace FortiGateMigration
         }
 
         //report about Errors
-        public void CreateErrorsHtml(string vDomName)
+        public void CreateErrorsReport(string vDomName)
         {
             if (_errorsList.Count > 0)
             {
+                // if (OutputFormat == "text") {
                 string filename = _targetFolder + "//" + vDomName + "_errors.html";
 
                 using (var file = new StreamWriter(filename, false))
@@ -653,11 +656,27 @@ namespace FortiGateMigration
                     file.WriteLine("</body>");
                     file.WriteLine("</html>");
                 }
+                /*}else
+                {
+                    string filename = _targetFolder + "//" + vDomName + "_errors.json";
+
+                    using (var file = new StreamWriter(filename, false))
+                    {
+                        FgJsonOutputReportsList fgJsonOutput = new FgJsonOutputReportsList();
+                        fgJsonOutput.header = vDomName;
+                        for (int i = 0; i < _errorsList.Count; i++)
+                        {
+                            fgJsonOutput.reports.Add(i, _errorsList[i]);
+                        }
+                        file.WriteLine(JsonConvert.SerializeObject(fgJsonOutput, Formatting.Indented));
+                    }
+
+                }*/
             }
         }
 
         //report about Warnings
-        public void CreateWarningsHtml(string vDomName)
+        public void CreateWarningsReport(string vDomName)
         {
             if (_errorsList.Count > 0)
             {
@@ -694,7 +713,7 @@ namespace FortiGateMigration
         #region Converter
 
         //MAIN method to convert configuration file.
-        public override void Convert(bool convertNat)
+        public override Dictionary<string, int> Convert(bool convertNat)
         {
             string targetFileNameMain = _vendorFileName;
             string targetFolderMain = _targetFolder;
@@ -732,9 +751,11 @@ namespace FortiGateMigration
             }
 
             VendorHtmlFile = _vendorFilePath;
-            
+
             ObjectsScriptFile = _targetFolder;
             PolicyScriptFile = _targetFolder;
+
+            return new Dictionary<string, int>() { { "errors", ErrorsInConvertedPackage() }, { "warnings", WarningsInConvertedPackage() } };
         }
 
         //Convertint VDOMs to each VDOM and then Convert each VDOM as simple Configuration
@@ -890,7 +911,7 @@ namespace FortiGateMigration
                 {
                     FgCommand_Config fgCommandConfig = (FgCommand_Config)fgCommand;
 
-                    if(fgCommandConfig.ObjectName.Equals("firewall address"))
+                    if (fgCommandConfig.ObjectName.Equals("firewall address"))
                     {
                         Add_ConfigFirewallAddress(fgCommandConfig.SubCommandsList);
                     }
@@ -898,7 +919,7 @@ namespace FortiGateMigration
                     {
                         AddFirewallVip(fgCommandConfig.SubCommandsList);
                     }
-                    else if(fgCommandConfig.ObjectName.Equals("firewall vipgrp"))
+                    else if (fgCommandConfig.ObjectName.Equals("firewall vipgrp"))
                     {
                         AddFirewallVipGroups(fgCommandConfig.SubCommandsList);
                     }
@@ -934,11 +955,11 @@ namespace FortiGateMigration
                     {
                         AddSystemZone(fgCommandConfig.SubCommandsList);
                     }
-                    else if(fgCommandConfig.ObjectName.Equals("router static"))
+                    else if (fgCommandConfig.ObjectName.Equals("router static"))
                     {
                         AddRoutesStatic(fgCommandConfig.SubCommandsList);
                     }
-                    else if(fgCommandConfig.ObjectName.Equals("router rip"))
+                    else if (fgCommandConfig.ObjectName.Equals("router rip"))
                     {
                         CheckDynamicRoutesRip(fgCommandConfig.SubCommandsList);
                     }
@@ -1000,15 +1021,15 @@ namespace FortiGateMigration
 
             CreatePackagesScript();
 
-            CreateErrorsHtml(targetFileNameNew);
-            CreateWarningsHtml(targetFileNameNew);
+            CreateErrorsReport(targetFileNameNew);
+            CreateWarningsReport(targetFileNameNew);
 
             ExportNatLayerAsHtml();
             ExportPolicyPackagesAsHtmlConfig();
 
             _warningsConvertedPackage = _warningsList.Count;
             _errorsConvertedPackage = _errorsList.Count;
-			
+
             CreateSmartConnector();
 
             // to clean; must be the last!!!
@@ -1038,7 +1059,7 @@ namespace FortiGateMigration
 
         public void AddRoutesStatic(List<FgCommand> fgCommandsList)
         {
-            foreach(FgCommand fgCommandE in fgCommandsList)
+            foreach (FgCommand fgCommandE in fgCommandsList)
             {
                 FgCommand_Edit fgCommandEdit = (FgCommand_Edit)fgCommandE;
 

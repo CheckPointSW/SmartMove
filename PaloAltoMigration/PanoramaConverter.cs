@@ -50,6 +50,8 @@ namespace PanoramaPaloAltoMigration
 
         private Dictionary<string, string> cpPredefServicesTypes = new Dictionary<string, string>();
 
+        private string outputFormat = "";
+
         #endregion
 
         #region Constants
@@ -745,14 +747,15 @@ namespace PanoramaPaloAltoMigration
 
         #region Converter
 
-        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName)
+        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName, string outputFormat = "json")
         {
             _paParser = (PanoramaParser)vendorParser;
             if (_paParser == null)
             {
                 throw new InvalidDataException("Unexpected!!!");
             }
-            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName);
+            this.outputFormat = outputFormat;
+            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
 
         protected override bool AddCheckPointObject(CheckPointObject cpObject)
@@ -848,7 +851,7 @@ namespace PanoramaPaloAltoMigration
             return devgroupZoneDictionary;
         }
 
-        public override void Convert(bool convertNat)
+        public override Dictionary<string, int> Convert(bool convertNat)
         {            
             string targetFileNameMain = _vendorFileName;
             string targetFolderMain = _targetFolder;
@@ -1036,6 +1039,8 @@ namespace PanoramaPaloAltoMigration
 
             ObjectsScriptFile = _targetFolder;
             PolicyScriptFile = _targetFolder;
+
+            return new Dictionary<string, int>() { { "errors", ErrorsInConvertedPackage() }, { "warnings", WarningsInConvertedPackage() } };
         }
 
         /// <summary>
