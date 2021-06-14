@@ -3194,10 +3194,7 @@ namespace JuniperMigration
                     return true;
                 }
 
-                if (fwRule.Service.Count == 0)
-                {
-                    // TODO: ???
-                }
+                if (fwRule.Service.Count == 0){}
                 else if (fwRule.Service.Count == 1 && fwRule.Service[0].Name == CheckPointObject.Any)
                 {
                     // There is only one service in FW rule and it is "any", no matter what NAT rule service is...

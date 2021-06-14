@@ -711,7 +711,15 @@ namespace MigrationBase
             }
             else
             {
-                Console.WriteLine("Check Point object type " + cpObject.GetType() + " not found!!");
+                //this is warning only
+                if (_outputFormat == "text")
+                    Console.WriteLine("Check Point object type " + cpObject.GetType() + " not found!!");
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                           msg: "Check Point object type " + cpObject.GetType() + " not found!!");
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
             }
 
             return found;
