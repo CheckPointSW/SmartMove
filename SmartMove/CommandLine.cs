@@ -309,7 +309,22 @@ namespace SmartMove
                     case "-n":
                     case "--nat":
                         {
-                            this.convertNat = true;
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option -n is not specified! ", MessageTypes.Error);
+                            }
+                            else if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            {
+                                bool nat;
+                                if (!bool.TryParse(args[i + 1], out nat))
+                                {
+                                    Console.WriteLine("Value for option -n is not corrected! Only true or false allowed ", MessageTypes.Error);
+                                    _successCommands = false;
+                                }
+
+                                this.convertNat = nat;
+                            }
                             break;
                         }
                     case "-l":
