@@ -185,7 +185,6 @@ namespace JuniperMigration
                 else if (addressBookName != JuniperObject.GlobalZoneName)
                 {
                     // Found non global address-book without a zone attached!!!
-                    Console.WriteLine("Found non global address-book without a zone attached: {0}", addressBookName);
                     continue;
                 }
 
