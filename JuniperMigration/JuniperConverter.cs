@@ -95,7 +95,6 @@ namespace JuniperMigration
                         break;
 
                     default:
-                        Console.WriteLine("Error: Unknown service protocol '{0}'", sProtocol);
                         return null;
                 }
 
@@ -3048,7 +3047,6 @@ namespace JuniperMigration
                     var parentLayerRuleZone = (CheckPoint_Zone)cpParentRule.Source[0];
                     if (parentLayerRuleZone == null)
                     {
-                        Console.WriteLine("Ooopppsssss...............");   // shouldn't happen...
                         continue;
                     }
 

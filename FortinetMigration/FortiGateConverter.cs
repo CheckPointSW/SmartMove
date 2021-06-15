@@ -921,6 +921,7 @@ namespace FortiGateMigration
         {
             if (IsConsoleRunning)
             {
+                Console.WriteLine("Convert configuration for VDOM " + targetFileNameNew);
                 Console.WriteLine("Convert configuration...");
                 Progress.SetProgress(35);
                 Thread.Sleep(1000);

@@ -93,7 +93,6 @@ namespace CiscoMigration
                         return "network_" + IpAddress + "_" + MaskPrefix;
                 }
 
-                Console.WriteLine("Error: unrecognized network object - Ip={0}, Mask={1}", IpAddress, NetMask);
                 return "_Err_in_network-line_" + CiscoCommandId;
             }
 
@@ -107,7 +106,6 @@ namespace CiscoMigration
                         return "network_" + IpAddress + "_" + MaskPrefix;
                 }
 
-                Console.WriteLine("Error: unrecognized network object - Ip={0}, Mask={1}, Prefix={2}", IpAddress, NetMask, MaskPrefix);
                 return "_Err_in_network-line_" + CiscoCommandId;
             }
 
@@ -184,10 +182,6 @@ namespace CiscoMigration
                             protocol = ProtocolType.KnownOtherIpProtocol;
                             sProtocol = serviceName;
                         }
-                        else
-                        {
-                            Console.WriteLine("Error: Unrecognized service protocol '{0}'", sProtocol);
-                        }
                         break;
                 }
 
@@ -222,10 +216,6 @@ namespace CiscoMigration
                         break;
 
                     default:
-                        if (!string.IsNullOrEmpty(sPortOperator))
-                        {
-                            Console.WriteLine("Error: unsupported port operator '{0}'", sPortOperator);
-                        }
                         break;
                 }
 
@@ -308,7 +298,6 @@ namespace CiscoMigration
                         }
                         else
                         {
-                            Console.WriteLine("Error: unsupported port operator '{0}' for protocol IP", portOperator);
                             name = "_Err_in_service-line_" + ciscoCommandId;
                         }
                         return name;
@@ -319,7 +308,6 @@ namespace CiscoMigration
                         return serviceFound ? name : sPort;
 
                     case ProtocolType.NA:
-                        Console.WriteLine("Error: Unrecognized service protocol");
                         return "_Err_in_service-line_" + ciscoCommandId;
                 }
 
@@ -428,10 +416,6 @@ namespace CiscoMigration
                         break;
 
                     case ProtocolType.Ip:
-                        if (portOperator != TcpUdpPortOperatorType.All)
-                        {
-                            Console.WriteLine("Error: Service protocol is 'IP', but the service is not 'any'");
-                        }
                         // Skip, a predefined "any" object is used!!!
                         break;
 
@@ -449,7 +433,6 @@ namespace CiscoMigration
                         break;
 
                     case ProtocolType.NA:
-                        Console.WriteLine("Error: Service protocol is 'NA'");
                         break;
                 }
 
