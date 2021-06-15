@@ -11,6 +11,8 @@ using FortiGateMigration;
 using PaloAltoMigration;
 using PanoramaPaloAltoMigration;
 using System.Text.RegularExpressions;
+using CommonUtils;
+using System.Threading;
 
 namespace SmartMove
 {
@@ -18,7 +20,7 @@ namespace SmartMove
     /// Represents command line logic
     /// </summary>
     class CommandLine
-    {    
+    {
         private string[] arguments { get; set; }
 
         public CommandLine(string[] args)
@@ -27,14 +29,14 @@ namespace SmartMove
         }
 
         #region command line options
-        //–f “D:\SmartMove\Content\config.txt” 
+        //–s “D:\SmartMove\Content\config.txt” 
         private string configFileName { get; set; }
         public string ConfigFileName
         {
             get { return configFileName; }
             set { configFileName = value; }
         }
-        
+
         //–v CiscoASA
         private string vendor { get; set; }
         public string Vendor
@@ -50,7 +52,7 @@ namespace SmartMove
             get { return targetFolder; }
             set { targetFolder = value; }
         }
-        
+
         //-d domain
         private string domain { get; set; }
         public string Domain
@@ -67,7 +69,7 @@ namespace SmartMove
             set { convertNat = value; }
         }
 
-        //-u unit1
+        //-l unit1
         private string ldapAccountUnit { get; set; }
         public string LdapAccountUnit
         {
@@ -81,32 +83,42 @@ namespace SmartMove
             get { return convertUserConfiguration; }
             set { convertUserConfiguration = value; }
         }
-        //-i
+        //-k
         private bool dontImportUnusedObjects { get; set; }
         public bool DontImportUnusedObjects
         {
             get { return dontImportUnusedObjects; }
             set { dontImportUnusedObjects = value; }
         }
+        //-f
+        private string formatOutput { get; set; }
+        public string FormatOutput
+        {
+            get { return formatOutput; }
+            set { formatOutput = value; }
+        }
+
+        private bool _successCommands = true;
         #endregion
 
         public int DisplayHelp()
         {
             Console.WriteLine("SmartMove command usage:");
             Console.WriteLine();
-            Console.WriteLine("SmartMove.exe [–f config_file_name] [-v vendor] [-t target_folder] [-d domain] [-n] [-u LDAP_Account_unit] [-i]");
+            Console.WriteLine("SmartMove.exe [–s config_file_name] [-v vendor] [-t target_folder] [-d domain] [-n] [-l LDAP_Account_unit] [-k]");
             Console.WriteLine();
             Console.WriteLine("Options:");
-            Console.WriteLine("\t" + "-f" + "\t" + "full path to vendor configuration file");
-            Console.WriteLine("\t" + "-v" + "\t" + "vendor for conversion (available options: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama)");
-            Console.WriteLine("\t" + "-t" + "\t" + "migration output folder");
-            Console.WriteLine("\t" + "-d" + "\t" + "domain name (for CiscoASA, JuniperSRX, JuniperSSG only)");
-            Console.WriteLine("\t" + "-n" + "\t" + "convert NAT configuration");
-            Console.WriteLine("\t" + "-u" + "\t" + "LDAP Account unit for convert user configuration option (for FortiNet, PaloAlto and Panorama only)");
-            Console.WriteLine("\t" + "-i" + "\t" + "do not import unused objects (for FortiNet, PaloAlto and Panorama only)");
+            Console.WriteLine("\t" + "-s | --source" + "\t" + "full path to the vendor configuration file");
+            Console.WriteLine("\t" + "-v | --vendor" + "\t" + "vendor for conversion (available options: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama)");
+            Console.WriteLine("\t" + "-t | --target" + "\t" + "migration output folder");
+            Console.WriteLine("\t" + "-d | --domain" + "\t" + "domain name (for CiscoASA, JuniperSRX, JuniperSSG only)");
+            Console.WriteLine("\t" + "-n | --nat" + "\t" + @"(""-n false"" |"" -n true"" [default])  convert NAT configuration [enabled by default]");
+            Console.WriteLine("\t" + "-l | --ldap" + "\t" + "LDAP Account unit for convert user configuration option (for FortiNet, PaloAlto and Panorama only)");
+            Console.WriteLine("\t" + "-k | --skip" + "\t" + @"(""-k false"" |"" -k true"" [default]) do not import unused objects (for FortiNet, PaloAlto and Panorama only) [enabled by default]");
+            Console.WriteLine("\t" + "-f | --format" + "\t" + "format of the output file (JSON[default], TEXT)");
             Console.WriteLine();
             Console.WriteLine("Example:");
-            Console.WriteLine("\t" + "SmartMove.exe –f \"D:\\SmartMove\\Content\\config.txt\" –v CiscoASA - t \"D:\\SmartMove\\Content\" –n");
+            Console.WriteLine("\t" + "SmartMove.exe –s \"D:\\SmartMove\\Content\\config.txt\" –v CiscoASA - t \"D:\\SmartMove\\Content\" –n true -k false -f json");
             return 0;
         }
 
@@ -122,35 +134,35 @@ namespace SmartMove
             if (String.IsNullOrEmpty(commandLine.Vendor))
             {
                 Console.WriteLine("Option -v is mandatory but not specified.", MessageTypes.Error);
-                Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                 return 0;
             }
             if (String.IsNullOrEmpty(commandLine.ConfigFileName))
             {
-                Console.WriteLine("Option -f is mandatory but not specified.", MessageTypes.Error);
-                Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                Console.WriteLine("Option -s is mandatory but not specified.", MessageTypes.Error);
+                Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                 return 0;
             }
             if (!fullVendorsList.Contains(commandLine.Vendor))
             {
                 Console.WriteLine("Specified vendor \"" + commandLine.Vendor + "\" is not available.", MessageTypes.Error);
                 Console.WriteLine("Available options are: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama", MessageTypes.Error);
-                Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                 return 0;
             }
             if (vendorsList1.Contains(commandLine.Vendor))
             {
                 if (commandLine.ConvertUserConfiguration == true)
                 {
-                    Console.WriteLine("Option -u is not valid for vendor " + commandLine.Vendor + "!");
-                    Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                    Console.WriteLine("Option -l is not valid for vendor " + commandLine.Vendor + "!");
+                    Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                     return 0;
                 }
 
                 if (commandLine.DontImportUnusedObjects == true)
                 {
-                    Console.WriteLine("Option -i is not valid for vendor " + commandLine.Vendor + "!");
-                    Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                    Console.WriteLine("Option -k is not valid for vendor " + commandLine.Vendor + "!");
+                    Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                     return 0;
                 }
 
@@ -159,8 +171,8 @@ namespace SmartMove
             {
                 if (commandLine.ConvertUserConfiguration == true && commandLine.LdapAccountUnit == null)
                 {
-                    Console.WriteLine("Value for option -u is not specified!");
-                    Console.WriteLine("For command help run \"SmartMove.exe -help\"", MessageTypes.Error);
+                    Console.WriteLine("Value for option -l is not specified!");
+                    Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                     return 0;
                 }
 
@@ -189,7 +201,7 @@ namespace SmartMove
         public string[] regenerateArgs(string commandLineString)
         {
             String[] args = null;
-            
+
             var parts = Regex.Matches(commandLineString, @"[\""].+?[\""]|[^ ]+")
                             .Cast<Match>()
                             .Select(m => m.Value)
@@ -197,7 +209,7 @@ namespace SmartMove
             parts.RemoveAt(0);
 
             string buf;
-            List<String> finalArgs = new List<String> ();
+            List<String> finalArgs = new List<String>();
             foreach (var item in parts)
             {
                 if (item.StartsWith("\"") && item.EndsWith("\""))
@@ -209,10 +221,10 @@ namespace SmartMove
                 {
                     finalArgs.Add(item);
                 }
-                    
+
             }
-                args = finalArgs.ToArray();
-                      
+            args = finalArgs.ToArray();
+
             return args;
         }
 
@@ -220,85 +232,174 @@ namespace SmartMove
          * Parses input options and writes its values to ComamndLine class fields
          */
         public CommandLine Parse(string[] args)
-        {                    
-             for (int i = 0; i < args.Length; i++)
-             {                
+        {
+            //set default values
+            ConvertNat = true;
+            FormatOutput = "json";
+            //not default value, just for disabling null reference exception during conversion
+            LdapAccountUnit = string.Empty;
+
+
+            for (int i = 0; i < args.Length; i++)
+            {
                 switch (args[i])
                 {
-                    case "-f":
+                    case "-s":
+                    case "--source":
                         {
                             if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
-                            {                         
+                            {
                                 if (args[i + 1].IndexOf("\\") != -1)
-                                {                                    
+                                {
                                     this.ConfigFileName = args[i + 1];
                                 }
                                 else
                                 {
                                     this.configFileName = Directory.GetCurrentDirectory() + "\\" + args[i + 1];
-                             
+
                                 }
                                 //set default velue of target folder to cofig file directory
                                 this.TargetFolder = this.ConfigFileName.Substring(0, this.ConfigFileName.LastIndexOf("\\"));
-                                
-                            } else
+
+                            }
+                            else
                             {
-                                Console.WriteLine("Value for mandatory option -f is not specified! ", MessageTypes.Error);
-                            } 
+                                _successCommands = false;
+                                Console.WriteLine("Value for mandatory option -s is not specified! ", MessageTypes.Error);
+                            }
 
                             break;
                         }
                     case "-v":
+                    case "--vendor":
                         {
                             if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
                                 this.vendor = args[i + 1];
-                             else
-                                 Console.WriteLine("Value for mandatory option -v is not specified! ", MessageTypes.Error);
+                            else
+                            {
+                                Console.WriteLine("Value for mandatory option -v is not specified! ", MessageTypes.Error);
+                                _successCommands = false;
+                            }
                             break;
                         }
                     case "-t":
+                    case "--target":
                         {
                             if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
-                                this.targetFolder = args[i + 1]; 
+                                this.targetFolder = args[i + 1];
                             else
+                            {
+                                _successCommands = false;
                                 Console.WriteLine("Value for target folder option -t is not specified. Default value will be set!", MessageTypes.Error);
+                            }
                             break;
                         }
                     case "-d":
+                    case "--domain":
                         {
-                            if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option -d is not specified! ", MessageTypes.Error);
+                            }
+                            else if(args[i] != args.Last() && !args[i + 1].StartsWith("-"))
                                 this.domain = args[i + 1];
                             else
+                            {
+                                _successCommands = false;
                                 Console.WriteLine("Value for option -d is not specified! ", MessageTypes.Error);
+                            }
                             break;
                         }
                     case "-n":
+                    case "--nat":
                         {
-                            this.convertNat = true;
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option -n is not specified! ", MessageTypes.Error);
+                            }
+                            else if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            {
+                                bool nat;
+                                if (!bool.TryParse(args[i + 1], out nat))
+                                {
+                                    Console.WriteLine("Value for option -n is not corrected! Only true or false allowed ", MessageTypes.Error);
+                                    _successCommands = false;
+                                }
+
+                                this.convertNat = nat;
+                            }
                             break;
                         }
-                    case "-u":
+                    case "-l":
+                    case "--ldap":
                         {
-                            if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            if (args[i] == args.Last())
                             {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option -l is not specified! ", MessageTypes.Error);
+                            }
+                            else if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            {
+                                if (args[i + 1].Contains(' ') || args[i + 1].Length == 0)
+                                {
+                                    Console.WriteLine("Value for option -l is not corrected! Spaces and empty string not allowed ", MessageTypes.Error);
+                                    _successCommands = false;
+                                }
+
                                 this.ldapAccountUnit = args[i + 1];
                                 this.ConvertUserConfiguration = true;
-                            } else
+                            }
+                            else 
                             {
                                 this.ConvertUserConfiguration = true;
                                 //Console.WriteLine("Value for option -u is not specified! ", MessageTypes.Error);
                             }
-                                
+
                             break;
                         }
-                    case "-i":
+                    case "-k":
+                    case "--skip":
                         {
-                            this.dontImportUnusedObjects = true;
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option -k is not specified! ", MessageTypes.Error);
+                            }
+                            else if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            {
+                                bool dontImportUnusedObjectsFlag;
+                                if (!bool.TryParse(args[i + 1], out dontImportUnusedObjectsFlag))
+                                {
+                                    Console.WriteLine("Value for option -k is not corrected! Only true or false allowed ", MessageTypes.Error);
+                                    _successCommands = false;
+                                }
+
+                                this.dontImportUnusedObjects = dontImportUnusedObjectsFlag;
+                            }
                             break;
-                        }                    
-                }                                
-             }
-             return this;
+                        }
+                    case "-f":
+                    case "--format":
+                        {
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option -f is not specified! ", MessageTypes.Error);
+                            }
+                            else if(new List<string>() { "text", "json" }.Contains(args[i + 1].ToLower()))
+                                FormatOutput = args[i + 1];
+                            else
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option format is not corrected! Allow only 'text' or 'json' ", MessageTypes.Error);
+                            }
+                            break;
+                        }
+                }
+            }
+            return this;
         }
 
         /*
@@ -307,39 +408,73 @@ namespace SmartMove
          */
         public void DoMigration(CommandLine commandLine)
         {
-            
+            if (!_successCommands)
+                return;
+
             string fileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
             //Console.WriteLine("File name: " + fileName);
 
-            if (string.IsNullOrEmpty(commandLine.ConfigFileName) || string.IsNullOrEmpty(fileName))            
+            if (string.IsNullOrEmpty(commandLine.ConfigFileName) || string.IsNullOrEmpty(fileName))
             {
-                Console.WriteLine("Configuration file is not selected.", MessageTypes.Error);                
+                if (FormatOutput == "text")
+                    Console.WriteLine("Configuration file is not selected.", MessageTypes.Error);
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                        msg: "Configuration file is not selected.",
+                        err: "err_cannot_convert_configuration_file");
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
                 return;
             }
 
             if (!File.Exists(commandLine.ConfigFileName))
             {
-                Console.WriteLine("Cannot find configuration file.", MessageTypes.Error);
+                if (FormatOutput == "text")
+                    Console.WriteLine("Cannot find configuration file.", MessageTypes.Error);
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                        msg: "Cannot find configuration file.",
+                        err: "err_cannot_convert_configuration_file");
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
                 return;
             }
 
             if (fileName.Length > 20)
             {
-                Console.WriteLine("Configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
+                if (FormatOutput == "text")
+                    Console.WriteLine("Configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                        msg: "Configuration file name is restricted to 20 characters at most.",
+                        err: "err_cannot_convert_configuration_file");
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
                 return;
             }
-                   
+
             if (!Directory.Exists(commandLine.TargetFolder))
             {
-                Console.WriteLine("Cannot find target folder for conversion output.", MessageTypes.Error);
+                if (FormatOutput == "text")
+                    Console.WriteLine("Cannot find target folder for conversion output.", MessageTypes.Error);
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                        msg: "Cannot find target folder for conversion output.",
+                        err: "err_cannot_convert_configuration_file");
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
                 return;
             }
 
             VendorParser vendorParser;
 
-            switch (commandLine.Vendor)            
+            switch (commandLine.Vendor)
             {
-                case "CiscoASA":                    
+                case "CiscoASA":
                     vendorParser = new CiscoParser();
                     break;
                 case "JuniperSRX":
@@ -351,8 +486,8 @@ namespace SmartMove
                 case "FortiNet":
                     vendorParser = new FortiGateParser();
                     break;
-                case "PaloAlto":                    
-                    vendorParser = new PaloAltoParser();                    
+                case "PaloAlto":
+                    vendorParser = new PaloAltoParser();
                     break;
                 case "Panorama":
                     vendorParser = new PanoramaParser();
@@ -362,10 +497,10 @@ namespace SmartMove
             }
 
             try
-            {                
+            {
                 string ciscoFile = commandLine.ConfigFileName;
-                Console.WriteLine("Parsing configuration file...");
-                
+                Console.Write("Parsing configuration file...");
+
                 if (commandLine.Vendor.Equals("Panorama"))
                 {
                     PanoramaParser panParser = (PanoramaParser)vendorParser;
@@ -375,11 +510,25 @@ namespace SmartMove
                 {
                     vendorParser.Parse(ciscoFile);
                 }
+
+                Console.WriteLine("Done.");
+
             }
             catch (Exception ex)
-            {                
-                Console.WriteLine(string.Format("Could not parse configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
-                return;
+            {
+                if (FormatOutput == "text")
+                {
+                    Console.WriteLine(string.Format("\nCould not parse configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                    return;
+                }
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                        msg: "Could not parse configuration file.",
+                        err: "err_cannot_parse_configuration_file");
+                    Console.WriteLine("\n" + jsonReport.PrintJson());
+                    return;
+                }
             }
 
             #region check middleware version
@@ -388,12 +537,26 @@ namespace SmartMove
                 case "CiscoASA":
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
-                        Console.WriteLine("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified ASA version. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
                         return;
                     }
                     else if (vendorParser.MajorVersion < 8 || (vendorParser.MajorVersion == 8 && vendorParser.MinorVersion < 3))
                     {
-                        Console.WriteLine("Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported ASA version (" + vendorParser.Version + "). This tool supports ASA 8.3 and above configuration files. The configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported ASA version (" + vendorParser.Version + "). This tool supports ASA 8.3 and above configuration files. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
                         return;
                     }
                     break;
@@ -401,12 +564,26 @@ namespace SmartMove
                 case "JuniperSRX":
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
-                        Console.WriteLine("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified SRX version. Cannot find SRX version for the selected configuration. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
                         return;
                     }
                     else if (vendorParser.MajorVersion < 12 || (vendorParser.MajorVersion == 12 && vendorParser.MinorVersion < 1))
                     {
-                        Console.WriteLine("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported SRX version (" + vendorParser.Version + "). This tool supports SRX 12.1 and above configuration files. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
                         return;
                     }
                     break;
@@ -417,59 +594,101 @@ namespace SmartMove
                 case "FortiNet":
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
-                        Console.WriteLine("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified FortiGate version. Cannot find FortiGate version for the selected configuration. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
                         return;
                     }
                     else if (vendorParser.MajorVersion < 5)
                     {
-                        Console.WriteLine("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported FortiGate version (" + vendorParser.Version + "). This tool supports FortiGate 5.x and above configuration files. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
                         return;
                     }
                     break;
                 case "PaloAlto":
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
-                        Console.WriteLine("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified PaloAlto version. Cannot find PaloAlto PAN-OS version for the selected configuration. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
                         return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
-                        Console.WriteLine("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported PaloAlto version (" + vendorParser.Version + "). This tool supports PaloAlto PAN-OS 7.x and above configuration files. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
                         return;
                     }
                     break;
                 case "Panorama":
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
-                        Console.WriteLine("Unspecified PaloAlto Panorama version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified PaloAlto Panorama version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified PaloAlto Panorama version. Cannot find PaloAlto Panorama version for the selected configuration. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
                         return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
-                        Console.WriteLine("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported PaloAlto version (" + vendorParser.Version + "). This tool supports PaloAlto Panorama 7.x and above configuration files. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
                         return;
                     }
                     break;
             }
             #endregion                       
 
-            string vendorFileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);            
+            string vendorFileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
 
             string toolVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            
-            string targetFolder = commandLine.TargetFolder + "\\";                        
+
+            string targetFolder = commandLine.TargetFolder + "\\";
 
             bool convertNat = commandLine.ConvertNat;
-            
+
             string ldapAccountUnit = commandLine.LdapAccountUnit;
-            
+
             vendorParser.Export(targetFolder + vendorFileName + ".json");
 
             VendorConverter vendorConverter;
 
             switch (commandLine.Vendor)
             {
-                case "CiscoASA":                    
+                case "CiscoASA":
                     vendorConverter = new CiscoConverter();
                     break;
                 case "JuniperSRX":
@@ -490,7 +709,7 @@ namespace SmartMove
                     paConverter.OptimizeConf = commandLine.DontImportUnusedObjects;
                     paConverter.ConvertUserConf = commandLine.ConvertUserConfiguration;
                     paConverter.LDAPAccoutUnit = ldapAccountUnit;
-                    vendorConverter = paConverter;                    
+                    vendorConverter = paConverter;
                     break;
                 case "Panorama":
                     PanoramaConverter panoramaConverter = new PanoramaConverter();
@@ -503,36 +722,76 @@ namespace SmartMove
                     throw new InvalidDataException("Unexpected!!!");
             }
 
-            vendorConverter.Initialize(vendorParser, commandLine.ConfigFileName, toolVersion, targetFolder, commandLine.Domain);
-            
+            vendorConverter.Initialize(vendorParser, commandLine.ConfigFileName, toolVersion, targetFolder, commandLine.Domain, commandLine.formatOutput);
+            vendorConverter.IsConsoleRunning = true;
+
             try
             {
-                Console.WriteLine("Conversion is in progress...");
-                vendorConverter.Convert(convertNat);
-                Console.WriteLine("Conversion is finished.");
+                Console.WriteLine("Conversion started...");
+                Dictionary<string, int> results = vendorConverter.Convert(convertNat);
+
+                if (formatOutput.Equals("text"))
+                {
+                    Console.WriteLine("Conversion finished.");
+                    if (results.ContainsKey("errors"))
+                        Console.WriteLine("Errors: {0}", results["errors"]);
+                    if (results.ContainsKey("warnings"))
+                        Console.WriteLine("Warnings: {0}", results["warnings"]);
+                }
+                else
+                {
+                    TotalJsonReport jsonReport = new TotalJsonReport(
+                        msg: "Conversion finished",
+                        errs: results.ContainsKey("errors") ? results["errors"].ToString() : null,
+                        warnings: results.ContainsKey("warnings") ? results["warnings"].ToString() : null);
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
+
             }
             catch (Exception ex)
             {
 
                 if (ex is InvalidDataException && ex.Message != null && ex.Message.Contains("Policy exceeds the maximum number"))
                 {
-                    Console.WriteLine(String.Format("{1}{0}{2}{0}{3}", Environment.NewLine, "SmartMove is unable to convert the provided policy.",
-                                                        "Reason: Policy exceeds the maximum number of supported policy layers.",
-                                                        "To assure the smooth conversion of your data, it is recommended to contact Check Point Professional Services by sending an e-mail to ps@checkpoint.com"));
+                    if (FormatOutput == "text")
+                    {
+                        Console.WriteLine(String.Format("{1}{0}{2}{0}{3}", Environment.NewLine, "SmartMove is unable to convert the provided policy.",
+                                                          "Reason: Policy exceeds the maximum number of supported policy layers.",
+                                                          "To assure the smooth conversion of your data, it is recommended to contact Check Point Professional Services by sending an e-mail to ps@checkpoint.com"));
+                    }
+                    else
+                    {
+                        JsonReport jsonReport = new JsonReport(
+                            msg: "SmartMove is unable to convert the provided policy. Reason: Policy exceeds the maximum number of supported policy layers.",
+                            err: "generic_error");
+                        Console.WriteLine(jsonReport.PrintJson());
+                    }
                 }
                 else
                 {
-                    Console.WriteLine(string.Format("Could not convert configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                    if (FormatOutput == "text")
+                        Console.WriteLine("Could not convert configuration file.", MessageTypes.Error);
+                    else
+                    {
+                        JsonReport jsonReport = new JsonReport(
+                            msg: "Could not convert configuration file.",
+                            err: "err_cannot_convert_configuration_file");
+                        Console.WriteLine(jsonReport.PrintJson());
+                    }
                 }
                 return;
-            }                     
-            
-            vendorConverter.ExportConfigurationAsHtml();            
-            vendorConverter.ExportPolicyPackagesAsHtml();            
+            }
+            finally
+            {
+                vendorConverter.Progress.Dispose();
+            }
+
+            vendorConverter.ExportConfigurationAsHtml();
+            vendorConverter.ExportPolicyPackagesAsHtml();
             if (commandLine.ConvertNat)
             {
-                vendorConverter.ExportNatLayerAsHtml();               
-            }          
+                vendorConverter.ExportNatLayerAsHtml();
+            }
         }
     }
 }

@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using CheckPointObjects;
 using CommonUtils;
 using Newtonsoft.Json;
@@ -66,7 +67,9 @@ namespace MigrationBase
         protected string _domainName;
         protected string _policyPackageName;
         protected string _policyPackageOptimizedName;
+        protected string _outputFormat; //txt or json
         protected bool _hasNATConversionIncident = false;
+        protected bool _calledFromConsole = false;
 
         protected CheckPointObjectsRepository _cpObjects = new CheckPointObjectsRepository();
 
@@ -114,6 +117,19 @@ namespace MigrationBase
         public string ErrorsHtmlFile { get; set; }
         public int ConversionIncidentCategoriesCount { get; set; }
         public int ConversionIncidentsCommandsCount { get; set; }
+        public bool IsConsoleRunning { 
+            get 
+            { 
+                return _calledFromConsole; 
+            } 
+            set
+            {
+                _calledFromConsole = value;
+            }
+        }
+
+        //console progressbar
+        public ProgressBar Progress { get; set; } = null;
 
         #endregion
 
@@ -133,12 +149,13 @@ namespace MigrationBase
 
         #region Methods
 
-        public virtual void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName)
+        public virtual void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName, string outputFormat)
         {
             _vendorFilePath = vendorFilePath;
             _toolVersion = toolVersion;
             _targetFolder = targetFolder;
             _domainName = domainName;
+            _outputFormat = outputFormat;
 
             _vendorFileName = Path.GetFileNameWithoutExtension(vendorFilePath);
             _vendorFileName = !string.IsNullOrEmpty(_vendorFileName) ? Regex.Replace(_vendorFileName, @"\s+", "_") : "";
@@ -217,7 +234,7 @@ namespace MigrationBase
 
         #region Abstract
 
-        public abstract void Convert(bool convertNat);
+        public abstract Dictionary<string, int> Convert(bool convertNat);
         public abstract int RulesInConvertedPackage();
         public abstract int RulesInConvertedOptimizedPackage();
         public abstract int RulesInNatLayer();
@@ -706,10 +723,6 @@ namespace MigrationBase
                 {
                     cpObject.ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 }
-            }
-            else
-            {
-                Console.WriteLine("Check Point object type " + cpObject.GetType() + " not found!!");
             }
 
             return found;
@@ -2007,6 +2020,12 @@ namespace MigrationBase
 
             if (isGeneratingSC)
             {
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Generating Smart Connector ...");
+                    Progress.SetProgress(90);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(90, "Generating Smart Connector ...");
                 string cpObjectsJsonFN = "cp_objects.json";
                 string cpObjectsJsonFP = _targetFolder + Path.DirectorySeparatorChar + cpObjectsJsonFN;

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace PaloAltoMigration
 {
@@ -45,6 +46,8 @@ namespace PaloAltoMigration
         private int _numPostfix = 0;
 
         private Dictionary<string, string> cpPredefServicesTypes = new Dictionary<string, string>();
+
+        private string outputFormat = "";
 
         #endregion
 
@@ -731,14 +734,15 @@ namespace PaloAltoMigration
 
         #region Converter
 
-        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName)
+        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName, string outputFormat = "json")
         {
             _paParser = (PaloAltoParser)vendorParser;
             if (_paParser == null)
             {
                 throw new InvalidDataException("Unexpected!!!");
             }
-            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName);
+            this.outputFormat = outputFormat;
+            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
 
         protected override bool AddCheckPointObject(CheckPointObject cpObject)
@@ -759,10 +763,14 @@ namespace PaloAltoMigration
             return false;
         }
 
-        public override void Convert(bool convertNat)
+        public override Dictionary<string, int> Convert(bool convertNat)
         {
+
             string targetFileNameMain = _vendorFileName;
             string targetFolderMain = _targetFolder;
+
+            if (IsConsoleRunning)
+                Progress = new ProgressBar();
 
             PA_Config paConfig = _paParser.Config;
             _isNatConverted = convertNat;
@@ -877,13 +885,34 @@ namespace PaloAltoMigration
                 }
             }
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Optimizing Firewall rulebase ...");
+                Progress.SetProgress(70);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(70, "Optimizing Firewall rulebase ...");
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Generating CLI scripts ...");
+                Progress.SetProgress(80);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(80, "Generating CLI scripts ...");
 
             VendorHtmlFile = _vendorFilePath;
 
             ObjectsScriptFile = _targetFolder;
             PolicyScriptFile = _targetFolder;
+
+
+            if (IsConsoleRunning)
+            {
+                Progress.SetProgress(100);
+                Progress.Dispose();
+            }
+            return new Dictionary<string, int>() { { "errors", ErrorsInConvertedPackage() }, { "warnings", WarningsInConvertedPackage() } };
         }
 
         public void ConvertPaVsysEntry(string targetFolderNew, string targetFileNameNew, PA_VsysEntry paVsysEntry,
@@ -897,7 +926,20 @@ namespace PaloAltoMigration
                                         Dictionary<string, CheckPoint_ApplicationGroup> s_cpAppGroupsDict,
                                         Dictionary<string, List<CheckPoint_Time>> s_cpSchedulesDict)
         {
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Convert configuration...");
+                Progress.SetProgress(35);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(35, "Convert configuration...");
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Convert objects...");
+                Progress.SetProgress(40);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(40, "Convert objects...");
 
             _cpObjects.Initialize(); // must be first!!!
@@ -949,6 +991,12 @@ namespace PaloAltoMigration
 
             Dictionary<string, CheckPoint_AccessRole> cpAccessRolesDict = new Dictionary<string, CheckPoint_AccessRole>();
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Convert policy...");
+                Progress.SetProgress(60);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(60, "Convert policy...");
 
             ConvertSecurityPolicy(paVsysEntry, cpZonesDict,
