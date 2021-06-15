@@ -297,7 +297,12 @@ namespace SmartMove
                     case "-d":
                     case "--domain":
                         {
-                            if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option -d is not specified! ", MessageTypes.Error);
+                            }
+                            else if(args[i] != args.Last() && !args[i + 1].StartsWith("-"))
                                 this.domain = args[i + 1];
                             else
                             {
@@ -357,13 +362,33 @@ namespace SmartMove
                     case "-k":
                     case "--skip":
                         {
-                            this.dontImportUnusedObjects = true;
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option -k is not specified! ", MessageTypes.Error);
+                            }
+                            else if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            {
+                                bool dontImportUnusedObjectsFlag;
+                                if (!bool.TryParse(args[i + 1], out dontImportUnusedObjectsFlag))
+                                {
+                                    Console.WriteLine("Value for option -k is not corrected! Only true or false allowed ", MessageTypes.Error);
+                                    _successCommands = false;
+                                }
+
+                                this.dontImportUnusedObjects = dontImportUnusedObjectsFlag;
+                            }
                             break;
                         }
                     case "-f":
                     case "--format":
                         {
-                            if (new List<string>() { "text", "json" }.Contains(args[i + 1].ToLower()))
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option -f is not specified! ", MessageTypes.Error);
+                            }
+                            else if(new List<string>() { "text", "json" }.Contains(args[i + 1].ToLower()))
                                 FormatOutput = args[i + 1];
                             else
                             {
