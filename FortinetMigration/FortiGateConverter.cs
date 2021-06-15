@@ -736,8 +736,8 @@ namespace FortiGateMigration
             }
             else //if configuration file contains some VDOM then we can not count Errors, Warnings, Rules and NATs
             {
-                _warningsConvertedPackage = -1;
-                _errorsConvertedPackage = -1;
+                //_warningsConvertedPackage = -1;
+                //_errorsConvertedPackage = -1;
                 _rulesInConvertedPackage = -1;
                 _rulesInNatLayer = -1;
                 CleanCheckPointObjectsLists();
@@ -1076,8 +1076,8 @@ namespace FortiGateMigration
             ExportNatLayerAsHtml();
             ExportPolicyPackagesAsHtmlConfig();
 
-            _warningsConvertedPackage = _warningsList.Count;
-            _errorsConvertedPackage = _errorsList.Count;
+            _warningsConvertedPackage += _warningsList.Count;
+            _errorsConvertedPackage += _errorsList.Count;
 
             CreateSmartConnector();
 

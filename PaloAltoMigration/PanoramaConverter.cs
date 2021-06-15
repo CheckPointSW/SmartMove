@@ -1015,8 +1015,8 @@ namespace PanoramaPaloAltoMigration
                                     s_cpNetGroupsDict = s_cpNetGroupsDict.Concat(s_cpNetGroupsDict_Global.Where(x => !s_cpNetGroupsDict.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
                                 }
 
-                                _warningsConvertedPackage = -1;
-                                _errorsConvertedPackage = -1;
+                                //_warningsConvertedPackage = -1;
+                                //_errorsConvertedPackage = -1;
                                 _rulesInConvertedPackage = -1;
                                 _rulesInNatLayer = -1;
                                 CleanCheckPointObjectsLists();
@@ -1241,8 +1241,8 @@ namespace PanoramaPaloAltoMigration
 
             ExportNatLayerAsHtml();
 
-            _warningsConvertedPackage = _warningsList.Count;
-            _errorsConvertedPackage = _errorsList.Count;
+            _warningsConvertedPackage += _warningsList.Count;
+            _errorsConvertedPackage += _errorsList.Count;
 
             CreateSmartConnector();
 
