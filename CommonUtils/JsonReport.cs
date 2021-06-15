@@ -50,9 +50,9 @@ namespace CommonUtils
         [DataMember]
         public string msg { get; set; }
         //total count at the finish
-        [DataMember]
+        [DataMember(Name = "Conversion warnings")]
         public int warnings { get; set; }
-        [DataMember]
+        [DataMember(Name = "Conversion errors")]
         public int errors { get; set; }
 
         public TotalJsonReport() {
@@ -62,8 +62,12 @@ namespace CommonUtils
         public TotalJsonReport(string msg, string errs, string warnings) : this()
         {
             this.msg = msg;
-            int errsCount = int.Parse(errs);
-            int warnCount = int.Parse(warnings);
+            int errsCount = 0;
+            int warnCount = 0;
+            if (errs != null)
+                errsCount = int.Parse(errs);
+            if (warnings != null)
+                warnCount = int.Parse(warnings);
             if (errsCount > 0)
                 errors = errsCount;
             if (warnCount > 0)

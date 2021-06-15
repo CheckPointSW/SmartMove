@@ -25,6 +25,7 @@ using System.Globalization;
 using CheckPointObjects;
 using CommonUtils;
 using MigrationBase;
+using System.Threading;
 
 namespace JuniperMigration
 {
@@ -3747,6 +3748,15 @@ namespace JuniperMigration
 
         public override Dictionary<string, int> Convert(bool convertNat)
         {
+            if (IsConsoleRunning)
+                Progress = new ProgressBar();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Converting obects ...");
+                Progress.SetProgress(20);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(20, "Converting obects ...");
             _cpObjects.Initialize();   // must be first!!!
 
@@ -3761,27 +3771,65 @@ namespace JuniperMigration
             Add_Zones();   // must be called AFTER handling all network stuff!!!
             Add_ServiceObjects();
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Converting rules ...");
+                Progress.SetProgress(30);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(30, "Converting rules ...");
             Add_Package();
 
             if (convertNat)
             {
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Converting NAT rules ...");
+                    Progress.SetProgress(40);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(40, "Converting NAT rules ...");
                 Add_Static_NAT();
                 Add_Destination_NAT();
                 Add_Source_NAT();
+
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Creating NAT rulebase ...");
+                    Progress.SetProgress(50);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(50, "Creating NAT rulebase ...");
                 CreateNATRulebase();
+
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Creating Firewall rulebase ...");
+                    Progress.SetProgress(60);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(60, "Creating Firewall rulebase ...");
                 MatchNATRulesIntoFirewallPolicy();
             }
 
             // This should be done here, after all objects are converted!!!
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Validating converted objects ...");
+                Progress.SetProgress(70);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(70, "Validating converted objects ...");
             EnforceObjectNameValidity();
             ReplaceJuniperApplicationsWithEquivalentCheckpointServices();
             ReplaceJuniperInvalidApplicationsReferences();
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Generating CLI scripts ...");
+                Progress.SetProgress(80);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(80, "Generating CLI scripts ...");
             CreateObjectsScript();
             CreatePackagesScript();
@@ -3796,6 +3844,12 @@ namespace JuniperMigration
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
 			
             CreateSmartConnector();
+
+            if (IsConsoleRunning)
+            {
+                Progress.SetProgress(100);
+                Progress.Dispose();
+            }
             return new Dictionary<string, int>() { { "warnings", ConversionIncidentCategoriesCount } };
         }
 

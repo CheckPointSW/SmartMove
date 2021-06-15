@@ -9,6 +9,7 @@ using CheckPointObjects;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Net;
+using System.Threading;
 
 namespace FortiGateMigration
 {
@@ -718,7 +719,13 @@ namespace FortiGateMigration
             string targetFileNameMain = _vendorFileName;
             string targetFolderMain = _targetFolder;
 
+            if (IsConsoleRunning)
+                Progress = new ProgressBar();
+
             LDAP_Account_Unit = LDAPAccoutUnit.Trim();
+
+            if (IsConsoleRunning)
+                Progress.SetProgress(5);
 
             bool isVDom = ConvertVDom(targetFolderMain, _fortiGateParser.FgCommandsList, convertNat);
 
@@ -736,7 +743,20 @@ namespace FortiGateMigration
                 CleanCheckPointObjectsLists();
             }
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Optimizing Firewall rulebase ...");
+                Progress.SetProgress(72);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(70, "Optimizing Firewall rulebase ...");
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Generating CLI scripts ...");
+                Progress.SetProgress(80);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(80, "Generating CLI scripts ...");
 
             ChangeTargetFolder(targetFolderMain, targetFileNameMain); // chaning target folder path to folder contains config file
@@ -755,12 +775,23 @@ namespace FortiGateMigration
             ObjectsScriptFile = _targetFolder;
             PolicyScriptFile = _targetFolder;
 
+            if (IsConsoleRunning)
+            {
+                Progress.SetProgress(100);
+                Progress.Dispose();
+            }
             return new Dictionary<string, int>() { { "errors", ErrorsInConvertedPackage() }, { "warnings", WarningsInConvertedPackage() } };
         }
 
         //Convertint VDOMs to each VDOM and then Convert each VDOM as simple Configuration
         public bool ConvertVDom(string targetFolderM, List<FgCommand> fgCommandsList, bool convertNat)
         {
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Checking if vdom is present...");
+                Progress.SetProgress(10);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(10, "Checking if vdom is present...");
 
             bool isVDom = false;
@@ -803,6 +834,12 @@ namespace FortiGateMigration
         //Init system Interfaces which is Global
         public void InitSystemInterfaces(List<FgCommand> fgCommandsList)
         {
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Init system interfaces...");
+                Progress.SetProgress(20);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(20, "Init system interfaces...");
 
             foreach (FgCommand fgCommand in fgCommandsList)
@@ -882,7 +919,19 @@ namespace FortiGateMigration
         //converting full configuration file or part which is related to VDOM
         public void ConvertConfig(string targetFolderNew, string targetFileNameNew, List<FgCommand> fgCommandsList, bool convertNat)
         {
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Convert configuration...");
+                Progress.SetProgress(35);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(35, "Convert configuration...");
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Convert objects...");
+                Progress.SetProgress(40);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(40, "Convert objects...");
             _cpObjects.Initialize();   // must be first!!!
             CleanCheckPointObjectsLists(); // must be first!!!
@@ -1072,15 +1121,15 @@ namespace FortiGateMigration
 
                 foreach (FgCommand fgCommandS in fgCommandEdit.SubCommandsList)
                 {
-                    if(fgCommandS.GetType() == typeof(FgCommand_Set))
+                    if (fgCommandS.GetType() == typeof(FgCommand_Set))
                     {
                         FgCommand_Set fgCommandSet = (FgCommand_Set)fgCommandS;
 
-                        if(fgCommandSet.Field.Equals("dst"))
+                        if (fgCommandSet.Field.Equals("dst"))
                         {
                             string[] destination = fgCommandSet.Value.Trim('"').Trim().Split(new string[] { " " }, StringSplitOptions.None).ToArray();
 
-                            if(destination.Count() == 2)
+                            if (destination.Count() == 2)
                             {
                                 fgStaticRoute.Network = destination[0];
                                 fgStaticRoute.Mask = destination[1];
@@ -1090,7 +1139,7 @@ namespace FortiGateMigration
                         {
                             fgStaticRoute.Gateway = fgCommandSet.Value.Trim('"').Trim();
                         }
-                        if(fgCommandSet.Field.Equals("device"))
+                        if (fgCommandSet.Field.Equals("device"))
                         {
                             fgStaticRoute.Device = fgCommandSet.Value.Trim('"').Trim();
                         }
@@ -1120,12 +1169,12 @@ namespace FortiGateMigration
 
         public void CheckDynamicRoutesRip(List<FgCommand> fgCommandsList)
         {
-            foreach(FgCommand fgCommandC in fgCommandsList)
+            foreach (FgCommand fgCommandC in fgCommandsList)
             {
-                if(fgCommandC.GetType() == typeof(FgCommand_Config))
+                if (fgCommandC.GetType() == typeof(FgCommand_Config))
                 {
                     FgCommand_Config fgCommandConfig = (FgCommand_Config)fgCommandC;
-                    if(fgCommandConfig.ObjectName.Equals("interface"))
+                    if (fgCommandConfig.ObjectName.Equals("interface"))
                     {
                         _localFgDynRoutesEnable = true;
                     }
@@ -1150,12 +1199,12 @@ namespace FortiGateMigration
 
         public void CheckDynamicRoutesOspf(List<FgCommand> fgCommandsList)
         {
-            foreach(FgCommand fgCommandS in fgCommandsList)
+            foreach (FgCommand fgCommandS in fgCommandsList)
             {
-                if(fgCommandS.GetType() == typeof(FgCommand_Set))
+                if (fgCommandS.GetType() == typeof(FgCommand_Set))
                 {
                     FgCommand_Set fgCommandSet = (FgCommand_Set)fgCommandS;
-                    if(fgCommandSet.Field.Equals("router-id"))
+                    if (fgCommandSet.Field.Equals("router-id"))
                     {
                         _localFgDynRoutesEnable = true;
                     }
@@ -1860,7 +1909,7 @@ namespace FortiGateMigration
         public void AddFirewallScheduleGroupsRecurs(string cpTimeGrpName, Dictionary<string, CheckPoint_TimeGroup> checkingTimeGrps)
         {
             List<string> errorsList = new List<string>();
-            
+
             CheckPoint_TimeGroup cpTimeGrp = checkingTimeGrps[cpTimeGrpName];
 
             checkingTimeGrps.Remove(cpTimeGrpName);
@@ -1868,7 +1917,7 @@ namespace FortiGateMigration
             CheckPoint_TimeGroup cpTimeGrpAdd = new CheckPoint_TimeGroup();
 
             cpTimeGrpAdd.Name = cpTimeGrp.Name;
-            
+
             for (int i = 0; i < cpTimeGrp.Members.Count; i++)
             {
                 string member = cpTimeGrp.Members[i];
@@ -2022,7 +2071,7 @@ namespace FortiGateMigration
 
                                 foreach (string zoneInterface in zoneInterfaces)
                                 {
-                                    if(_interfacesMapperFgCp.ContainsKey(zoneInterface))
+                                    if (_interfacesMapperFgCp.ContainsKey(zoneInterface))
                                     {
                                         List<CheckPoint_Host> cpObjsList = _interfacesMapperFgCp[zoneInterface];
                                         foreach (CheckPoint_Host cpObj in cpObjsList)
@@ -2058,7 +2107,7 @@ namespace FortiGateMigration
                     FgCommand_Edit fgCommandEdit = (FgCommand_Edit)fgCommandE;
 
                     bool isFSSOService = false;
-                    
+
                     string membersStr = "";
 
                     foreach (FgCommand fgCommandS in fgCommandEdit.SubCommandsList)
@@ -2133,7 +2182,7 @@ namespace FortiGateMigration
 
         public void Add_ConfigFirewallAddress(List<FgCommand> fgCommandsList)
         {
-            foreach(FgCommand fgCommand in fgCommandsList)
+            foreach (FgCommand fgCommand in fgCommandsList)
             {
                 if (fgCommand.GetType() == typeof(FgCommand_Edit))
                 {
@@ -2433,16 +2482,16 @@ namespace FortiGateMigration
                                 }
                                 break;
                             case "icmp":
-                                    string type = "99";
-                                    
-                                    bool isFound = false;
-                                    string cpServiceName = _cpObjects.GetKnownServiceName("ICMP_" + type, out isFound);
+                                string type = "99";
 
-                                    CheckPointObject cpObj = _cpObjects.GetObject(cpServiceName);
-                                    
-                                    AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_service_custom + nameVipE, cpObj);
-                                    AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_service_custom + nameVipM, cpObj);
-                                    break;
+                                bool isFound = false;
+                                string cpServiceName = _cpObjects.GetKnownServiceName("ICMP_" + type, out isFound);
+
+                                CheckPointObject cpObj = _cpObjects.GetObject(cpServiceName);
+
+                                AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_service_custom + nameVipE, cpObj);
+                                AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_service_custom + nameVipM, cpObj);
+                                break;
                         }
                     }
                 }
@@ -2628,7 +2677,7 @@ namespace FortiGateMigration
         public void Add_AddressGroupsRecurs(string cpAddrGrpName, Dictionary<string, CheckPoint_NetworkGroup> checkingAddrGrps)
         {
             List<string> errorsList = new List<string>();
-            
+
             CheckPoint_NetworkGroup cpAddrGrp = checkingAddrGrps[cpAddrGrpName];
 
             checkingAddrGrps.Remove(cpAddrGrpName);
@@ -2636,7 +2685,7 @@ namespace FortiGateMigration
             CheckPoint_NetworkGroup cpAddrGrpAdd = new CheckPoint_NetworkGroup();
 
             cpAddrGrpAdd.Name = cpAddrGrp.Name;
-            
+
             for (int i = 0; i < cpAddrGrp.Members.Count; i++)
             {
                 string member = cpAddrGrp.Members[i];
@@ -2667,7 +2716,7 @@ namespace FortiGateMigration
                 }
                 else
                 {
-                    errorsList.Add(cpAddrGrpAdd.Name + " address group " + 
+                    errorsList.Add(cpAddrGrpAdd.Name + " address group " +
                         "can not been converted becuase it contains non-existing member: " + member);
                 }
 
@@ -2676,7 +2725,7 @@ namespace FortiGateMigration
                     checkingAddrGrps.Remove(member);
                 }
             }
-            
+
             if (errorsList.Count == 0)
             {
                 //AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_addrgrp + cpAddrGrp.Name, cpAddrGrpAdd);
@@ -2694,6 +2743,11 @@ namespace FortiGateMigration
 
         public void Add_Package(List<FgCommand> fgCommandsList, bool convertNat)
         {
+            if (IsConsoleRunning) { 
+                Console.WriteLine("Convert policy...");
+                Progress.SetProgress(70);
+                Thread.Sleep(1000);
+            } 
             RaiseConversionProgress(70, "Convert policy...");
 
             var cpPackage = new CheckPoint_Package();
@@ -2718,11 +2772,11 @@ namespace FortiGateMigration
             //add sub policy layer
             //add rule from Intrazone
 
-            foreach(CheckPoint_Zone cpZoneIntra in _localIntrazonesList)
+            foreach (CheckPoint_Zone cpZoneIntra in _localIntrazonesList)
             {
                 string warnMessage = CheckZoneForReservedWords(cpZoneIntra);
 
-                if(warnMessage != null)
+                if (warnMessage != null)
                 {
                     _warningsList.Add(warnMessage);
                 }
@@ -2773,8 +2827,8 @@ namespace FortiGateMigration
 
                     cpRule.ConversionComments = "Matched rule " + fgCommand_Edit.Table;
 
-                    string[] fgSrcIntfs = new string[]{};
-                    string[] fgDstIntfs = new string[]{};
+                    string[] fgSrcIntfs = new string[] { };
+                    string[] fgDstIntfs = new string[] { };
 
                     cpRule.Track = CheckPoint_Rule.TrackTypes.Log;
 
@@ -2793,7 +2847,7 @@ namespace FortiGateMigration
                         {
                             FgCommand_Set fgCommand_Set = (FgCommand_Set)fgCommandS;
 
-                            if(fgCommand_Set.Field.Equals("name"))
+                            if (fgCommand_Set.Field.Equals("name"))
                             {
                                 cpRule.Name = GetSafeName(fgCommand_Set.Value);
                             }
@@ -2812,17 +2866,17 @@ namespace FortiGateMigration
                             {
                                 cpRule.Action = CheckPoint_Rule.ActionType.Accept;
                             }
-                            
+
                             if (fgCommand_Set.Field.Equals("srcintf"))
                             {
                                 fgSrcIntfs = fgCommand_Set.Value.Trim('"').Split(new string[] { "\" \"" }, StringSplitOptions.None).ToArray();
 
-                                if(Array.IndexOf(fgSrcIntfs.Select(s => s.ToLowerInvariant()).ToArray(), "any") > -1)
+                                if (Array.IndexOf(fgSrcIntfs.Select(s => s.ToLowerInvariant()).ToArray(), "any") > -1)
                                 {
                                     isIntfContainsAny = true;
                                 }
                             }
-                            
+
                             if (fgCommand_Set.Field.Equals("dstintf"))
                             {
                                 fgDstIntfs = fgCommand_Set.Value.Trim('"').Split(new string[] { "\" \"" }, StringSplitOptions.None).ToArray();
@@ -2848,7 +2902,7 @@ namespace FortiGateMigration
 
                                         bool isAdded = false;
 
-                                        string[] fgPrefixes = new string[] 
+                                        string[] fgPrefixes = new string[]
                                                     {
                                                         FG_PREFIX_KEY_firewall_address,
                                                         FG_PREFIX_KEY_firewall_addrgrp,
@@ -2874,7 +2928,7 @@ namespace FortiGateMigration
                                             }
                                         }
 
-                                        if(!isAdded)
+                                        if (!isAdded)
                                         {
                                             errorsList.Add("policy rule " + fgCommand_Edit.Table + " contains 'srcaddr' field with non-existing reference to: " + name + " and was not created.");
                                         }
@@ -2898,7 +2952,7 @@ namespace FortiGateMigration
 
                                         bool isAdded = false;
 
-                                        string[] fgPrefixes = new string[] 
+                                        string[] fgPrefixes = new string[]
                                                     {
                                                         FG_PREFIX_KEY_firewall_address,
                                                         FG_PREFIX_KEY_firewall_addrgrp,
@@ -2924,7 +2978,7 @@ namespace FortiGateMigration
                                             }
                                         }
 
-                                        if(!isAdded)
+                                        if (!isAdded)
                                         {
                                             errorsList.Add("policy rule " + fgCommand_Edit.Table + " contains 'dstaddr' field with non-existing reference to: " + name + " and was not created.");
                                         }
@@ -2956,7 +3010,8 @@ namespace FortiGateMigration
                                     if (_localMapperFgCp.ContainsKey(fgPrefix + fgScheduleRule))
                                     {
                                         List<CheckPointObject> cpObjsList = _localMapperFgCp[fgPrefix + fgScheduleRule];
-                                        foreach(CheckPointObject cpObj in cpObjsList) {
+                                        foreach (CheckPointObject cpObj in cpObjsList)
+                                        {
                                             cpRule.Time.Add(cpObj);
                                             if (OptimizeConf)
                                             {
@@ -2967,7 +3022,7 @@ namespace FortiGateMigration
                                     }
                                 }
 
-                                if(!isAdded)
+                                if (!isAdded)
                                 {
                                     errorsList.Add("policy rule " + fgCommand_Edit.Table + " contains 'schedule' field with unrecognized value: " + fgScheduleRule + " and was not created");
                                 }
@@ -3077,7 +3132,7 @@ namespace FortiGateMigration
                             {
                                 fgSrcIntfsList.AddRange(_localMapperFgCp[FG_PREFIX_KEY_system_zone + fgSrcIntf]);
                             }
-                            else if(extraZonesMap.ContainsKey(FG_PREFIX_KEY_system_zone + fgSrcIntf))
+                            else if (extraZonesMap.ContainsKey(FG_PREFIX_KEY_system_zone + fgSrcIntf))
                             {
                                 fgSrcIntfsList.Add(extraZonesMap[FG_PREFIX_KEY_system_zone + fgSrcIntf]);
                             }
@@ -3087,7 +3142,7 @@ namespace FortiGateMigration
                                 cpZoneSrc.Name = GetSafeName(fgSrcIntf_Appendix + fgSrcIntf);
 
                                 string warnMessage = CheckZoneForReservedWords(cpZoneSrc);
-                                if(warnMessage != null)
+                                if (warnMessage != null)
                                 {
                                     extraZonesWarnMsgsList.Add(warnMessage);
                                 }
@@ -3115,7 +3170,7 @@ namespace FortiGateMigration
                             {
                                 fgDstIntfsList.AddRange(_localMapperFgCp[FG_PREFIX_KEY_system_zone + fgDstIntf]);
                             }
-                            else if(extraZonesMap.ContainsKey(FG_PREFIX_KEY_system_zone + fgDstIntf))
+                            else if (extraZonesMap.ContainsKey(FG_PREFIX_KEY_system_zone + fgDstIntf))
                             {
                                 fgDstIntfsList.Add(extraZonesMap[FG_PREFIX_KEY_system_zone + fgDstIntf]);
                             }
@@ -3187,7 +3242,7 @@ namespace FortiGateMigration
                         realRulesList.Add(cpRule);
 
                         _rulesInConvertedPackage += 1;
-                        
+
                         if (cpRuleUG != null)
                         {
                             rootLayer.Rules.Add(cpRuleUG);
@@ -3199,7 +3254,7 @@ namespace FortiGateMigration
 
                         //NAT conversion reagrding design which is described in other doc
 
-                        if(convertNat)
+                        if (convertNat)
                         {
                             int counterNatRules = -1;
 
@@ -3207,12 +3262,12 @@ namespace FortiGateMigration
                             {
                                 if (isNatEnabled)
                                 {
-                                    if(_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_grp + fgDstAddr))
+                                    if (_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_grp + fgDstAddr))
                                     {
                                         List<CheckPointObject> cpVipGrpsList = _localMapperFgCp[FG_PREFIX_KEY_firewall_vip_grp + fgDstAddr];
                                         foreach (CheckPointObject cpVipGrpI in cpVipGrpsList)
                                         {
-                                            if(cpVipGrpI.GetType() == typeof(CheckPoint_NetworkGroup))
+                                            if (cpVipGrpI.GetType() == typeof(CheckPoint_NetworkGroup))
                                             {
                                                 CheckPoint_NetworkGroup cpVipGrp = (CheckPoint_NetworkGroup)cpVipGrpI;
 
@@ -3220,7 +3275,7 @@ namespace FortiGateMigration
 
                                                 foreach (string cpVipI in cpVipMembersOrig)
                                                 {
-                                                    if (_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_extip + cpVipI) || 
+                                                    if (_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_extip + cpVipI) ||
                                                         _localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_mappedip + cpVipI))
                                                     {
                                                         counterNatRules = AddNatRuleVipNatEnable(fgCommand_Edit, cpVipI, counterNatRules);
@@ -3229,7 +3284,7 @@ namespace FortiGateMigration
                                             }
                                         }
                                     }
-                                    else if(_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_extip + fgDstAddr) || 
+                                    else if (_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_extip + fgDstAddr) ||
                                             _localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_mappedip + fgDstAddr))
                                     {
                                         counterNatRules = AddNatRuleVipNatEnable(fgCommand_Edit, fgDstAddr, counterNatRules);
@@ -3278,8 +3333,8 @@ namespace FortiGateMigration
                     }
                     else
                     {
-                        
-                        foreach(string error in errorsList)
+
+                        foreach (string error in errorsList)
                         {
                             _errorsList.Add(error);
                         }
@@ -3396,7 +3451,7 @@ namespace FortiGateMigration
         public List<CheckPointObject> GetFgDstAddrsAsVipMappedIpList(string fgDstAddr)
         {
             List<CheckPointObject> fgDstAddrsList = new List<CheckPointObject>();
-            
+
             if (fgDstAddr.ToLower().Equals("all"))
             {
                 fgDstAddrsList.Add(_cpObjects.GetObject(CheckPointObject.Any));
@@ -3478,10 +3533,10 @@ namespace FortiGateMigration
 
         public List<CheckPointObject> GetFgServicesList(FgCommand_Set fgCommandSet)
         {
-            List <CheckPointObject> fgServicesList = new List<CheckPointObject>();
+            List<CheckPointObject> fgServicesList = new List<CheckPointObject>();
 
             List<string> fgServicesNames = fgCommandSet.Value.Trim('"').Split(new string[] { "\" \"" }, StringSplitOptions.None).ToList();
-            for(int i = 0; i < fgServicesNames.Count; i++)
+            for (int i = 0; i < fgServicesNames.Count; i++)
             {
                 string fgServiceName = fgServicesNames[i];
 
@@ -3507,8 +3562,8 @@ namespace FortiGateMigration
                                 //---
                                 // predefined CheckPoint services are not skipped. Sorry, current API does not allow to do that!!!!!!!!!!!!!!!
                                 //---
-                                if ((cpObj.GetType() == typeof(CheckPoint_IcmpService)) || 
-                                    (cpObj.GetType() == typeof(CheckPoint_SctpService)) || 
+                                if ((cpObj.GetType() == typeof(CheckPoint_IcmpService)) ||
+                                    (cpObj.GetType() == typeof(CheckPoint_SctpService)) ||
                                     (cpObj.GetType() == typeof(CheckPoint_OtherService)))
                                 {
                                     continue;
@@ -3583,17 +3638,17 @@ namespace FortiGateMigration
                     }
                     if (fgCommandSet.Field.Equals("dstintf"))
                     {
-                        if(_interfacesMapperFgCp.ContainsKey(fgCommandSet.Value.Trim('"')))
+                        if (_interfacesMapperFgCp.ContainsKey(fgCommandSet.Value.Trim('"')))
                         {
                             fgDstIntfsList.AddRange(_interfacesMapperFgCp[fgCommandSet.Value.Trim('"')]);
                         }
-                        else if(_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_system_zone_host + fgCommandSet.Value.Trim('"'))) //if FG dstintf is Zone
+                        else if (_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_system_zone_host + fgCommandSet.Value.Trim('"'))) //if FG dstintf is Zone
                         {
                             if (fgDstAddr.Equals("all"))
                             {
                                 continue; //don't process "all" for FG dstaddr because we can't route for "all" addresses
                             }
-                            if(fgDstAddrsList.Count != 1)
+                            if (fgDstAddrsList.Count != 1)
                             {
                                 continue; //don't process "multi" FG objects
                             }
@@ -3602,7 +3657,7 @@ namespace FortiGateMigration
                             string fgDstAddrChecking = null;
                             CheckPointObject checkPointObject = fgDstAddrsList[0];
 
-                            if(checkPointObject.GetType() == typeof(CheckPoint_Range))
+                            if (checkPointObject.GetType() == typeof(CheckPoint_Range))
                             {
                                 fgDstAddrChecking = ((CheckPoint_Range)checkPointObject).RangeFrom;
                             }
@@ -3622,7 +3677,7 @@ namespace FortiGateMigration
                             //get FG Interface(s) object(s) for checked Zone
                             List<CheckPointObject> cpObjsList = _localMapperFgCp[FG_PREFIX_KEY_system_zone_host + fgCommandSet.Value.Trim('"')];
                             //if Zone contains only one Interface : it is simple because dstaddr will be route via that Interface
-                            if(cpObjsList.Count == 1)
+                            if (cpObjsList.Count == 1)
                             {
                                 fgDstIntfsList.AddRange(cpObjsList);
                             }
@@ -3630,7 +3685,7 @@ namespace FortiGateMigration
                             // 1) if dynamic routing is disable
                             // 2) to check which Interface contains network for destaddr
                             // 3) if noone Interface contains network for dstaddr, then we should to use interface with default routing (if default routing exists for some Interface)
-                            else if(cpObjsList.Count > 1 && !_localFgDynRoutesEnable)
+                            else if (cpObjsList.Count > 1 && !_localFgDynRoutesEnable)
                             {
                                 string intfName = null;
                                 int netCidr = -1;
@@ -3642,7 +3697,7 @@ namespace FortiGateMigration
                                     {
                                         FgInterface interfaceFg = _interfacesFgDict[interfaceNameFg];
                                         IPNetwork ipnetwork = IPNetwork.Parse(interfaceFg.Ip, interfaceFg.Mask);
-                                        if(IPNetwork.Contains(ipnetwork, ipaddress) && netCidr < ipnetwork.Cidr) //check if interface from Zone contains dstaddr network
+                                        if (IPNetwork.Contains(ipnetwork, ipaddress) && netCidr < ipnetwork.Cidr) //check if interface from Zone contains dstaddr network
                                         {
                                             intfName = interfaceNameFg;
                                             netCidr = ipnetwork.Cidr;
@@ -3653,7 +3708,7 @@ namespace FortiGateMigration
                                     {
                                         foreach (FgStaticRoute fgStaticRoute in _localFgRoutesDict[interfaceNameFg])
                                         {
-                                            if(fgStaticRoute.Network.Equals("0.0.0.0") && intfNameDefault == null)
+                                            if (fgStaticRoute.Network.Equals("0.0.0.0") && intfNameDefault == null)
                                             {
                                                 intfNameDefault = fgStaticRoute.Device;
                                                 continue;
@@ -3671,9 +3726,9 @@ namespace FortiGateMigration
                                 {
                                     intfName = intfNameDefault;
                                 }
-                                if(intfName != null)
+                                if (intfName != null)
                                 {
-                                    if(_interfacesMapperFgCp.ContainsKey(intfName))
+                                    if (_interfacesMapperFgCp.ContainsKey(intfName))
                                     {
                                         fgDstIntfsList.AddRange(_interfacesMapperFgCp[intfName]);
                                     }
@@ -3687,7 +3742,7 @@ namespace FortiGateMigration
                         fgSrcAddrsList.AddRange(GetFgSrcAddrsList(fgCommandSet));
                     }
 
-                    if(fgCommandSet.Field.Equals("comments"))
+                    if (fgCommandSet.Field.Equals("comments"))
                     {
                         cpNatRuleComments = fgCommandSet.Value.Trim('"');
                     }
@@ -3703,7 +3758,7 @@ namespace FortiGateMigration
                 foreach (CheckPointObject cpObjSrcAddr in fgSrcAddrsList)
                 {
                     //don't create NAT Rule for Domain objects
-                    if(cpObjSrcAddr.GetType() == typeof(CheckPoint_Domain))
+                    if (cpObjSrcAddr.GetType() == typeof(CheckPoint_Domain))
                     {
                         _warningsList.Add("NAT rule with matched rule " + cpNatRuleId + " was not created for " + cpObjSrcAddr.Name + " domain object.");
                         continue;
@@ -4062,7 +4117,7 @@ namespace FortiGateMigration
                 }
             }
 
-            if(isIpPoolEnabled)
+            if (isIpPoolEnabled)
             {
                 foreach (CheckPointObject cpObjDstIntf in fgDstIntfsList)
                 {
@@ -4412,7 +4467,8 @@ namespace FortiGateMigration
                                 }
                             }
                         }
-                        else {
+                        else
+                        {
                             foreach (CheckPointObject cpObjSrv in fgServicesList)
                             {
                                 CheckPoint_NAT_Rule cpNatRule = new CheckPoint_NAT_Rule();
@@ -4520,15 +4576,15 @@ namespace FortiGateMigration
                 "orange", "red", "sienna", "yellow", "dark", "light", "medium"
             };
 
-            foreach(string inZoneNamePart in inZoneNameParts)
+            foreach (string inZoneNamePart in inZoneNameParts)
             {
-                if(reservedWords.Contains(inZoneNamePart))
+                if (reservedWords.Contains(inZoneNamePart))
                 {
                     inZoneNameNew += "_" + inZoneNamePart;
                 }
                 else
                 {
-                    if(!inZoneNameNew.Equals(""))
+                    if (!inZoneNameNew.Equals(""))
                     {
                         inZoneNameNew += "-";
                     }
@@ -4537,7 +4593,7 @@ namespace FortiGateMigration
                 }
             }
 
-            if(!inZone.Name.Equals(inZoneNameNew))
+            if (!inZone.Name.Equals(inZoneNameNew))
             {
                 retMessage = inZone.Name + " zone was renamed to " + inZoneNameNew + " for solving 'reserved words' issue.";
                 inZone.Name = inZoneNameNew;
@@ -4559,16 +4615,16 @@ namespace FortiGateMigration
             }
 
             //check the name of Object
-            if(cpObject.GetType() == typeof(CheckPoint_TcpService))
+            if (cpObject.GetType() == typeof(CheckPoint_TcpService))
             {
-                if(!char.IsLetter(cpObject.Name, 0))
+                if (!char.IsLetter(cpObject.Name, 0))
                 {
                     string newName = "TCP_" + cpObject.Name;
                     _warningsList.Add(cpObject.Name + " tcp-service was renamed to " + newName);
                     cpObject.Name = newName;
                 }
             }
-            else if(cpObject.GetType() == typeof(CheckPoint_UdpService))
+            else if (cpObject.GetType() == typeof(CheckPoint_UdpService))
             {
                 if (!char.IsLetter(cpObject.Name, 0))
                 {
@@ -4577,16 +4633,16 @@ namespace FortiGateMigration
                     cpObject.Name = newName;
                 }
             }
-            else if(cpObject.GetType() == typeof(CheckPoint_SctpService))
+            else if (cpObject.GetType() == typeof(CheckPoint_SctpService))
             {
-                if(!char.IsLetter(cpObject.Name, 0))
+                if (!char.IsLetter(cpObject.Name, 0))
                 {
                     string newName = "SCTP_" + cpObject.Name;
                     _warningsList.Add(cpObject.Name + " sctp-service was renamed to " + newName);
                     cpObject.Name = newName;
                 }
             }
-            else if(cpObject.GetType() == typeof(CheckPoint_IcmpService))
+            else if (cpObject.GetType() == typeof(CheckPoint_IcmpService))
             {
                 if (!char.IsLetter(cpObject.Name, 0))
                 {
@@ -4604,7 +4660,7 @@ namespace FortiGateMigration
                     cpObject.Name = newName;
                 }
             }
-            else if(cpObject.GetType() == typeof(CheckPoint_Time))
+            else if (cpObject.GetType() == typeof(CheckPoint_Time))
             {
                 string cpTimeName = cpObject.Name;
 
@@ -4619,7 +4675,7 @@ namespace FortiGateMigration
                     cpObject.Name = cpTimeName;
                 }
             }
-            else if(cpObject.GetType() == typeof(CheckPoint_TimeGroup))
+            else if (cpObject.GetType() == typeof(CheckPoint_TimeGroup))
             {
                 string cpTimeGrpName = cpObject.Name;
 
@@ -4628,7 +4684,7 @@ namespace FortiGateMigration
                     cpTimeGrpName = cpTimeGrpName.Substring(0, 6) + "_c" + _timeGroupCutterCounter++;
                 }
 
-                if(!cpTimeGrpName.Equals(cpObject.Name))
+                if (!cpTimeGrpName.Equals(cpObject.Name))
                 {
                     _warningsList.Add(cpObject.Name + " time group object was renamed to " + cpTimeGrpName);
                     cpObject.Name = cpTimeGrpName;
@@ -4660,7 +4716,7 @@ namespace FortiGateMigration
                 }
             }
 
-            if(!cpObject.Name.Equals(cpObjectName))
+            if (!cpObject.Name.Equals(cpObjectName))
             {
                 _warningsList.Add(cpObject.Name + " object was renamed to " + cpObjectName + " for solving duplicate names issue.");
                 cpObject.Name = cpObjectName;
@@ -4672,7 +4728,7 @@ namespace FortiGateMigration
         }
 
         #endregion
-        
+
         public static string GetSafeName(string name)
         {
             if (name != null && !name.Trim().Equals(""))
@@ -4691,14 +4747,14 @@ namespace FortiGateMigration
 
             List<string> vipGrpMembers = _localFgVipGrpsDict[vipGrpName];
 
-            foreach(string vipGrpMember in vipGrpMembers)
+            foreach (string vipGrpMember in vipGrpMembers)
             {
-                if (_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_extip + vipGrpMember) || 
+                if (_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_extip + vipGrpMember) ||
                     _localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_mappedip + vipGrpMember))
                 {
                     retList.Add(vipGrpMember);
                 }
-                else if(_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_grp + vipGrpMember))
+                else if (_localMapperFgCp.ContainsKey(FG_PREFIX_KEY_firewall_vip_grp + vipGrpMember))
                 {
                     retList.AddRange(GetVipGroupMembers(vipGrpMember));
                 }
@@ -4728,5 +4784,16 @@ namespace FortiGateMigration
         public string Mask { get; set; }
         public string Gateway { get; set; }
         public string Device { get; set; }
+    }
+
+    public class FgJsonOutputReportsList
+    {
+        public string header;
+        public Dictionary<int, string> reports;
+
+        public FgJsonOutputReportsList()
+        {
+            reports = new Dictionary<int, string>();
+        }
     }
 }

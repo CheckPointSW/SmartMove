@@ -61,6 +61,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Interactivity, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Windows.Interactivity.WPF.2.0.20525\lib\net40\System.Windows.Interactivity.dll</HintPath>
@@ -162,6 +163,10 @@
     <ProjectReference Include="..\CiscoMigration\CiscoMigration.csproj">
       <Project>{2221dbe4-0775-4bbd-9cbc-33a20e0a09e7}</Project>
       <Name>CiscoMigration</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CommonUtils\CommonUtils.csproj">
+      <Project>{9FF1087A-C314-4B6B-85B6-9BA5B4F14F48}</Project>
+      <Name>CommonUtils</Name>
     </ProjectReference>
     <ProjectReference Include="..\FortinetMigration\FortiGateMigration.csproj">
       <Project>{3fa93a97-b484-48ca-a9ea-89fa2e3a6ae3}</Project>

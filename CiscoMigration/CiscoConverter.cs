@@ -26,6 +26,7 @@ using MigrationBase;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 
 namespace CiscoMigration
 {
@@ -4695,6 +4696,15 @@ namespace CiscoMigration
 
         public override Dictionary<string, int> Convert(bool convertNat)
         {
+            if (IsConsoleRunning)
+                Progress = new ProgressBar();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Converting obects ...");
+                Progress.SetProgress(20);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(20, "Converting obects ...");
             _cpObjects.Initialize();   // must be first!!!
 
@@ -4714,16 +4724,43 @@ namespace CiscoMigration
             Add_or_Modify_InterfaceNetworkGroups();
             Add_ServicesAndServiceGroups();
             Add_TimeRanges();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Converting rules ...");
+                Progress.SetProgress(30);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(30, "Converting rules ...");
             Add_Package();
 
             if (convertNat)
             {
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Converting NAT rules ...");
+                    Progress.SetProgress(40);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(40, "Converting NAT rules ...");
                 Add_object_NAT();
                 Add_NAT_Rules();
+
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Creating NAT rulebase ...");
+                    Progress.SetProgress(50);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(50, "Creating NAT rulebase ...");
                 CreateNATRulebase();
+
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Creating Firewall rulebase ...");
+                    Progress.SetProgress(60);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(60, "Creating Firewall rulebase ...");
                 MatchNATRulesIntoFirewallPolicy();
             }
@@ -4731,8 +4768,21 @@ namespace CiscoMigration
             // This should be done here, after all objects are converted!!!
             EnforceObjectNameValidity();
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Optimizing Firewall rulebase ...");
+                Progress.SetProgress(70);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(70, "Optimizing Firewall rulebase ...");
             Add_Optimized_Package();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Generating CLI scripts ...");
+                Progress.SetProgress(80);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(80, "Generating CLI scripts ...");
             CreateObjectsScript();
             CreatePackagesScript();
@@ -4747,6 +4797,13 @@ namespace CiscoMigration
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
 
             CreateSmartConnector();
+
+
+            if (IsConsoleRunning)
+            {
+                Progress.SetProgress(100);
+                Progress.Dispose();
+            }
             return new Dictionary<string, int>() { { "warnings", ConversionIncidentCategoriesCount } };
         }
 

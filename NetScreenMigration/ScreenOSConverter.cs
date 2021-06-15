@@ -18,11 +18,13 @@ limitations under the License.
 using CheckPointObjects;
 using CommonUtils;
 using MigrationBase;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace NetScreenMigration
 {
@@ -3540,6 +3542,15 @@ namespace NetScreenMigration
 
         public override Dictionary<string, int> Convert(bool convertNat = false)
         {
+            if (IsConsoleRunning)
+                Progress = new ProgressBar();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Converting obects ...");
+                Progress.SetProgress(20);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(20, "Converting obects ...");
             _cpObjects.Initialize();   // must be first!!!
             
@@ -3558,6 +3569,13 @@ namespace NetScreenMigration
             Add_InterfacesAndRoutes();
             Add_or_Modify_InterfaceNetworkGroups();
             Add_ZonesNetworkGroups();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Converting rules ...");
+                Progress.SetProgress(30);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(30, "Converting rules ...");
             Convert_policies();
 
@@ -3567,6 +3585,12 @@ namespace NetScreenMigration
             }
             else
             {
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Converting NAT rules ...");
+                    Progress.SetProgress(40);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(40, "Converting NAT rules ...");
                 Add_Mip_Nat();
                 Add_Vip_Nat();
@@ -3574,13 +3598,32 @@ namespace NetScreenMigration
                 Add_PolicyBasedDestNat();
                 Add_PolicyBasedSrcDestNat();
                 Add_InterfaceBasedLegacyNat();
+
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Creating Firewall rulebase ...");
+                    Progress.SetProgress(60);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(60, "Creating Firewall rulebase ...");
                 Add_NatPolicy2RegularPolicy();
             }
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Validating converted objects ...");
+                Progress.SetProgress(70);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(70, "Validating converted objects ...");
             EnforceObjectNameValidity();
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Generating CLI scripts ...");
+                Progress.SetProgress(80);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(80, "Generating CLI scripts ...");
             CreateObjectsHtml();
             CreateObjectsScript();
@@ -3595,6 +3638,12 @@ namespace NetScreenMigration
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
 			
             CreateSmartConnector();
+
+            if (IsConsoleRunning)
+            {
+                Progress.SetProgress(100);
+                Progress.Dispose();
+            }
             return new Dictionary<string, int>() { { "warnings", ConversionIncidentCategoriesCount } };
         }
 
