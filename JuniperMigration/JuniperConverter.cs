@@ -25,6 +25,7 @@ using System.Globalization;
 using CheckPointObjects;
 using CommonUtils;
 using MigrationBase;
+using System.Threading;
 
 namespace JuniperMigration
 {
@@ -94,7 +95,6 @@ namespace JuniperMigration
                         break;
 
                     default:
-                        Console.WriteLine("Error: Unknown service protocol '{0}'", sProtocol);
                         return null;
                 }
 
@@ -169,6 +169,7 @@ namespace JuniperMigration
         private List<CheckPointObject> _cpNetworkObjectsInMultipleZones = new List<CheckPointObject>();
         private List<CheckPoint_NAT_Rule> _cpPreorderedNatRules = new List<CheckPoint_NAT_Rule>();
         private Dictionary<int, List<CheckPoint_Rule>> _natMatchedFirewallRules = new Dictionary<int, List<CheckPoint_Rule>>();
+        private string _outputFormat;
 
         private IEnumerable<JuniperObject> _juniperZones;
         public IEnumerable<JuniperObject> JuniperZones
@@ -3046,7 +3047,6 @@ namespace JuniperMigration
                     var parentLayerRuleZone = (CheckPoint_Zone)cpParentRule.Source[0];
                     if (parentLayerRuleZone == null)
                     {
-                        Console.WriteLine("Ooopppsssss...............");   // shouldn't happen...
                         continue;
                     }
 
@@ -3193,10 +3193,7 @@ namespace JuniperMigration
                     return true;
                 }
 
-                if (fwRule.Service.Count == 0)
-                {
-                    // TODO: ???
-                }
+                if (fwRule.Service.Count == 0){}
                 else if (fwRule.Service.Count == 1 && fwRule.Service[0].Name == CheckPointObject.Any)
                 {
                     // There is only one service in FW rule and it is "any", no matter what NAT rule service is...
@@ -3735,19 +3732,29 @@ namespace JuniperMigration
 
         #region Public Methods
 
-        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName)
+        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName, string outputFormat = "json")
         {
             _juniperParser = (JuniperParser)vendorParser;
             if (_juniperParser == null)
             {
                 throw new InvalidDataException("Unexpected!!!");
             }
+            _outputFormat = outputFormat;
 
-            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName);
+            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
 
-        public override void Convert(bool convertNat)
+        public override Dictionary<string, int> Convert(bool convertNat)
         {
+            if (IsConsoleRunning)
+                Progress = new ProgressBar();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Converting obects ...");
+                Progress.SetProgress(20);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(20, "Converting obects ...");
             _cpObjects.Initialize();   // must be first!!!
 
@@ -3762,27 +3769,65 @@ namespace JuniperMigration
             Add_Zones();   // must be called AFTER handling all network stuff!!!
             Add_ServiceObjects();
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Converting rules ...");
+                Progress.SetProgress(30);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(30, "Converting rules ...");
             Add_Package();
 
             if (convertNat)
             {
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Converting NAT rules ...");
+                    Progress.SetProgress(40);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(40, "Converting NAT rules ...");
                 Add_Static_NAT();
                 Add_Destination_NAT();
                 Add_Source_NAT();
+
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Creating NAT rulebase ...");
+                    Progress.SetProgress(50);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(50, "Creating NAT rulebase ...");
                 CreateNATRulebase();
+
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Creating Firewall rulebase ...");
+                    Progress.SetProgress(60);
+                    Thread.Sleep(1000);
+                }
                 RaiseConversionProgress(60, "Creating Firewall rulebase ...");
                 MatchNATRulesIntoFirewallPolicy();
             }
 
             // This should be done here, after all objects are converted!!!
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Validating converted objects ...");
+                Progress.SetProgress(70);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(70, "Validating converted objects ...");
             EnforceObjectNameValidity();
             ReplaceJuniperApplicationsWithEquivalentCheckpointServices();
             ReplaceJuniperInvalidApplicationsReferences();
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Generating CLI scripts ...");
+                Progress.SetProgress(80);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(80, "Generating CLI scripts ...");
             CreateObjectsScript();
             CreatePackagesScript();
@@ -3797,8 +3842,15 @@ namespace JuniperMigration
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
 			
             CreateSmartConnector();
+
+            if (IsConsoleRunning)
+            {
+                Progress.SetProgress(100);
+                Progress.Dispose();
+            }
+            return new Dictionary<string, int>() { { "warnings", ConversionIncidentCategoriesCount } };
         }
-        
+
         public override int RulesInConvertedPackage()
         {
             return _cpPackages[0].TotalRules();

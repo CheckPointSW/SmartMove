@@ -115,7 +115,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing dns name for fqdn object.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return;
             }
 
@@ -142,7 +141,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing IP address for host object. Using IP 1.1.1.1.";
-                Console.WriteLine(ConversionIncidentMessage);
                 IpAddress = "1.1.1.1";
                 return;
             }
@@ -154,7 +152,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("Invalid IP address '{0}' for host object. Using IP 1.1.1.1.", IpAddress);
-                Console.WriteLine(ConversionIncidentMessage);
                 IpAddress = "1.1.1.1";
             }
         }
@@ -187,7 +184,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("Invalid IP address '{0}' for network object. Using subnet 1.1.1.0/255.255.255.0.", IpAddress);
-                Console.WriteLine(ConversionIncidentMessage);
                 IpAddress = "1.1.1.0";
                 Netmask = "255.255.255.0";
                 return;
@@ -198,7 +194,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("Wildcard address is not supported: {0}. Using subnet 1.1.1.0/255.255.255.0.", ipPrefixNode.Value);
-                Console.WriteLine(ConversionIncidentMessage);
                 IpAddress = "1.1.1.0";
                 Netmask = "255.255.255.0";
                 return;
@@ -239,7 +234,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid starting IP range '{0}' for range object. Using IP 0.0.0.0.", RangeFrom);
-                    Console.WriteLine(ConversionIncidentMessage);
                     RangeFrom = "0.0.0.0";
                 }
             }
@@ -257,7 +251,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid ending IP range '{0}' for range object. Using IP 255.255.255.255.", RangeTo);
-                    Console.WriteLine(ConversionIncidentMessage);
                     RangeTo = "255.255.255.255";
                 }
             }
@@ -331,7 +324,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = "Missing IPv4 address for interface object.";
-                    Console.WriteLine(ConversionIncidentMessage);
                     continue;
                 }
 
@@ -340,7 +332,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for interface object.", ipNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                     continue;
                 }
 
@@ -380,13 +371,11 @@ namespace JuniperMigration
                 MainIpAddress = firstpAddress;
                 ConversionIncidentType = ConversionIncidentType.Informative;
                 ConversionIncidentMessage = string.Format("Cannot resolve primary nor preferred IP address for interface object. Using a first IP address as a main address.");
-                Console.WriteLine(ConversionIncidentMessage);
             }
             else
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("Cannot resolve a main IP address for interface object.");
-                Console.WriteLine(ConversionIncidentMessage);
             }
         }
     }
@@ -408,7 +397,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing IPv4 address for route object. Using IP 1.1.1.1.";
-                Console.WriteLine(ConversionIncidentMessage);
                 IpAddress = "1.1.1.1";
                 Netmask = "255.255.255.255";
                 return;
@@ -419,7 +407,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for route object. Using IP 1.1.1.1.", ipNode.Value);
-                Console.WriteLine(ConversionIncidentMessage);
                 IpAddress = "1.1.1.1";
                 Netmask = "255.255.255.255";
                 return;
@@ -439,7 +426,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.Informative;
                     ConversionIncidentMessage = string.Format("Invalid next hop '{0}' for route object.", nextHopNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                     return;
                 }
             }
@@ -453,7 +439,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.Informative;
                     ConversionIncidentMessage = string.Format("Invalid qualified next hop '{0}' for route object.", qualifiedNextHopNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                     return;
                 }
             }
@@ -461,7 +446,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.Informative;
                 ConversionIncidentMessage = "Missing next hop address for route object.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return;
             }
 
@@ -527,7 +511,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing protocol for application object.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return;
             }
 
@@ -558,7 +541,6 @@ namespace JuniperMigration
                     {
                         ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                         ConversionIncidentMessage = "Missing destination port for application object.";
-                        Console.WriteLine(ConversionIncidentMessage);
                         return;
                     }
 
@@ -640,7 +622,6 @@ namespace JuniperMigration
                     {
                         ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                         ConversionIncidentMessage = string.Format("Unrecognized protocol '{0}' for application object.", Protocol);
-                        Console.WriteLine(ConversionIncidentMessage);
                     }
                     break;
             }
@@ -675,7 +656,6 @@ namespace JuniperMigration
                     {
                         ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                         ConversionIncidentMessage = string.Format("Invalid inactivity-timeout '{0}' for application object.", timeout);
-                        Console.WriteLine(ConversionIncidentMessage);
                     }
                 }
             }
@@ -794,7 +774,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing match information for policy rule object.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return;
             }
 
@@ -803,7 +782,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing action information for policy rule object.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return;
             }
 			
@@ -930,7 +908,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing source zone name for policy object.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return;
             }
 
@@ -939,7 +916,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing destination zone name for policy object.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return;
             }
 
@@ -969,7 +945,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing IPv4 address for NAT pool object.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return null;
             }
 
@@ -978,7 +953,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for NAT pool object.", ipNode.Value);
-                Console.WriteLine(ConversionIncidentMessage);
                 return null;
             }
 
@@ -1008,7 +982,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid ending IP range '{0}' for destination NAT pool object. Using IP 255.255.255.255.", rangeToNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                     address.RangeTo = "255.255.255.255";
                 }
                 else
@@ -1018,7 +991,6 @@ namespace JuniperMigration
                     {
                         ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                         ConversionIncidentMessage = string.Format("Invalid ending IP range '{0}' for destination NAT pool object. Using IP 255.255.255.255.", rangeToNode.Value);
-                        Console.WriteLine(ConversionIncidentMessage);
                         address.RangeTo = "255.255.255.255";
                     }
                     else
@@ -1064,7 +1036,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for source NAT pool's host address object.", hostAddressBaseNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                 }
             }
 
@@ -1164,7 +1135,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for source NAT rule's source address object.", sourceAddressNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                 }
                 else
                 {
@@ -1195,7 +1165,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for source NAT rule's destination address object.", destAddressNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                 }
                 else
                 {
@@ -1290,7 +1259,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for destination NAT rule's source address object.", sourceAddressNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                 }
                 else
                 {
@@ -1315,7 +1283,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for destination NAT rule's destination address object.", destAddressNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                 }
                 else
                 {
@@ -1405,7 +1372,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for static NAT rule's source address object.", sourceAddressNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                 }
                 else
                 {
@@ -1440,7 +1406,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for static NAT rule's destination address object.", destAddressNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                 }
                 else
                 {
@@ -1469,7 +1434,6 @@ namespace JuniperMigration
                 {
                     ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                     ConversionIncidentMessage = string.Format("Invalid IPv4 address '{0}' for static NAT rule's prefix object.", prefixNode.Value);
-                    Console.WriteLine(ConversionIncidentMessage);
                 }
                 else
                 {
@@ -1546,7 +1510,6 @@ namespace JuniperMigration
                 IsRoutingInstanceDefined = true;
                 ConversionIncidentType = ConversionIncidentType.Informative;
                 ConversionIncidentMessage = "Not converting source NAT policy object which specifies a routing instance as a source or destination of the traffic.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return;
             }
 
@@ -1578,7 +1541,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing a source of the traffic for source NAT policy object.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return;
             }
 
@@ -1604,7 +1566,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing a destination of the traffic for source NAT policy object.";
-                Console.WriteLine(ConversionIncidentMessage);
             }
         }
     }
@@ -1662,7 +1623,6 @@ namespace JuniperMigration
                 IsRoutingInstanceDefined = true;
                 ConversionIncidentType = ConversionIncidentType.Informative;
                 ConversionIncidentMessage = "Not converting static NAT policy object which specifies a routing instance as a source of the traffic.";
-                Console.WriteLine(ConversionIncidentMessage);
                 return;
             }
 
@@ -1694,7 +1654,6 @@ namespace JuniperMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Missing a source of the traffic for static NAT policy object.";
-                Console.WriteLine(ConversionIncidentMessage);
             }
         }
     }

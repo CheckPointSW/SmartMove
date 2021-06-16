@@ -438,7 +438,6 @@ namespace CiscoMigration
             {
                 ConversionIncidentType = ConversionIncidentType.Informative;
                 ConversionIncidentMessage = "An Object (network) can only hold one fqdn, host, range or subnet";
-                Console.WriteLine(ConversionIncidentMessage);
             }
         }
 
@@ -502,7 +501,6 @@ namespace CiscoMigration
                             {
                                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                                 ConversionIncidentMessage = "Unrecognized service protocol (" + ServiceProtocol + ")";
-                                Console.WriteLine(ConversionIncidentMessage);
                             }
                             break;
                     }
@@ -513,7 +511,6 @@ namespace CiscoMigration
             {
                 ConversionIncidentType = ConversionIncidentType.Informative;
                 ConversionIncidentMessage = "An Object (service) can only hold one service";
-                Console.WriteLine(ConversionIncidentMessage);
             }
         }
     }
@@ -546,7 +543,6 @@ namespace CiscoMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Invalid host IP address (" + HostAddress + "). Using IP 1.1.1.1.";
-                Console.WriteLine(ConversionIncidentMessage);
 
                 HostAddress = "1.1.1.1";
             }
@@ -578,7 +574,6 @@ namespace CiscoMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Invalid IP subnet (" + Network + "/" + Netmask + "). Using IP subnet 1.1.1.0/255.255.255.0.";
-                Console.WriteLine(ConversionIncidentMessage);
 
                 Network = "1.1.1.0";
                 Netmask = "255.255.255.0";
@@ -602,7 +597,6 @@ namespace CiscoMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Invalid range starting IP address (" + RangeFrom + "). Using IP 0.0.0.0.";
-                Console.WriteLine(ConversionIncidentMessage);
 
                 RangeFrom = "0.0.0.0";
             }
@@ -612,7 +606,6 @@ namespace CiscoMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Invalid range ending IP address (" + RangeTo + "). Using IP 255.255.255.255.";
-                Console.WriteLine(ConversionIncidentMessage);
 
                 RangeTo = "255.255.255.255";
             }
@@ -685,7 +678,6 @@ namespace CiscoMigration
                         // "service tcp source eq ssh destination eq ssh" ---> wrong!!! ---> ignore source!!!
                         ConversionIncidentType = ConversionIncidentType.Informative;
                         ConversionIncidentMessage = "Cannot convert a service defined as both source service and destination service. Ignoring source service.";
-                        Console.WriteLine(ConversionIncidentMessage);
 
                         IsDestination = true;
                         Operator = command.GetParam(nextParamId + 1);
@@ -724,7 +716,6 @@ namespace CiscoMigration
                     {
                         ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                         ConversionIncidentMessage = "Unrecognized service protocol (" + Protocol + ")";
-                        Console.WriteLine(ConversionIncidentMessage);
                     }
                     break;
             }
@@ -767,7 +758,6 @@ namespace CiscoMigration
                         {
                             ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                             ConversionIncidentMessage = "Invalid IP address (" + IpAddress + "). Using IP 1.1.1.1.";
-                            Console.WriteLine(ConversionIncidentMessage);
 
                             IpAddress = "1.1.1.1";
                         }
@@ -796,7 +786,6 @@ namespace CiscoMigration
                     {
                         ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                         ConversionIncidentMessage = "Invalid IP subnet (" + IpAddress + "/" + Netmask + "). Using IP subnet 1.1.1.0/255.255.255.0.";
-                        Console.WriteLine(ConversionIncidentMessage);
 
                         IpAddress = "1.1.1.0";
                         Netmask = "255.255.255.0";
@@ -921,7 +910,6 @@ namespace CiscoMigration
                         // "service-object tcp source eq ssh destination eq ssh" ---> wrong!!! ---> ignore source!!!
                         ConversionIncidentType = ConversionIncidentType.Informative;
                         ConversionIncidentMessage = "Cannot convert a service defined as both source service and destination service. Ignoring source service.";
-                        Console.WriteLine(ConversionIncidentMessage);
 
                         IsDestination = true;
                         Operator = command.GetParam(nextParamId + 1);
@@ -960,7 +948,6 @@ namespace CiscoMigration
                     {
                         ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                         ConversionIncidentMessage = "Unrecognized service protocol (" + Protocol + ")";
-                        Console.WriteLine(ConversionIncidentMessage);
                     }
                     break;
             }
@@ -1456,7 +1443,6 @@ namespace CiscoMigration
                         {
                             ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                             ConversionIncidentMessage = "Invalid IP subnet (" + IpAddress + "/" + Netmask + ").";
-                            Console.WriteLine(ConversionIncidentMessage);
                         }
                         break;
                 }
@@ -1520,7 +1506,6 @@ namespace CiscoMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Cannot resolve route destination IP address (" + command.GetParam(2) + "). Using IP 1.1.1.1.";
-                Console.WriteLine(ConversionIncidentMessage);
 
                 DestinationIp = "1.1.1.1";
                 DestinationNetmask = "255.255.255.255";
@@ -1530,7 +1515,6 @@ namespace CiscoMigration
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = "Invalid IP address (" + DestinationIp + "). Using IP 1.1.1.1.";
-                Console.WriteLine(ConversionIncidentMessage);
 
                 DestinationIp = "1.1.1.1";
                 DestinationNetmask = "255.255.255.255";
@@ -1717,7 +1701,6 @@ namespace CiscoMigration
 
                             ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                             ConversionIncidentMessage = "Unrecognized service protocol (" + ServiceProtocol + ")";
-                            Console.WriteLine(ConversionIncidentMessage);
                         }
                     }
                     break;
@@ -1738,7 +1721,6 @@ namespace CiscoMigration
                     {
                         ConversionIncidentType = ConversionIncidentType.Informative;
                         ConversionIncidentMessage = "Interface fall-back for dynamic object NAT is not supported";
-                        Console.WriteLine(ConversionIncidentMessage);
                     }
                     break;
             }
@@ -1786,7 +1768,6 @@ namespace CiscoMigration
                     {
                         ConversionIncidentType = ConversionIncidentType.Informative;
                         ConversionIncidentMessage = "Not handling NAT with dynamic destination";
-                        Console.WriteLine(ConversionIncidentMessage);
                         return;
                     }
 
@@ -1805,7 +1786,6 @@ namespace CiscoMigration
             {
                 ConversionIncidentType = ConversionIncidentType.Informative;
                 ConversionIncidentMessage = "Not handling NAT with dynamic source";
-                Console.WriteLine(ConversionIncidentMessage);
             }
         }
     }
@@ -1847,7 +1827,6 @@ namespace CiscoMigration
                     break;
 
                 default:
-                    Console.WriteLine("Error: unknown access-group traffic direction (" + command.GetParam(2) + ").");
                     break;
             }
 
@@ -1855,7 +1834,6 @@ namespace CiscoMigration
             {
                 ConversionIncidentType = ConversionIncidentType.Informative;
                 ConversionIncidentMessage = "Outbound ACLs will not be converted";
-                Console.WriteLine(ConversionIncidentMessage);
             }
         }
     }
@@ -2343,7 +2321,6 @@ namespace CiscoMigration
                         ProtocolReference = strProtocol;
                         ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                         ConversionIncidentMessage = "Unrecognized service protocol (" + strProtocol + ")";
-                        Console.WriteLine(ConversionIncidentMessage);
                     }
                     break;
             }

@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using PaloAltoMigration;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace PanoramaPaloAltoMigration
 {
@@ -49,6 +50,8 @@ namespace PanoramaPaloAltoMigration
         private int _numPostfix = 0;
 
         private Dictionary<string, string> cpPredefServicesTypes = new Dictionary<string, string>();
+
+        private string outputFormat = "";
 
         #endregion
 
@@ -745,14 +748,15 @@ namespace PanoramaPaloAltoMigration
 
         #region Converter
 
-        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName)
+        public override void Initialize(VendorParser vendorParser, string vendorFilePath, string toolVersion, string targetFolder, string domainName, string outputFormat = "json")
         {
             _paParser = (PanoramaParser)vendorParser;
             if (_paParser == null)
             {
                 throw new InvalidDataException("Unexpected!!!");
             }
-            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName);
+            this.outputFormat = outputFormat;
+            base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
 
         protected override bool AddCheckPointObject(CheckPointObject cpObject)
@@ -848,10 +852,13 @@ namespace PanoramaPaloAltoMigration
             return devgroupZoneDictionary;
         }
 
-        public override void Convert(bool convertNat)
+        public override Dictionary<string, int> Convert(bool convertNat)
         {            
             string targetFileNameMain = _vendorFileName;
             string targetFolderMain = _targetFolder;
+
+            if (IsConsoleRunning)
+                Progress = new ProgressBar();
 
             Panorama_Config paConfig = _paParser.Config;
 
@@ -1008,8 +1015,8 @@ namespace PanoramaPaloAltoMigration
                                     s_cpNetGroupsDict = s_cpNetGroupsDict.Concat(s_cpNetGroupsDict_Global.Where(x => !s_cpNetGroupsDict.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
                                 }
 
-                                _warningsConvertedPackage = -1;
-                                _errorsConvertedPackage = -1;
+                                //_warningsConvertedPackage = -1;
+                                //_errorsConvertedPackage = -1;
                                 _rulesInConvertedPackage = -1;
                                 _rulesInNatLayer = -1;
                                 CleanCheckPointObjectsLists();
@@ -1029,13 +1036,33 @@ namespace PanoramaPaloAltoMigration
                 }
             }
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Optimizing Firewall rulebase ...");
+                Progress.SetProgress(70);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(70, "Optimizing Firewall rulebase ...");
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Generating CLI scripts ...");
+                Progress.SetProgress(80);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(80, "Generating CLI scripts ...");
 
             VendorHtmlFile = _vendorFilePath;
 
             ObjectsScriptFile = _targetFolder;
             PolicyScriptFile = _targetFolder;
+
+            if (IsConsoleRunning)
+            {
+                Progress.SetProgress(100);
+                Progress.Dispose();
+            }
+            return new Dictionary<string, int>() { { "errors", ErrorsInConvertedPackage() }, { "warnings", WarningsInConvertedPackage() } };
         }
 
         /// <summary>
@@ -1086,8 +1113,22 @@ namespace PanoramaPaloAltoMigration
                                         List<CheckPoint_NetworkGroup> devicesGroupList,
                                         Dictionary<string, string> _devicesUIDDict
                                         )
-        {           
+        {
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Convert configuration...");
+                Progress.SetProgress(35);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(35, "Convert configuration...");
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Convert objects...");
+                Progress.SetProgress(40);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(40, "Convert objects...");
 
             _cpObjects.Initialize(); // must be first!!!
@@ -1144,6 +1185,12 @@ namespace PanoramaPaloAltoMigration
 
             Dictionary<string, CheckPoint_AccessRole> cpAccessRolesDict = new Dictionary<string, CheckPoint_AccessRole>();
 
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Convert policy...");
+                Progress.SetProgress(60);
+                Thread.Sleep(1000);
+            }
             RaiseConversionProgress(60, "Convert policy...");
 
             ConvertSecurityPolicy(paDeviceGroupEntry, cpZonesDict,
@@ -1194,8 +1241,8 @@ namespace PanoramaPaloAltoMigration
 
             ExportNatLayerAsHtml();
 
-            _warningsConvertedPackage = _warningsList.Count;
-            _errorsConvertedPackage = _errorsList.Count;
+            _warningsConvertedPackage += _warningsList.Count;
+            _errorsConvertedPackage += _errorsList.Count;
 
             CreateSmartConnector();
 
