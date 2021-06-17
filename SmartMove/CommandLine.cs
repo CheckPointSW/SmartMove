@@ -803,7 +803,6 @@ namespace SmartMove
                             msg: "Could not convert configuration file.",
                             err: "err_cannot_convert_configuration_file");
                         Console.WriteLine(jsonReport.PrintJson());
-                        Console.WriteLine(ex.StackTrace);
                     }
                 }
                 return;
