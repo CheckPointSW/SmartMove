@@ -528,8 +528,9 @@ namespace SmartMove
 
                 if (commandLine.Vendor.Equals("Panorama"))
                 {
+                    
                     PanoramaParser panParser = (PanoramaParser)vendorParser;
-                    panParser.ParseWithTargetFolder(ciscoFile, TargetFolder);
+                    panParser.ParseWithTargetFolder(ciscoFile, Path.GetFullPath(TargetFolder));
                 }
                 else
                 {
@@ -543,7 +544,8 @@ namespace SmartMove
             {
                 if (FormatOutput == "text")
                 {
-                    Console.WriteLine(string.Format("\nCould not parse configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                    Console.WriteLine("\nCould not parse configuration file.", MessageTypes.Error);
+                    Console.WriteLine(ex.StackTrace);
                     return;
                 }
                 else
