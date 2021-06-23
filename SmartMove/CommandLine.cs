@@ -545,7 +545,6 @@ namespace SmartMove
                 if (FormatOutput == "text")
                 {
                     Console.WriteLine("\nCould not parse configuration file.", MessageTypes.Error);
-                    Console.WriteLine(ex.StackTrace);
                     return;
                 }
                 else
