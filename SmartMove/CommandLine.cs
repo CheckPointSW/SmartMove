@@ -99,6 +99,7 @@ namespace SmartMove
         }
 
         private bool _successCommands = true;
+        private bool _isInteractive = true;
         #endregion
 
         public int DisplayHelp()
@@ -108,14 +109,15 @@ namespace SmartMove
             Console.WriteLine("SmartMove.exe [–s config_file_name] [-v vendor] [-t target_folder] [-d domain] [-n] [-l LDAP_Account_unit] [-k]");
             Console.WriteLine();
             Console.WriteLine("Options:");
-            Console.WriteLine("\t" + "-s | --source" + "\t" + "full path to the vendor configuration file");
-            Console.WriteLine("\t" + "-v | --vendor" + "\t" + "vendor for conversion (available options: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama)");
-            Console.WriteLine("\t" + "-t | --target" + "\t" + "migration output folder");
-            Console.WriteLine("\t" + "-d | --domain" + "\t" + "domain name (for CiscoASA, JuniperSRX, JuniperSSG only)");
-            Console.WriteLine("\t" + "-n | --nat" + "\t" + @"(""-n false"" |"" -n true"" [default])  convert NAT configuration [enabled by default]");
-            Console.WriteLine("\t" + "-l | --ldap" + "\t" + "LDAP Account unit for convert user configuration option (for FortiNet, PaloAlto and Panorama only)");
-            Console.WriteLine("\t" + "-k | --skip" + "\t" + @"(""-k false"" |"" -k true"" [default]) do not import unused objects (for FortiNet, PaloAlto and Panorama only) [enabled by default]");
-            Console.WriteLine("\t" + "-f | --format" + "\t" + "format of the output file (JSON[default], TEXT)");
+            Console.WriteLine("\t" + "-s | --source" + "\t\t" + "full path to the vendor configuration file");
+            Console.WriteLine("\t" + "-v | --vendor" + "\t\t" + "vendor for conversion (available options: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama)");
+            Console.WriteLine("\t" + "-t | --target" + "\t\t" + "migration output folder");
+            Console.WriteLine("\t" + "-d | --domain" + "\t\t" + "domain name (for CiscoASA, JuniperSRX, JuniperSSG only)");
+            Console.WriteLine("\t" + "-n | --nat" + "\t\t" + @"(""-n false"" |"" -n true"" [default])  convert NAT configuration [enabled by default]");
+            Console.WriteLine("\t" + "-l | --ldap" + "\t\t" + "LDAP Account unit for convert user configuration option (for FortiNet, PaloAlto and Panorama only)");
+            Console.WriteLine("\t" + "-k | --skip" + "\t\t" + @"(""-k false"" |"" -k true"" [default]) do not import unused objects (for FortiNet, PaloAlto and Panorama only) [enabled by default]");
+            Console.WriteLine("\t" + "-f | --format" + "\t\t" + "format of the output file (JSON[default], TEXT)");
+            Console.WriteLine("\t" + "-i | --interactive" + "\t" + @"-i false | -i true [default] Interactive mode provides a better user experience.Disable when automation is required[enabled by default]");
             Console.WriteLine();
             Console.WriteLine("Example:");
             Console.WriteLine("\t" + "SmartMove.exe –s \"D:\\SmartMove\\Content\\config.txt\" –v CiscoASA - t \"D:\\SmartMove\\Content\" –n true -k false -f json");
@@ -397,6 +399,29 @@ namespace SmartMove
                             }
                             break;
                         }
+                    case "-i":
+                    case "--interactive":
+                        {
+                            if (args[i] == args.Last())
+                            {
+                                _isInteractive = true;
+                                _successCommands = false;
+                                Console.WriteLine("Value for option -i is not specified! ", MessageTypes.Error);
+                            }
+                            else if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            {
+                                bool interactive;
+                                if (!bool.TryParse(args[i + 1], out interactive))
+                                {
+                                    Console.WriteLine("Value for option interactive is not corrected! Only true or false allowed ", MessageTypes.Error);
+                                    _isInteractive = true;
+                                    _successCommands = false;
+                                }
+
+                                _isInteractive = interactive;
+                            }
+                            break;
+                        }
                 }
             }
             return this;
@@ -503,8 +528,9 @@ namespace SmartMove
 
                 if (commandLine.Vendor.Equals("Panorama"))
                 {
+                    
                     PanoramaParser panParser = (PanoramaParser)vendorParser;
-                    panParser.ParseWithTargetFolder(ciscoFile, TargetFolder);
+                    panParser.ParseWithTargetFolder(ciscoFile, Path.GetFullPath(TargetFolder));
                 }
                 else
                 {
@@ -518,7 +544,7 @@ namespace SmartMove
             {
                 if (FormatOutput == "text")
                 {
-                    Console.WriteLine(string.Format("\nCould not parse configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                    Console.WriteLine("\nCould not parse configuration file.", MessageTypes.Error);
                     return;
                 }
                 else
@@ -723,7 +749,8 @@ namespace SmartMove
             }
 
             vendorConverter.Initialize(vendorParser, commandLine.ConfigFileName, toolVersion, targetFolder, commandLine.Domain, commandLine.formatOutput);
-            vendorConverter.IsConsoleRunning = true;
+            //if we are in interactive mode
+            vendorConverter.IsConsoleRunning = true && _isInteractive;
 
             try
             {
@@ -783,7 +810,8 @@ namespace SmartMove
             }
             finally
             {
-                vendorConverter.Progress.Dispose();
+                if (vendorConverter.Progress != null)
+                    vendorConverter.Progress.Dispose();
             }
 
             vendorConverter.ExportConfigurationAsHtml();
