@@ -1171,8 +1171,7 @@ args_parser = argparse.ArgumentParser()
 args_parser._optionals.title = "arguments"
 
 args_parser.add_argument('-r', '--root', action="store_true",
-                         help="If administrator logged into the management server and wants to receive SuperUser permissions, 'login-as-root' feature might be used. " +
-                              "In this case providing additional login credentials is not required.")
+                         help="For a logged in administrator that wants to receive SuperUser permissions. Additional login credentials are not required.")
 args_parser.add_argument('-m', '--management', default='127.0.0.1',
                          help="Management server IP address or name. Default: 127.0.0.1")
 args_parser.add_argument('--port', type=int,
