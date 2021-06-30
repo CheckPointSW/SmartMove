@@ -13,8 +13,10 @@ from __future__ import print_function
 import sys
 
 # compatible import for python 2 and 3
-from .api_exceptions import APIException, APIClientException
+from .api_exceptions import APIException, APIClientException, TimeoutException
 from .api_response import APIResponse
+from cpapi.utils import get_massage_from_io_error, compatible_loads
+
 if sys.version_info >= (3, 0):
     import http.client as http_client
 else:
@@ -27,8 +29,6 @@ import ssl
 import subprocess
 import time
 
-from cpapi.utils import compatible_loads
-
 
 class APIClientArgs:
     """
@@ -38,9 +38,10 @@ class APIClientArgs:
 
     # port is set to None by default, but it gets replaced with 443 if not specified
     # context possible values - web_api (default) or gaia_api
+    # single_conn is set to True by default, when work on parallel set to False
     def __init__(self, port=None, fingerprint=None, sid=None, server="127.0.0.1", http_debug_level=0,
                  api_calls=None, debug_file="", proxy_host=None, proxy_port=8080,
-                 api_version=None, unsafe=False, unsafe_auto_accept=False, context="web_api"):
+                 api_version=None, unsafe=False, unsafe_auto_accept=False, context="web_api", single_conn=True):
         self.port = port
         # management server fingerprint
         self.fingerprint = fingerprint
@@ -66,6 +67,8 @@ class APIClientArgs:
         self.unsafe_auto_accept = unsafe_auto_accept
         # The context of using the client - defaults to web_api
         self.context = context
+        # Indicates that the client should use single HTTPS connection
+        self.single_conn = single_conn
 
 
 class APIClient:
@@ -108,6 +111,10 @@ class APIClient:
         self.unsafe_auto_accept = api_client_args.unsafe_auto_accept
         # The context of using the client - defaults to web_api
         self.context = api_client_args.context
+        # HTTPS connection
+        self.conn = None
+        # Indicates that the client should use single HTTPS connection
+        self.single_conn = api_client_args.single_conn
 
     def __enter__(self):
         return self
@@ -117,6 +124,7 @@ class APIClient:
         # if sid is not empty (the login api was called), then call logout
         if self.sid:
             self.api_call("logout")
+        self.close_connection()
         # save debug data with api calls to disk
         self.save_debug_data()
 
@@ -139,24 +147,7 @@ class APIClient:
             out_file = open(self.debug_file, 'w+')
             out_file.write(json.dumps(self.api_calls, indent=4, sort_keys=True))
 
-    def login(self, username, password, continue_last_session=False, domain=None, read_only=False,
-              payload=None):
-        """
-        performs a 'login' API call to the management server
-
-        :param username: Check Point admin name
-        :param password: Check Point admin password
-        :param continue_last_session: [optional] It is possible to continue the last Check Point session
-                                      or to create a new one
-        :param domain: [optional] The name, UID or IP-Address of the domain to login.
-        :param read_only: [optional] Login with Read Only permissions. This parameter is not considered in case
-                          continue-last-session is true.
-        :param payload: [optional] More settings for the login command
-        :returns: APIResponse object
-        :side-effects: updates the class's uid and server variables
-        """
-        credentials = {"user": username, "password": password}
-
+    def _common_login_logic(self, credentials, continue_last_session, domain, read_only, payload):
         if self.context == "web_api":
             credentials.update({"continue-last-session": continue_last_session,
                                 "read-only": read_only})
@@ -175,12 +166,48 @@ class APIClient:
                 self.api_version = login_res.data["api-server-version"]
         return login_res
 
+    def login_with_api_key(self, api_key, continue_last_session=False, domain=None, read_only=False,
+              payload=None):
+        """
+        performs a 'login' API call to the management server
+        :param api_key: Check Point api-key
+        :param continue_last_session: [optional] It is possible to continue the last Check Point session
+                                      or to create a new one
+        :param domain: [optional] The name, UID or IP-Address of the domain to login.
+        :param read_only: [optional] Login with Read Only permissions. This parameter is not considered in case
+                          continue-last-session is true.
+        :param payload: [optional] More settings for the login command
+        :returns: APIResponse object
+        :side-effects: updates the class's uid and server variables
+        """
+        credentials = {"api-key": api_key}
+
+        return self._common_login_logic(credentials, continue_last_session, domain, read_only, payload)
+
+    def login(self, username, password, continue_last_session=False, domain=None, read_only=False,
+              payload=None):
+        """
+        performs a 'login' API call to the management server
+        :param username: Check Point admin name
+        :param password: Check Point admin password
+        :param continue_last_session: [optional] It is possible to continue the last Check Point session
+                                      or to create a new one
+        :param domain: [optional] The name, UID or IP-Address of the domain to login.
+        :param read_only: [optional] Login with Read Only permissions. This parameter is not considered in case
+                          continue-last-session is true.
+        :param payload: [optional] More settings for the login command
+        :returns: APIResponse object
+        :side-effects: updates the class's uid and server variables
+        """
+        credentials = {"user": username, "password": password}
+
+        return self._common_login_logic(credentials, continue_last_session, domain, read_only, payload)
+
     def login_as_root(self, domain=None, payload=None):
         """
         This method allows to login into the management server with root permissions.
         In order to use this method the application should be run directly on the management server
         and to have super-user privileges.
-
         :param domain: [optional] name/uid/IP address of the domain you want to log into in an MDS environment
         :param payload: [optional] dict of additional parameters for the login command
         :return: APIResponse object with the relevant details from the login command.
@@ -221,13 +248,14 @@ class APIClient:
             raise APIClientException(
                 "Could not load JSON from login as root command, perhaps no root privileges?\n" + str(
                     type(err)) + " - " + str(err))
-        except (WindowsError, subprocess.CalledProcessError) as err:
+        except subprocess.CalledProcessError as err:
+            raise APIClientException("Could not login as root:\n" + str(type(err)) + " - " + str(err))
+        except (WindowsError) as err:
             raise APIClientException("Could not login as root:\n" + str(type(err)) + " - " + str(err))
 
-    def api_call(self, command, payload=None, sid=None, wait_for_task=True):
+    def api_call(self, command, payload=None, sid=None, wait_for_task=True, timeout=-1):
         """
         performs a web-service API request to the management server
-
         :param command: the command is placed in the URL field
         :param payload: a JSON object (or a string representing a JSON object) with the command arguments
         :param sid: [optional]. The Check Point session-id. when omitted use self.sid.
@@ -236,10 +264,13 @@ class APIClient:
                               and will not return until the task is completed.
                               when wait_for_task=False, it is up to the user to call the "show-task" API and check
                               the status of the command.
+        :param timeout: Optional positive timeout (in seconds) before stop waiting for the task even if not completed.
         :return: APIResponse object
         :side-effects: updates the class's uid and server variables
         """
-        self.check_fingerprint()
+        timeout_start = time.time()
+        if self.check_fingerprint() is False:
+            return APIResponse("", False, err_message="Invalid fingerprint")
         if payload is None:
             payload = {}
         # Convert the json payload to a string if needed
@@ -265,23 +296,8 @@ class APIClient:
         if sid is not None:
             _headers["X-chkp-sid"] = sid
 
-        # Create ssl context with no ssl verification, we do it by ourselves
-        context = ssl.create_default_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-
-        # create https connection
-        if self.proxy_host and self.proxy_port:
-            conn = HTTPSConnection(self.proxy_host, self.proxy_port, context=context)
-            conn.set_tunnel(self.server, self.get_port())
-        else:
-            conn = HTTPSConnection(self.server, self.get_port(), context=context)
-
-        # Set fingerprint
-        conn.fingerprint = self.fingerprint
-
-        # Set debug level
-        conn.set_debuglevel(self.http_debug_level)
+        # init https connection. if single connection is True, use last connection
+        conn = self.get_https_connection()
         url = "/" + self.context + "/" + (("v" + str(self.api_version) + "/") if self.api_version else "") + command
         response = None
         try:
@@ -300,6 +316,9 @@ class APIClient:
                 res = APIResponse("", False, err_message=err)
         except Exception as err:
             res = APIResponse("", False, err_message=err)
+        finally:
+            if not self.single_conn:
+                conn.close()
 
         if response:
             res.status_code = response.status
@@ -325,9 +344,9 @@ class APIClient:
         # If we want to wait for the task to end, wait for it
         if wait_for_task is True and res.success and command != "show-task":
             if "task-id" in res.data:
-                res = self.__wait_for_task(res.data["task-id"])
+                res = self.__wait_for_task(res.data["task-id"], timeout=(timeout - time.time() + timeout_start))
             elif "tasks" in res.data:
-                res = self.__wait_for_tasks(res.data["tasks"])
+                res = self.__wait_for_tasks(res.data["tasks"], timeout=(timeout - time.time() + timeout_start))
 
         return res
 
@@ -340,7 +359,6 @@ class APIClient:
         This API makes such repeated API calls and return the full list objects.
         note: this function calls gen_api_query and iterates over the generator until it gets all the objects,
         then returns.
-
         :param command: name of API command. This command should be an API that returns an array of
                         objects (for example: show-hosts, show networks, ...)
         :param details_level: query APIs always take a details-level argument.
@@ -368,7 +386,6 @@ class APIClient:
         This is a generator function that yields the list of wanted objects received so far from the management server.
         This is in contrast to normal API calls that return only a limited number of objects.
         This function can be used to show progress when requesting many objects (i.e. "Received x/y objects.")
-
         :param command: name of API command. This command should be an API that returns an array of objects
                         (for example: show-hosts, show networks, ...)
         :param details_level: query APIs always take a details-level argument. Possible values are "standard", "full", "uid"
@@ -396,12 +413,14 @@ class APIClient:
             all_objects[key] = []
         iterations = 0  # number of times we've made an API call
         limit = 50 # page size to get for each api call
+        offset = 0 # skip n objects in the database
         if payload is None:
             payload = {}
         else:
             limit = int(payload.get("limit", limit))
+            offset = int(payload.get("offset", offset))
 
-        payload.update({"limit": limit, "offset": iterations * limit, "details-level": details_level})
+        payload.update({"limit": limit, "offset": iterations * limit + offset, "details-level": details_level})
         api_res = self.api_call(command, payload)
         for container_key in container_keys:
             if not api_res.data or container_key not in api_res.data or not isinstance(api_res.data[container_key], list) \
@@ -428,44 +447,44 @@ class APIClient:
                 break
 
             iterations += 1
-            payload.update({"limit": limit, "offset": iterations * limit, "details-level": details_level})
+            payload.update({"limit": limit, "offset": iterations * limit + offset, "details-level": details_level})
             api_res = self.api_call(command, payload)
 
     def get_server_fingerprint(self):
         """
-        Initiates an HTTPS connection to the server and extracts the SHA1 fingerprint from the server's certificate.
+        Initiates an HTTPS connection to the server if need and extracts the SHA1 fingerprint from the server's certificate.
         :return: string with SHA1 fingerprint (all uppercase letters)
         """
-        context = ssl.create_default_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
+        conn = self.get_https_connection(set_fingerprint=False, set_debug_level=False)
+        fingerprint_hash = conn.get_fingerprint_hash()
+        if not self.single_conn:
+            conn.close()
+        return fingerprint_hash
 
-        if self.proxy_host and self.proxy_port:
-            conn = HTTPSConnection(self.proxy_host, self.proxy_port, context=context)
-            conn.set_tunnel(self.server, self.get_port())
-        else:
-            conn = HTTPSConnection(self.server, self.get_port(), context=context)
-
-        return conn.get_fingerprint_hash()
-
-    def __wait_for_task(self, task_id):
+    def __wait_for_task(self, task_id, timeout=-1):
         """
         When the server needs to perform an API call that may take a long time (e.g. run-script, install-policy,
         publish), the server responds with a 'task-id'.
         Using the show-task API it is possible to check on the status of this task until its completion.
         Every two seconds, this function will check for the status of the task.
         The function will return when the task (and its sub-tasks) are no longer in-progress.
-
         :param task_id: The task identifier.
+        :param timeout: Optional positive timeout (in seconds) that will end the task even if not completed.
         :return: APIResponse object (response of show-task command).
         :raises APIException
         """
         task_complete = False
         task_result = None
+        task_start = time.time()
         in_progress = "in progress"
 
-        # As long as there is a task in progress
+        # As long as there is a task in progress or the timeout isn't expired (and is positive)
         while not task_complete:
+
+            # If timeout parameter was set and valid and timeout did expire, raise exception
+            if timeout >= 0 and time.time() - task_start > timeout:
+                raise TimeoutException("Timeout reached when waiting for task to complete")
+
             # Check the status of the task
             task_result = self.api_call("show-task", {"task-id": task_id, "details-level": "full"}, self.sid, False)
 
@@ -496,13 +515,13 @@ class APIClient:
         self.check_tasks_status(task_result)
         return task_result
 
-    def __wait_for_tasks(self, task_objects):
+    def __wait_for_tasks(self, task_objects, timeout=-1):
         """
         The version of __wait_for_task function for the collection of tasks
-
         :param task_objects: A list of task objects
         :return: APIResponse object (response of show-task command).
         """
+        timeout_start = time.time()
 
         # A list of task ids to be retrieved
         tasks = []
@@ -510,7 +529,7 @@ class APIClient:
             # Retrieve the taskId and wait for the task to be completed
             task_id = task_obj["task-id"]
             tasks.append(task_id)
-            self.__wait_for_task(task_id)
+            self.__wait_for_task(task_id, timeout=(timeout - time.time() + timeout_start))
 
         task_result = self.api_call("show-task", {"task-id": tasks, "details-level": "full"},
                                     self.sid, False)
@@ -522,12 +541,11 @@ class APIClient:
     def check_tasks_status(task_result):
         """
         This method checks if one of the tasks failed and if so, changes the response status to be False
-
         :param task_result: api_response returned from "show-task" command
         :return:
         """
         for task in task_result.data["tasks"]:
-            if task["status"] == "failed" or task["status"] == "partially succeeded":
+             if task["status"] == "failed" or task["status"] == "partially succeeded" or task["status"] == "in progress":
                 task_result.set_success_status(False)
                 break
 
@@ -537,7 +555,6 @@ class APIClient:
         If the server's fingerprint is not found, an HTTPS connection is made to the server
         and the user is asked if he or she accepts the server's fingerprint.
         If the fingerprint is trusted, it is stored in the fingerprint file.
-
         :return: False if the user does not accept the server certificate, True in all other cases.
         """
         if self.unsafe:
@@ -584,7 +601,6 @@ class APIClient:
     def ask_yes_no_question(question):
         """
         helper function. Present a question to the user with Y/N options.
-
         :param question: The question to display to the user
         :return: 'True' if the user typed 'Y'. 'False' is the user typed 'N'
         """
@@ -601,7 +617,6 @@ class APIClient:
     def save_fingerprint_to_file(server, fingerprint, filename="fingerprints.txt"):
         """
         store a server's fingerprint into a local file.
-
         :param server: the IP address/name of the Check Point management server.
         :param fingerprint: A SHA1 fingerprint of the server's certificate.
         :param filename: The file in which to store the certificates. The file will hold a JSON structure in which
@@ -622,7 +637,7 @@ class APIClient:
                     print(e.message, file=sys.stderr)
                 return False
             except IOError as e:
-                print("Couldn't open file: " + filename + "\n" + e.message, file=sys.stderr)
+                print("Couldn't open file: " + filename + "\n" + get_massage_from_io_error(e), file=sys.stderr)
                 return False
             except Exception as e:
                 print(e, file=sys.stderr)
@@ -641,7 +656,8 @@ class APIClient:
                 filedump.close()
             return True
         except IOError as e:
-            print("Couldn't open file: " + filename + " for writing.\n" + e.message, file=sys.stderr)
+            print("Couldn't open file: " + filename + " for writing.\n" + get_massage_from_io_error(e),
+                  file=sys.stderr)
         except Exception as e:
             print(e, file=sys.stderr)
             return False
@@ -650,7 +666,6 @@ class APIClient:
     def read_fingerprint_from_file(server, filename="fingerprints.txt"):
         """
         reads a server's fingerprint from a local file.
-
         :param server: the IP address/name of the Check Point management server.
         :param filename: The file in which to store the certificates. The file will hold a JSON structure in which
                          the key is the server and the value is its fingerprint.
@@ -671,7 +686,8 @@ class APIClient:
                 else:
                     print(e.message, file=sys.stderr)
             except IOError as e:
-                print("Couldn't open file: " + filename + "\n" + e.message, file=sys.stderr)
+                print("Couldn't open file: " + filename + "\n" + get_massage_from_io_error(e),
+                      file=sys.stderr)
             except Exception as e:
                 print(e, file=sys.stderr)
             else:
@@ -680,22 +696,50 @@ class APIClient:
                     return json_dict[server]
         return ""
 
+    def create_https_connection(self, set_fingerprint, set_debug_level):
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        # create https connection
+        if self.proxy_host and self.proxy_port:
+            conn = HTTPSConnection(self.proxy_host, self.proxy_port, context=context)
+            conn.set_tunnel(self.server, self.get_port())
+        else:
+            conn = HTTPSConnection(self.server, self.get_port(), context=context)
+
+        # Set fingerprint
+        if set_fingerprint:
+            conn.fingerprint = self.fingerprint
+
+        # Set debug level
+        if set_debug_level:
+            conn.set_debuglevel(self.http_debug_level)
+        conn.connect()
+        return conn
+
+    def get_https_connection(self, set_fingerprint=True, set_debug_level=True):
+        if self.single_conn:
+            if self.conn is None:
+                self.conn = self.create_https_connection(set_fingerprint, set_debug_level)
+            return self.conn
+        return self.create_https_connection(set_fingerprint, set_debug_level)
+
+    def close_connection(self):
+        if self.conn:
+            self.conn.close()
+
 
 class HTTPSConnection(http_client.HTTPSConnection):
     """
     A class for making HTTPS connections that overrides the default HTTPS checks (e.g. not accepting
     self-signed-certificates) and replaces them with a server fingerprint check.
     """
-
     def connect(self):
         http_client.HTTPConnection.connect(self)
         self.sock = ssl.wrap_socket(self.sock, self.key_file, self.cert_file, cert_reqs=ssl.CERT_NONE)
 
     def get_fingerprint_hash(self):
-        try:
-            http_client.HTTPConnection.connect(self)
-            self.sock = ssl.wrap_socket(self.sock, self.key_file, self.cert_file, cert_reqs=ssl.CERT_NONE)
-        except Exception:
-            return ""
+        if self.sock is None:
+            self.connect()
         fingerprint = hashlib.new("SHA1", self.sock.getpeercert(True)).hexdigest()
         return fingerprint.upper()

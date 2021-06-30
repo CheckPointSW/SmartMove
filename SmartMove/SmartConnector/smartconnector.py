@@ -1170,14 +1170,16 @@ args_parser = argparse.ArgumentParser()
 
 args_parser._optionals.title = "arguments"
 
-args_parser.add_argument('-r', '--root', action="store_true",
-                         help="If administrator logged into the management server and wants to receive SuperUser permissions, 'login-as-root' feature might be used. " +
-                              "In this case providing additional login credentials is not required.")
 args_parser.add_argument('-m', '--management', default='127.0.0.1',
                          help="Management server IP address or name. Default: 127.0.0.1")
 args_parser.add_argument('--port', type=int,
                          help="Server port. Default: 443")
-args_parser.add_argument('-u', '--user',
+mxg = args_parser.add_mutually_exclusive_group(required=True)
+mxg.add_argument('-r', '--root', action="store_true",
+                         help="For a logged in administrator that wants to receive SuperUser permissions. Additional login credentials are not required.")
+mxg.add_argument('-k', '--key',
+                         help="api_key")
+mxg.add_argument('-u', '--user',
                          help="User name")
 args_parser.add_argument('-p', '--password',
                          help="User password")
@@ -1200,12 +1202,7 @@ if os.path.exists(file_name_log):
     os.remove(file_name_log)
 file_log = open(file_name_log, "w+")
 
-if not args.root and args.user is None:
-    print("")
-    printStatus(None, None, "No user or root option is specified.")
-    print("")
-    args_parser.print_help()
-elif args.root and args.user is not None:
+if args.root and args.user and args.key is not None:
     print("")
     printStatus(None, None, "Command contains ambiguous parameters. User is unexpected when logging in as root.")
     print("")
@@ -1215,7 +1212,7 @@ elif args.root and args.management != '127.0.0.1':
     printStatus(None, None, "Command contains ambiguous parameters. Management is unexpected when logging in as root.")
     print("")
     args_parser.print_help()
-elif not args.root and args.password is None:
+elif not args.root and args.password is None and args.user is not None:
     print("")
     printStatus(None, None, "No password option is specified.")
     print("")
@@ -1244,6 +1241,7 @@ else:
     printStatus(None, "domain: " + args.domain if args.domain is not None else "domain: is not set")
     printStatus(None, "user: " + args.user if args.user is not None else "user: is not set")
     printStatus(None, "password: ***" if args.password is not None else "password: is not set")
+    printStatus(None, "API_KEY: " + args.key if args.key is not None else "API_KEY: is not set")
     printStatus(None, "file: " + args.file)
     printStatus(None, "threshold: " + str(args.threshold))
     printStatus(None, "replace-from-global-first: " + str(isReplaceFromGlobalFirst))
@@ -1328,7 +1326,7 @@ else:
                     msg += "local server"
                 printStatus(None, msg)
                 login_res = client.login_as_root(domain=args.domain)
-            else:
+            elif args.user:
                 msg = "login as " + args.user + " to "
                 if args.domain is not None:
                     msg += args.domain + " domain of " + args.management + " server"
@@ -1336,6 +1334,16 @@ else:
                     msg += args.management + " server"
                 printStatus(None, msg)
                 login_res = client.login(args.user, args.password, domain=args.domain)
+            else:
+                msg = "login by api key to "
+                if args.domain is not None:
+                    msg += args.domain + " domain of " + args.management + " server"
+                else:
+                    msg += args.management + " server"
+                printStatus(None, msg)
+
+                login_res = client.login_with_api_key(args.key, domain=args.domain)
+
             if login_res.success is False:
                 printStatus(None, "Login failed: {}".format(login_res.error_message))
             else:
