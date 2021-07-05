@@ -1185,6 +1185,8 @@ args_parser.add_argument('-p', '--password',
                          help="User password")
 args_parser.add_argument('-f', '--file', default='cp_objects.json',
                          help="JSON file with CheckPoint Objects. Default: cp_objects.json")
+args_parser.add_argument('-c', '--context', default='web_api',
+                         help="Context of WebAPI.")
 args_parser.add_argument('-t', '--threshold', type=int, default=100,
                          help="Parameter specifies maximum number of Check Point objects/rules to add before starting publish operation. Default: 100")
 args_parser.add_argument('-d', '--domain', default=None,
@@ -1309,9 +1311,9 @@ else:
     printStatus(None, "reading and parsing processes are completed for JSON file: " + args.file)
     client_args = None
     if args.port is not None:
-        client_args = APIClientArgs(server=args.management, port=args.port)
+        client_args = APIClientArgs(server=args.management, port=args.port, context=args.context)
     else:
-        client_args = APIClientArgs(server=args.management)
+        client_args = APIClientArgs(server=args.management, context=args.context)
     with APIClient(client_args) as client:
         client.debug_file = "api_calls.json"
         printStatus(None, "checking fingerprint")
