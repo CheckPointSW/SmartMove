@@ -154,7 +154,7 @@ def addUserObjectToServer(client, apiCommand, payload, userObjectNamePostfix=1, 
 
 # adding to server the object which contains fields with IP: hosts, networks
 # adjusting the name if object with the name exists at server: <initial_object_name>_<postfix>
-# using the object from server side if object exsits with the same IP at server
+# using the object from server side if object exits with the same IP at server
 # client - client object
 # payload - JSON representation of "new" object
 # userObjectType - the type of object: host or network
@@ -170,27 +170,39 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
     isIgnoreWarnings = False
     while not isFinished:
         payload["ignore-warnings"] = isIgnoreWarnings
+        # payload["--user-agent"] = "mgmt_cli_smartmove";
         res_add_obj_with_ip = client.api_call("add-" + userObjectType, payload)
+        print("add-" + userObjectType, payload)
         printStatus(res_add_obj_with_ip, "REPORT: " + userObjectNameInitial + " is added as " + payload['name'])
         if res_add_obj_with_ip.success is False:
             if isIpDuplicated(res_add_obj_with_ip) and not isIgnoreWarnings:
-                res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": True, "type": userObjectType})
+                res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": True,
+                                                                                "type": userObjectType})
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
                     if len(res_get_obj_with_ip.data) > 0:
-                        if userObjectType == "network" and next((x for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet']), None) is None:
+                        if userObjectType == "network" and next((x for x in res_get_obj_with_ip.data if x[
+                                                                                                            'subnet4' if is_valid_ipv4(
+                                                                                                                    payload[
+                                                                                                                        'subnet']) else 'subnet6'] ==
+                                                                                                        payload[
+                                                                                                            'subnet']),
+                                                                None) is None:
                             isIgnoreWarnings = True
                         else:
                             if userObjectType == "host":
                                 mergedObjectsNamesMap[userObjectNameInitial] = res_get_obj_with_ip.data[0]['name']
-                                printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
+                                printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
+                                    userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
                                 isFinished = True
                             break
                             for serverObject in res_get_obj_with_ip.data:
                                 mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
-                                if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
+                                if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (
+                                        isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
                                     break
-                            printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
+                            printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
+                                userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
                             isFinished = True
                     else:
                         isIgnoreWarnings = True
@@ -223,25 +235,25 @@ def processGroupWithMembers(client, apiCommand, userGroup, mergedObjectsMap, mer
         apiSetCommand = "set-time-group"
     elif "service" in apiCommand:
         apiSetCommand = "set-service-group"
-    
+
     if isNeedSplitted:
         for i, userGroupMember in enumerate(userGroup['Members']):
             print(userGroupMember)
             res_add_obj = client.api_call(
                 apiSetCommand,
                 {
-                    "name": userGroup['Name'],                    
-                    "members": { "add" : userGroupMember }
+                    "name": userGroup['Name'],
+                    "members": {"add": userGroupMember}
                 })
-            printStatus(None, "REPORT: " + userGroup['Name'] + " is setted with new member " + str(userGroupMember))
+            printStatus(None, "REPORT: " + userGroup['Name'] + " is set with new member " + str(userGroupMember))
     else:
         addedGroup = addUserObjectToServer(
             client,
             apiCommand,
             {
-            "name": userGroup['Name'],
-            "comments": userGroup['Comments'],
-            "tags": userGroup['Tags']
+                "name": userGroup['Name'],
+                "comments": userGroup['Comments'],
+                "tags": userGroup['Tags']
             }
         )
     return addedGroup
@@ -354,6 +366,7 @@ def is_valid_ipv4(ip):
     """, re.VERBOSE | re.IGNORECASE)
     return pattern.match(ip) is not None
 
+
 def is_valid_ipv6(ip):
     pattern = re.compile(r"""
         ^
@@ -383,6 +396,7 @@ def is_valid_ipv6(ip):
     """, re.VERBOSE | re.IGNORECASE | re.DOTALL)
     return pattern.match(ip) is not None
 
+
 # processing and adding to server the CheckPoint Networks
 # adjusting the name if network with the name exists at server: <initial_object_name>_<postfix>
 # if network contains existing IP subnet then Network object from server will be used instead
@@ -395,7 +409,7 @@ def processNetworks(client, userNetworks):
     printMessageProcessObjects("networks")
     publishCounter = 0
     mergedNetworksNamesMap = {}
-    userNetworks = sorted(userNetworks, key=lambda K: (K['Netmask'], K['MaskLength']) , reverse=True)
+    userNetworks = sorted(userNetworks, key=lambda K: (K['Netmask'], K['MaskLength']), reverse=True)
     if len(userNetworks) == 0:
         return mergedNetworksNamesMap
     for userNetwork in userNetworks:
@@ -410,7 +424,8 @@ def processNetworks(client, userNetworks):
         else:
             payload["mask-length6"] = userNetwork['MaskLength']
         initialMapLength = len(mergedNetworksNamesMap)
-        mergedNetworksNamesMap = addCpObjectWithIpToServer(client, payload, "network", userNetwork['Subnet'], mergedNetworksNamesMap)
+        mergedNetworksNamesMap = addCpObjectWithIpToServer(client, payload, "network", userNetwork['Subnet'],
+                                                           mergedNetworksNamesMap)
         if initialMapLength == len(mergedNetworksNamesMap):
             printStatus(None, "REPORT: " + userNetwork['Name'] + ' is not added.')
         else:
@@ -418,7 +433,6 @@ def processNetworks(client, userNetworks):
         printStatus(None, "")
     publishUpdate(publishCounter, True)
     return mergedNetworksNamesMap
-
 
 
 # processing and adding to server the CheckPoint Ranges
@@ -552,9 +566,10 @@ def processNetGroups(client, userNetworkGroups, mergedNetworkObjectsMap):
         if addedNetworkGroup is not None:
             mergedGroupsNamesDict[userNetworkGroupNameInitial] = addedNetworkGroup['name']
             printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is added as " + addedNetworkGroup['name'])
-            publishCounter = publishUpdate(publishCounter, True)            
+            publishCounter = publishUpdate(publishCounter, True)
             userNetworkGroup["Name"] = addedNetworkGroup['name']
-            processGroupWithMembers(client, "add-group", userNetworkGroup, mergedNetworkObjectsMap, mergedGroupsNamesDict, True)
+            processGroupWithMembers(client, "add-group", userNetworkGroup, mergedNetworkObjectsMap,
+                                    mergedGroupsNamesDict, True)
         else:
             printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is not added.")
         printStatus(None, "")
@@ -576,7 +591,7 @@ def processSimpleGateways(client, userSimpleGateways):
     if len(userSimpleGateways) == 0:
         return mergedSimpleGatewaysNamesMap
     for userSimpleGateway in userSimpleGateways:
-        printStatus(None, "processing simple getway: " + userSimpleGateway['Name'])
+        printStatus(None, "processing simple gateway: " + userSimpleGateway['Name'])
         userSimpleGatewayNameInitial = userSimpleGateway['Name']
         addedSimpleGateway = addUserObjectToServer(
             client,
@@ -788,7 +803,8 @@ def processServicesGroups(client, userServicesGroups, mergedServicesMap):
             printStatus(None, "REPORT: " + userServicesGroupNameInitial + " is added as " + addedServicesGroup['name'])
             publishCounter = publishUpdate(publishCounter, True)
             userServicesGroup["Name"] = addedServicesGroup['name']
-            processGroupWithMembers(client, "add-service-group", userServicesGroup, mergedServicesMap, mergedServicesGroupsNamesMap, True)
+            processGroupWithMembers(client, "add-service-group", userServicesGroup, mergedServicesMap,
+                                    mergedServicesGroupsNamesMap, True)
         else:
             printStatus(None, "REPORT: " + userServicesGroupNameInitial + " is not added.")
         printStatus(None, "")
@@ -814,13 +830,14 @@ def processTimesGroups(client, userTimesGroups, mergedTimesNamesMap):
         printStatus(None, "processing times group: " + userTimesGroup['Name'])
         userTimesGroupNameInitial = userTimesGroup['Name']
         addedTimesGroup = processGroupWithMembers(client, "add-time-group", userTimesGroup, mergedTimesNamesMap,
-                                                     mergedTimesGroupsNamesMap, False)
+                                                  mergedTimesGroupsNamesMap, False)
         if addedTimesGroup is not None:
             mergedTimesGroupsNamesMap[userTimesGroupNameInitial] = addedTimesGroup['name']
             printStatus(None, "REPORT: " + userTimesGroupNameInitial + " is added as " + addedTimesGroup['name'])
             publishCounter = publishUpdate(publishCounter, True)
             userTimesGroup["Name"] = addedTimesGroup['name']
-            processGroupWithMembers(client, "add-time-group", userTimesGroup, mergedTimesNamesMap, mergedTimesGroupsNamesMap, True)
+            processGroupWithMembers(client, "add-time-group", userTimesGroup, mergedTimesNamesMap,
+                                    mergedTimesGroupsNamesMap, True)
         else:
             printStatus(None, "REPORT: " + userTimesGroupNameInitial + ' is not added.')
         printStatus(None, "")
@@ -1073,7 +1090,8 @@ def processPackage(client, userPackage, mergedNetworkObjectsMap, mergedServiceOb
                 addAccessRules(client, userSubLayer['Rules'], userSubLayer['Name'], False, mergedNetworkObjectsMap,
                                mergedServiceObjectsMap, mergedTimesGroupsNamesMap, mergedTimesNamesMap)
         if userPackage['ParentLayer'] is not None:
-            userPackage['ParentLayer']['Name'] = userPackage['ParentLayer']['Name'].replace(original_package_name, userPackage['Name'])
+            userPackage['ParentLayer']['Name'] = userPackage['ParentLayer']['Name'].replace(original_package_name,
+                                                                                            userPackage['Name'])
             for parentRule in userPackage['ParentLayer']['Rules']:
                 parentRule['Layer'] = userPackage['ParentLayer']['Name']
                 if parentRule['SubPolicyName'] != "":
@@ -1081,6 +1099,7 @@ def processPackage(client, userPackage, mergedNetworkObjectsMap, mergedServiceOb
             addAccessRules(client, userPackage['ParentLayer']['Rules'], "parent", True, mergedNetworkObjectsMap,
                            mergedServiceObjectsMap, mergedTimesGroupsNamesMap, mergedTimesNamesMap)
     return addedPackage
+
 
 # resolver for nat method type
 # typeValue - number of type [ static, hide, nat64, nat46 ]
@@ -1093,6 +1112,7 @@ def getMethodType(typeValue):
     elif typeValue == 3:
         _type = "nat46"
     return _type
+
 
 # processing and adding to server the CheckPoint NAT rules
 # NAT rules are added if package has been added
@@ -1176,11 +1196,11 @@ args_parser.add_argument('--port', type=int,
                          help="Server port. Default: 443")
 mxg = args_parser.add_mutually_exclusive_group(required=True)
 mxg.add_argument('-r', '--root', action="store_true",
-                         help="For a logged in administrator that wants to receive SuperUser permissions. Additional login credentials are not required.")
+                 help="For a logged in administrator that wants to receive SuperUser permissions. Additional login credentials are not required.")
 mxg.add_argument('-k', '--key',
-                         help="api_key")
+                 help="api_key")
 mxg.add_argument('-u', '--user',
-                         help="User name")
+                 help="User name")
 args_parser.add_argument('-p', '--password',
                          help="User password")
 args_parser.add_argument('-f', '--file', default='cp_objects.json',
@@ -1280,8 +1300,7 @@ else:
             userNetworks.append(jsonObject)
         if jsonObject['TypeName'] == 'CheckPoint_Range':
             userRanges.append(jsonObject)
-        if jsonObject['TypeName'] == 'CheckPoint_NetworkGroup' or jsonObject[
-            'TypeName'] == 'CheckPoint_GroupWithExclusion':
+        if jsonObject['TypeName'] == 'CheckPoint_NetworkGroup' or jsonObject['TypeName'] == 'CheckPoint_GroupWithExclusion':
             userNetGroups.append(jsonObject)
         if jsonObject['TypeName'] == 'CheckPoint_SimpleGateway':
             userSimpleGateways.append(jsonObject)
