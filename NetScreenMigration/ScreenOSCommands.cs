@@ -70,7 +70,7 @@ namespace NetScreenMigration
                         do
                         {
                             tempArrayList[i] += " " + tempArrayList[i + 1];
-                            tempArrayList.Remove(tempArrayList[i + 1]);
+                            tempArrayList.RemoveAt(i + 1);
                         } while (tempArrayList[i].Last() != '\"' && i + 1 < tempArrayList.Count);
                     }
                 }
