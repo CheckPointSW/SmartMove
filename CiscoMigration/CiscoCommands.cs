@@ -264,6 +264,11 @@ namespace CiscoMigration
         }
     }
 
+    public class FirePower : Cisco_ASA
+    {
+        public override string Name() { return "NGFW"; }
+    }
+
     public class Cisco_Alias : CiscoCommand
     {
         public override string Name() { return "name"; }

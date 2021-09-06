@@ -110,7 +110,7 @@ namespace SmartMove
             Console.WriteLine();
             Console.WriteLine("Options:");
             Console.WriteLine("\t" + "-s | --source" + "\t\t" + "full path to the vendor configuration file");
-            Console.WriteLine("\t" + "-v | --vendor" + "\t\t" + "vendor for conversion (available options: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama)");
+            Console.WriteLine("\t" + "-v | --vendor" + "\t\t" + "vendor for conversion (available options: CiscoASA, FirePower, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama)");
             Console.WriteLine("\t" + "-t | --target" + "\t\t" + "migration output folder");
             Console.WriteLine("\t" + "-d | --domain" + "\t\t" + "domain name (for CiscoASA, JuniperSRX, JuniperSSG only)");
             Console.WriteLine("\t" + "-n | --nat" + "\t\t" + @"(""-n false"" |"" -n true"" [default])  convert NAT configuration [enabled by default]");
@@ -130,7 +130,7 @@ namespace SmartMove
          */
         public int CheckOptionsValidity(CommandLine commandLine)
         {
-            var fullVendorsList = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FortiNet", "PaloAlto", "Panorama" };
+            var fullVendorsList = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FortiNet", "PaloAlto", "Panorama", "FirePower" };
             var vendorsList1 = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG" };
             var vendorsList2 = new List<string> { "FortiNet", "PaloAlto", "Panorama" };
             if (String.IsNullOrEmpty(commandLine.Vendor))
@@ -148,7 +148,7 @@ namespace SmartMove
             if (!fullVendorsList.Contains(commandLine.Vendor))
             {
                 Console.WriteLine("Specified vendor \"" + commandLine.Vendor + "\" is not available.", MessageTypes.Error);
-                Console.WriteLine("Available options are: CiscoASA, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama", MessageTypes.Error);
+                Console.WriteLine("Available options are: CiscoASA, FirePower, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama", MessageTypes.Error);
                 Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                 return 0;
             }
@@ -502,6 +502,12 @@ namespace SmartMove
                 case "CiscoASA":
                     vendorParser = new CiscoParser();
                     break;
+                case "FirePower":
+                    vendorParser = new CiscoParser()
+                    {
+                        isUsingForFirePower = true
+                    };
+                    break;
                 case "JuniperSRX":
                     vendorParser = new JuniperParser();
                     break;
@@ -616,6 +622,33 @@ namespace SmartMove
 
                 case "JuniperSSG":
                     break;
+                
+                case "FirePower":
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified NGFW version.\nCannot find version for the selected configuration.\nThe configuration may not parse correctly.");
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified NGFW version.\nCannot find version for the selected configuration.\nThe configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    else if (vendorParser.MajorVersion < 6 || (vendorParser.MajorVersion == 6 && vendorParser.MinorVersion < 4))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported version (" + vendorParser.Version + ").\nThis tool supports NGFW 6.4 and above configuration files.\nThe configuration may not parse correctly.");
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported version(" + vendorParser.Version + ").\nThis tool supports NGFW 6.4 and above configuration files.\nThe configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    break;
 
                 case "FortiNet":
                     if (string.IsNullOrEmpty(vendorParser.Version))
@@ -716,6 +749,12 @@ namespace SmartMove
             {
                 case "CiscoASA":
                     vendorConverter = new CiscoConverter();
+                    break;
+                case "FirePower":
+                    vendorConverter = new CiscoConverter()
+                    {
+                        isUsingForFirePower = true
+                    };
                     break;
                 case "JuniperSRX":
                     vendorConverter = new JuniperConverter();

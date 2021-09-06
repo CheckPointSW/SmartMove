@@ -31,6 +31,9 @@ namespace CiscoMigration
     /// </summary>
     public class CiscoParser : VendorParser
     {
+        //if we are using cisco code for fire power vendor we need set this flag to true value
+        public bool isUsingForFirePower { get; set; } = false;
+
         #region Helper Classes
 
         private class Indentation
@@ -62,7 +65,10 @@ namespace CiscoMigration
         public override void Parse(string filename)
         {
             ParseCommands(filename);   // this must come first!!!
-            ParseVersion(null);
+            if (isUsingForFirePower)
+                ParseVersion("NGFW");
+            else
+                ParseVersion(null);
             ParseInterfacesTopology();
         }
 
@@ -112,9 +118,21 @@ namespace CiscoMigration
 
         protected override void ParseVersion(object versionProvider)
         {
-            foreach (Cisco_ASA asa in Filter("ASA"))
+            if (versionProvider != null)
             {
-                VendorVersion = asa.Version;
+                //FirePower
+                string allowedVersionType = (string)versionProvider;
+                foreach (FirePower asa in Filter(allowedVersionType))
+                {
+                    VendorVersion = asa.Version;
+                }
+            }
+            else
+            {
+                foreach (Cisco_ASA asa in Filter("ASA"))
+                {
+                    VendorVersion = asa.Version;
+                }
             }
         }
 

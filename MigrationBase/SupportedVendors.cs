@@ -67,7 +67,9 @@ namespace MigrationBase
     public enum Vendor
     {
         [Description("Cisco ASA")]
-        CiscoASA,
+        CiscoASA, 
+        [Description("FirePower")]
+        FirePower,
         [Description("Juniper JunosOS SRX")]
         JuniperJunosOS,
         [Description("Juniper ScreenOS SSG/ISG/NS")]
