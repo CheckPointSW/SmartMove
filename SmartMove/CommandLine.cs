@@ -112,7 +112,7 @@ namespace SmartMove
             Console.WriteLine("\t" + "-s | --source" + "\t\t" + "full path to the vendor configuration file");
             Console.WriteLine("\t" + "-v | --vendor" + "\t\t" + "vendor for conversion (available options: CiscoASA, FirePower, JuniperSRX, JuniperSSG, FortiNet, PaloAlto, Panorama)");
             Console.WriteLine("\t" + "-t | --target" + "\t\t" + "migration output folder");
-            Console.WriteLine("\t" + "-d | --domain" + "\t\t" + "domain name (for CiscoASA, JuniperSRX, JuniperSSG only)");
+            Console.WriteLine("\t" + "-d | --domain" + "\t\t" + "domain name (for CiscoASA, FirePower, JuniperSRX, JuniperSSG only)");
             Console.WriteLine("\t" + "-n | --nat" + "\t\t" + @"(""-n false"" |"" -n true"" [default])  convert NAT configuration [enabled by default]");
             Console.WriteLine("\t" + "-l | --ldap" + "\t\t" + "LDAP Account unit for convert user configuration option (for FortiNet, PaloAlto and Panorama only)");
             Console.WriteLine("\t" + "-k | --skip" + "\t\t" + @"(""-k false"" |"" -k true"" [default]) do not import unused objects (for FortiNet, PaloAlto and Panorama only) [enabled by default]");
@@ -131,7 +131,7 @@ namespace SmartMove
         public int CheckOptionsValidity(CommandLine commandLine)
         {
             var fullVendorsList = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FortiNet", "PaloAlto", "Panorama", "FirePower" };
-            var vendorsList1 = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG" };
+            var vendorsList1 = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FirePower" };
             var vendorsList2 = new List<string> { "FortiNet", "PaloAlto", "Panorama" };
             if (String.IsNullOrEmpty(commandLine.Vendor))
             {
