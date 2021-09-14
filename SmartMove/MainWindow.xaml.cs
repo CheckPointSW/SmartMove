@@ -441,6 +441,11 @@ namespace SmartMove
                 case Vendor.CiscoASA:
                     vendorParser = new CiscoParser();
                     break;
+                case Vendor.FirePower:
+                    vendorParser = new CiscoParser() { 
+                        isUsingForFirePower = true 
+                    };
+                    break;
                 case Vendor.JuniperJunosOS:
                     vendorParser = new JuniperParser();
                     break;
@@ -523,6 +528,19 @@ namespace SmartMove
                     }
                     break;
 
+                case Vendor.FirePower:
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        ShowMessage("Unspecified NGFW version.\nCannot find version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
+                    }
+                    else if (vendorParser.MajorVersion < 6 || (vendorParser.MajorVersion == 6 && vendorParser.MinorVersion < 4))
+                    {
+                        ShowMessage("Unsupported version (" + vendorParser.Version + ").\nThis tool supports NGFW 6.4 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        return;
+                    }
+                    break;
+
                 case Vendor.JuniperJunosOS:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
@@ -585,6 +603,11 @@ namespace SmartMove
             {
                 case Vendor.CiscoASA:
                     vendorConverter = new CiscoConverter();
+                    break;
+                case Vendor.FirePower:
+                    vendorConverter = new CiscoConverter() {
+                        isUsingForFirePower = true
+                    };
                     break;
                 case Vendor.JuniperJunosOS:
                     vendorConverter = new JuniperConverter();

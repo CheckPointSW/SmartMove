@@ -17,6 +17,8 @@ limitations under the License.
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using CommonUtils;
 
 namespace CheckPointObjects
@@ -58,6 +60,11 @@ namespace CheckPointObjects
                 curLayer = nextLayer;
             }
 
+            for (int i = 0; i < newLayer.Rules.Count; ++i)
+            {
+                newLayer.Rules[i].ConversionComments = OptimizeConverstionComments(newLayer.Rules[i].ConversionComments);
+            }
+
             return newLayer;
         }
 
@@ -84,6 +91,7 @@ namespace CheckPointObjects
                 CheckPoint_Rule rule = newRule.Clone();
                 rule.Layer = layer.Name;
                 rule.Comments = "";
+                rule.ConversionComments = newRule.ConversionComments;
                 layer.Rules.Add(rule);
             }
         }
@@ -124,6 +132,7 @@ namespace CheckPointObjects
             mergedRule.SourceNegated = rule1.SourceNegated;
             mergedRule.DestinationNegated = rule1.DestinationNegated;
             mergedRule.Comments = "";
+            mergedRule.ConversionComments = rule1.ConversionComments + " | " + rule2.ConversionComments;
             mergedRule.ConvertedCommandId = rule1.ConvertedCommandId;
             mergedRule.ConversionIncidentType = ConversionIncidentType.None;
 
@@ -209,6 +218,30 @@ namespace CheckPointObjects
             var secondNotFirst = list2.Except(list1).ToList();
 
             return (!firstNotSecond.Any() && !secondNotFirst.Any());
+        }
+
+        /// <summary>
+        /// Method for creation comment by the template 'optimized of access-list #x #y'
+        /// </summary>
+        /// <param name="commentToProcess">comment to process</param>
+        /// <returns>optimized comment at the right format</returns>
+        private static string OptimizeConverstionComments(string commentToProcess)
+        {
+            string commentBuilder = "optimized of access-list";
+            List<string> rules = new List<string>();
+            List<string> comments_parts = commentToProcess.Split(' ').ToList();
+            Regex regex = new Regex(@"[0-9]+[)]");
+
+            if (regex.IsMatch(comments_parts[0]))
+                foreach (string part in comments_parts)
+                {
+                    if (regex.IsMatch(part))
+                        commentBuilder += " " + part.Remove(part.Length - 1);
+                }
+            else
+                return commentToProcess;
+
+            return commentBuilder;
         }
     }
 }

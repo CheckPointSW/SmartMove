@@ -36,6 +36,9 @@ namespace CiscoMigration
     /// </summary>
     public class CiscoConverter : VendorConverter
     {
+        //if we are using cisco code for fire power vendor we need set this flag to true value
+        public bool isUsingForFirePower { get; set; } = false;
+
         #region Helper Classes
 
         private class DuplicateNameInfo
@@ -624,7 +627,11 @@ namespace CiscoMigration
         {
             if (base.AddCheckPointObject(cpObject))
             {
-                string vendor = Vendor.CiscoASA.ToString();
+                string vendor;
+                if (isUsingForFirePower)
+                    vendor = Vendor.FirePower.ToString();
+                else
+                    vendor = Vendor.CiscoASA.ToString();
                 if (!cpObject.Tags.Contains(vendor))
                 {
                     cpObject.Tags.Add(vendor);
@@ -4633,6 +4640,7 @@ namespace CiscoMigration
                     newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];
                 }
                 newRule.Layer = optimizedPackage.ParentLayer.Name;
+                newRule.ConversionComments = rule.ConversionComments;
 
                 optimizedPackage.ParentLayer.Rules.Add(newRule);
             }
