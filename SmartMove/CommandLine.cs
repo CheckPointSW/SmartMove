@@ -100,6 +100,8 @@ namespace SmartMove
 
         private bool _successCommands = true;
         private bool _isInteractive = true;
+
+        private bool _isCiscoSpreadAclRemarks = false;
         #endregion
 
         public int DisplayHelp()
@@ -422,6 +424,22 @@ namespace SmartMove
                             }
                             break;
                         }
+                    case "--asa-spread-acl-remarks":
+                        {
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option --asa-spread-acl-remarks is not specified! ", MessageTypes.Error);
+                            }
+                            else if (bool.TryParse(args[i + 1].ToLower(), out _isCiscoSpreadAclRemarks))
+                                break;
+                            else
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option format is not corrected! Allow only 'text' or 'json' ", MessageTypes.Error);
+                            }
+                            break;
+                        }
                 }
             }
             return this;
@@ -500,6 +518,7 @@ namespace SmartMove
             switch (commandLine.Vendor)
             {
                 case "CiscoASA":
+                    CiscoParser.SpreadAclRemarks = _isCiscoSpreadAclRemarks;
                     vendorParser = new CiscoParser();
                     break;
                 case "FirePower":
