@@ -2,7 +2,6 @@
 using System.IO;
 using Newtonsoft.Json;
 using MigrationBase;
-using System.Text;
 
 namespace FortiGateMigration
 {
@@ -45,7 +44,7 @@ namespace FortiGateMigration
 
         private void ParseCommands(string filename)
         {
-            string[] linesCfg = File.ReadAllLines(filename, Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback(""), new DecoderReplacementFallback("")));
+            string[] linesCfg = File.ReadAllLines(filename);
 
             Stack<FgCommandExt> stackFgCommands = new Stack<FgCommandExt>();
 
