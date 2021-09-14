@@ -436,7 +436,7 @@ namespace SmartMove
                             else
                             {
                                 _successCommands = false;
-                                Console.WriteLine("Value for option format is not corrected! Allow only 'text' or 'json' ", MessageTypes.Error);
+                                Console.WriteLine("Value for option format is not corrected! Allow only 'true' or 'false' ", MessageTypes.Error);
                             }
                             break;
                         }
