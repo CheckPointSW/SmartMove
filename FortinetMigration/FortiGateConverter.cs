@@ -942,6 +942,9 @@ namespace FortiGateMigration
             //if it is w/o VDOM then report will be in the same folder as config file
             ChangeTargetFolder(targetFolderNew, targetFileNameNew);
 
+            //Validate parsing
+            _errorsList.AddRange(ValidateConversion(fgCommandsList));
+
             if (!OptimizeConf)
             {
                 foreach (string fgInterface in _interfacesMapperFgCp.Keys)
@@ -1049,8 +1052,43 @@ namespace FortiGateMigration
                 }
             }
 
-            if (!OptimizeConf) //adding objects if Optimized configuration is not required
+            HashSet<string> cpUsedFirewallObjectNamesList = new HashSet<string>(); //set of names of used firewall objects
+            HashSet<string> usedObjInFirewall = CreateUsedInPoliciesObjects(fgCommandsList);
+            foreach (string key in _localMapperFgCp.Keys)
             {
+                if (key.StartsWith(FG_PREFIX_KEY_user_group)) //already added because Access_Roles are added always
+                {
+                    continue;
+                }
+
+                List<CheckPointObject> cpObjectsList = _localMapperFgCp[key];
+                foreach (CheckPointObject cpObject in cpObjectsList)
+                {
+                    if (!OptimizeConf) //adding objects if Optimized configuration is not required
+                        AddCheckPointObject(cpObject);
+                    else               //if optimized mode is enabled
+                    {
+                        foreach (string objectName in usedObjInFirewall)
+                        {
+                            if (cpObject.Name.Contains(objectName))
+                            {
+                                if (cpObject.GetType() == typeof(CheckPoint_NetworkGroup))
+                                {
+                                    CheckPoint_NetworkGroup networkGroup = (CheckPoint_NetworkGroup)cpObject;
+                                    foreach (string firewallObject in networkGroup.Members)
+                                    {
+                                        cpUsedFirewallObjectNamesList.Add(firewallObject);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            //add domains opt
+            if (OptimizeConf)
+            { //adding objects if Optimized configuration is required
                 foreach (string key in _localMapperFgCp.Keys)
                 {
                     if (key.StartsWith(FG_PREFIX_KEY_user_group)) //already added because Access_Roles are added always
@@ -1061,7 +1099,12 @@ namespace FortiGateMigration
                     List<CheckPointObject> cpObjectsList = _localMapperFgCp[key];
                     foreach (CheckPointObject cpObject in cpObjectsList)
                     {
-                        AddCheckPointObject(cpObject);
+                        foreach (string firewallObjectName in cpUsedFirewallObjectNamesList)
+                        {
+                            string firewallObjectCorrectName = firewallObjectName.StartsWith(".") ? firewallObjectName.Substring(1) : firewallObjectName;
+                            if (key.Replace(" ", "_").Contains(firewallObjectCorrectName.Replace(" ", "_")))
+                                AddCheckPointObject(cpObject);
+                        }
                     }
                 }
             }
@@ -1465,7 +1508,7 @@ namespace FortiGateMigration
             else
             {
                 CheckPoint_TcpService cpTcpService = new CheckPoint_TcpService();
-                cpTcpService.Name = GetSafeName(nameEdit);
+                cpTcpService.Name = GetSafeName(nameEdit) + "-" + dest.ToString() + "-tcp";
                 cpTcpService.Port = dest;
                 if (!src.Equals(""))
                 {
@@ -1515,7 +1558,7 @@ namespace FortiGateMigration
             else
             {
                 CheckPoint_UdpService cpUdpService = new CheckPoint_UdpService();
-                cpUdpService.Name = GetSafeName(nameEdit);
+                cpUdpService.Name = GetSafeName(nameEdit) + "-" + dest.ToString() + "-udp";
                 cpUdpService.Port = dest;
                 if (!src.Equals(""))
                 {
@@ -4774,6 +4817,174 @@ namespace FortiGateMigration
         protected override string GetVendorName()
         {
             return Vendor.FortiGate.ToString();
+        }
+
+        /// <summary>
+        /// Generate a list of firewall objects names whitch was used in politycs
+        /// </summary>
+        /// <param name="fgCommandsList">parsed config file</param>
+        /// <returns>set of names</returns>
+        public HashSet<string> CreateUsedInPoliciesObjects(List<FgCommand> fgCommandsList)
+        {
+            FgCommand_Config firewall_policy_search = null;
+            HashSet<string> UsedObjInFirewall = new HashSet<string>();      //used objects in policies
+            foreach (FgCommand fgCommand in fgCommandsList)
+            {
+                if (fgCommand.GetType() == typeof(FgCommand_Config))
+                {
+                    FgCommand_Config fgCommandConfig = (FgCommand_Config)fgCommand;
+
+                    if (fgCommandConfig.ObjectName.Equals("firewall policy"))
+                    {
+                        firewall_policy_search = fgCommandConfig;
+                        break;
+                    }
+
+                }
+            }
+            if (firewall_policy_search != null)
+            {
+                foreach (FgCommand_Edit subCommand in firewall_policy_search.SubCommandsList)
+                {
+                    foreach (FgCommand_Set subCommand_addr in subCommand.SubCommandsList)
+                    {
+                        if (subCommand_addr.Field.Equals("dstaddr") ||
+                            subCommand_addr.Field.Equals("srcaddr") ||
+                            subCommand_addr.Field.Equals("srcintf") ||
+                            subCommand_addr.Field.Equals("dstintf"))
+                        {
+                            List<string> objects = subCommand_addr.Value.Split(' ').ToList();
+                            foreach (string obj in objects)
+                                UsedObjInFirewall.Add(obj.Replace('"', ' ').Trim());
+                        }
+                    }
+                }
+                UsedObjInFirewall.Remove("all");
+                return UsedObjInFirewall;
+            }
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// Validate objects (domains, hosts, members) for any conflicts
+        /// </summary>
+        /// <param name="fgCommandsList">parsed elements</param>
+        /// <returns>List of validation problems. If no problems return list will empty</returns>
+        private HashSet<string> ValidateConversion(List<FgCommand> fgCommandsList)
+        {
+            HashSet<string> output = new HashSet<string>();
+            Dictionary<string, string> portsTcp = new Dictionary<string, string>();       //list of used ports for TCP <port, service>
+            Dictionary<string, string> portsUdp = new Dictionary<string, string>();       //list of used ports for UDP <port, service>
+            HashSet<string> groupNames = new HashSet<string>();                     //set of groups names for check duplicates 
+
+            foreach (FgCommand parsedElement in fgCommandsList)
+            {
+                //check ports TCP/UDP
+                if (parsedElement.GetType() == typeof(FgCommand_Config))
+                {
+                    FgCommand_Config parsedElementConfig = (FgCommand_Config)parsedElement;
+                    if (parsedElementConfig.ObjectName.Contains("firewall service custom"))
+                    {
+                        foreach (FgCommand_Edit parsedElementService in parsedElementConfig.SubCommandsList)
+                        {
+                            foreach (FgCommand parsedElementServiceUntypedSet in parsedElementService.SubCommandsList)
+                            {
+                                FgCommand_Set parsedElementServiceSet;
+                                if (parsedElementServiceUntypedSet.GetType() == typeof(FgCommand_Set))
+                                    parsedElementServiceSet = (FgCommand_Set)parsedElementServiceUntypedSet;
+                                else
+                                    continue;
+                                //TCP port
+                                if (parsedElementServiceSet.Field.Equals("tcp-portrange"))
+                                {
+                                    string[] ports = parsedElementServiceSet.Value.Split(' ');
+                                    foreach (string port in ports)
+                                    {
+                                        bool isFound;
+                                        string cpServiceName = _cpObjects.GetKnownServiceName("TCP_" + port, out isFound);
+
+                                        if (isFound)
+                                        {
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            if (portsTcp.ContainsKey(port))
+                                            {
+                                                output.Add($"Conversion validation error: a TCP port {port} already used by service {portsTcp[port]}, but service {parsedElementService.Table} trying to use it");
+                                            }
+                                            else
+                                            {
+                                                portsTcp.Add(port, parsedElementService.Table);
+                                            }
+                                        }
+                                    }
+
+                                }
+                                //UDP
+                                if (parsedElementServiceSet.Field.Equals("udp-portrange"))
+                                {
+                                    string[] ports = parsedElementServiceSet.Value.Split(' ');
+                                    foreach (string port in ports)
+                                    {
+                                        bool isFound;
+                                        string cpServiceName = _cpObjects.GetKnownServiceName("UDP_" + port, out isFound);
+
+                                        if (isFound)
+                                        {
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            if (portsUdp.ContainsKey(port))
+                                            {
+                                                output.Add($"Conversion validation error: a UDP port {port} already used by service {portsUdp[port]}, but service {parsedElementService.Table} trying to use it");
+                                            }
+                                            else
+                                            {
+                                                portsUdp.Add(port, parsedElementService.Table);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    //check group duplicate members
+                    else if (parsedElementConfig.ObjectName.Contains("firewall addrgrp"))
+                    {
+                        foreach (FgCommand_Edit parsedElementGroup in parsedElementConfig.SubCommandsList)
+                        {
+                            foreach (FgCommand parsedElementGroupUntypedSet in parsedElementGroup.SubCommandsList)
+                            {
+                                FgCommand_Set parsedElementGroupSet;
+                                if (parsedElementGroupUntypedSet.GetType() == typeof(FgCommand_Set))
+                                    parsedElementGroupSet = (FgCommand_Set)parsedElementGroupUntypedSet;
+                                else
+                                    continue;
+                                if (parsedElementGroupSet.Field.Equals("member"))
+                                {
+                                    string[] members = parsedElementGroupSet.Value.Split(new string[] { @""" """ }, StringSplitOptions.None);
+                                    foreach (string member in members)
+                                    {
+                                        int count = 0;
+                                        foreach (string memberCheck in members)
+                                        {
+                                            if (memberCheck.Equals(member))
+                                                ++count;
+                                        }
+                                        if (count > 1)
+                                            output.Add($"At the group {parsedElementGroup.Table} found duplicates for member {member}");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return output;
         }
     }
 
