@@ -1149,18 +1149,21 @@ namespace FortiGateMigration
 
                 List<FgStaticRoute> routesList = null;
 
-                if (_localFgRoutesDict.ContainsKey(fgStaticRoute.Device))
+                if (fgStaticRoute.Device != null)
                 {
-                    routesList = _localFgRoutesDict[fgStaticRoute.Device];
-                }
-                else
-                {
-                    routesList = new List<FgStaticRoute>();
-                }
+                    if (_localFgRoutesDict.ContainsKey(fgStaticRoute.Device))
+                    {
+                        routesList = _localFgRoutesDict[fgStaticRoute.Device];
+                    }
+                    else
+                    {
+                        routesList = new List<FgStaticRoute>();
+                    }
 
-                routesList.Add(fgStaticRoute);
+                    routesList.Add(fgStaticRoute);
 
-                _localFgRoutesDict[fgStaticRoute.Device] = routesList;
+                    _localFgRoutesDict[fgStaticRoute.Device] = routesList;
+                }
             }
         }
 
@@ -4698,34 +4701,38 @@ namespace FortiGateMigration
 
             string cpObjectName = cpObject.Name;
 
-            while (isNameExist)
+            if (!string.IsNullOrEmpty(cpObjectName))
             {
-                isNameExist = false;
-
-                foreach (CheckPointObject cpObj in cpObjectsList)
+                while (isNameExist)
                 {
-                    if (cpObj.Name.Trim().ToLower().Equals(cpObjectName.Trim().ToLower()))
+                    isNameExist = false;
+
+                    foreach (CheckPointObject cpObj in cpObjectsList)
                     {
-                        isNameExist = true;
+                        if (cpObj.Name.Trim().ToLower().Equals(cpObjectName.Trim().ToLower()))
+                        {
+                            isNameExist = true;
 
-                        zIndex += 1;
+                            zIndex += 1;
 
-                        cpObjectName = cpObject.Name + "_" + zIndex;
+                            cpObjectName = cpObject.Name + "_" + zIndex;
 
-                        break;
+                            break;
+                        }
                     }
                 }
+
+
+                if (!cpObject.Name.Equals(cpObjectName))
+                {
+                    _warningsList.Add(cpObject.Name + " object was renamed to " + cpObjectName + " for solving duplicate names issue.");
+                    cpObject.Name = cpObjectName;
+                }
+
+                cpObjectsList.Add(cpObject);
+
+                _localMapperFgCp[fgObjectName] = cpObjectsList;
             }
-
-            if (!cpObject.Name.Equals(cpObjectName))
-            {
-                _warningsList.Add(cpObject.Name + " object was renamed to " + cpObjectName + " for solving duplicate names issue.");
-                cpObject.Name = cpObjectName;
-            }
-
-            cpObjectsList.Add(cpObject);
-
-            _localMapperFgCp[fgObjectName] = cpObjectsList;
         }
 
         #endregion
