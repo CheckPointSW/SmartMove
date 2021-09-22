@@ -4846,16 +4846,20 @@ namespace FortiGateMigration
             {
                 foreach (FgCommand_Edit subCommand in firewall_policy_search.SubCommandsList)
                 {
-                    foreach (FgCommand_Set subCommand_addr in subCommand.SubCommandsList)
+                    foreach (FgCommand subCommand_addr in subCommand.SubCommandsList)
                     {
-                        if (subCommand_addr.Field.Equals("dstaddr") ||
-                            subCommand_addr.Field.Equals("srcaddr") ||
-                            subCommand_addr.Field.Equals("srcintf") ||
-                            subCommand_addr.Field.Equals("dstintf"))
+                        if (subCommand_addr.GetType() == typeof(FgCommand_Set))
                         {
-                            List<string> objects = subCommand_addr.Value.Split(' ').ToList();
-                            foreach (string obj in objects)
-                                UsedObjInFirewall.Add(obj.Replace('"', ' ').Trim());
+                            var subCommand_addr_set = (FgCommand_Set)subCommand_addr;
+                            if (subCommand_addr_set.Field.Equals("dstaddr") ||
+                                subCommand_addr_set.Field.Equals("srcaddr") ||
+                                subCommand_addr_set.Field.Equals("srcintf") ||
+                                subCommand_addr_set.Field.Equals("dstintf"))
+                            {
+                                List<string> objects = subCommand_addr_set.Value.Split(' ').ToList();
+                                foreach (string obj in objects)
+                                    UsedObjInFirewall.Add(obj.Replace('"', ' ').Trim());
+                            }
                         }
                     }
                 }
