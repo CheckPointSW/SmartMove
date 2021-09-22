@@ -4784,6 +4784,7 @@ namespace FortiGateMigration
         {
             if (name != null && !name.Trim().Equals(""))
             {
+                name = Validators.ChangeNameAccordingToRules(name);
                 return Regex.Replace(name, @"[^A-Za-z0-9_.-]", "_");
             }
             else
