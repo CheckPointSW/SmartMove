@@ -194,6 +194,15 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                                 printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
                                     userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
                                 isFinished = True
+                                break
+                            for serverObject in res_get_obj_with_ip.data:
+                                mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
+                                if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (
+                                        isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
+                                    break
+                            printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
+                                userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
+                            isFinished = True
                             break
                             
                     else:
