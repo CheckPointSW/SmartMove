@@ -238,6 +238,8 @@ def processGroupWithMembers(client, apiCommand, userGroup, mergedObjectsMap, mer
     if isNeedSplitted:
         for i, userGroupMember in enumerate(userGroup['Members']):
             print(userGroupMember)
+            if userGroupMember in mergedObjectsMap:
+                userGroupMember = mergedObjectsMap[userGroupMember]
             res_add_obj = client.api_call(
                 apiSetCommand,
                 {
