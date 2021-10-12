@@ -33,6 +33,8 @@ namespace FortiGateMigration
         private List<string> _errorsList = new List<string>(); //storing conversion errors for config or each VDOM
         private List<string> _warningsList = new List<string>(); //storing conversion warnings for config or each VDOM
 
+        private HashSet<string> _skippedNames = new HashSet<string>(); //if objects was skipped by error of validation here need to be placed his name
+
         private Dictionary<string, List<CheckPointObject>> _localMapperFgCp = new Dictionary<string, List<CheckPointObject>>(); //storing map of FG names to CheckPoint objects
 
         private Dictionary<string, List<CheckPoint_Host>> _interfacesMapperFgCp = new Dictionary<string, List<CheckPoint_Host>>(); //storing information about interfaces
@@ -1077,7 +1079,8 @@ namespace FortiGateMigration
                                     CheckPoint_NetworkGroup networkGroup = (CheckPoint_NetworkGroup)cpObject;
                                     foreach (string firewallObject in networkGroup.Members)
                                     {
-                                        cpUsedFirewallObjectNamesList.Add(firewallObject);
+                                        if (!_skippedNames.Contains(firewallObject))
+                                            cpUsedFirewallObjectNamesList.Add(firewallObject);
                                     }
                                 }
                             }
@@ -2068,12 +2071,12 @@ namespace FortiGateMigration
                         }
                     }
 
-                    if (!cpRange.RangeFrom.Equals("") && !cpRange.RangeTo.Equals(""))
+                    if (!string.IsNullOrEmpty(cpRange.RangeFrom) && !string.IsNullOrEmpty(cpRange.RangeTo))
                     {
                         AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_ippool + fgCommandEdit.Table, cpRange);
                     }
 
-                    if (!cpRangeSrc.RangeFrom.Equals("") && !cpRangeSrc.RangeTo.Equals(""))
+                    if (!string.IsNullOrEmpty(cpRangeSrc.RangeFrom) && !string.IsNullOrEmpty(cpRangeSrc.RangeTo))
                     {
                         //AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_ippool_source + fgCommandEdit.Table, cpRangeSrc);
                         AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_ippool + fgCommandEdit.Table, cpRangeSrc);
@@ -2343,7 +2346,16 @@ namespace FortiGateMigration
 
             cpRange.Comments = comment;
 
-            return cpRange;
+            if (!string.IsNullOrEmpty(cpRange.RangeFrom) && !string.IsNullOrEmpty(cpRange.RangeTo))
+            {
+                return cpRange;
+            }
+            else
+            {
+                _warningsList.Add(cpRange.Name + " network range can not been converted becuase it contains wrong start ot end points values");
+                _skippedNames.Add(cpRange.Name);
+                return null;
+            }
         }
 
         public CheckPointObject Add_Subnet(FgCommand_Edit fgCommandEdit)
@@ -2436,7 +2448,15 @@ namespace FortiGateMigration
                                     cpRange.RangeFrom = addressesArray[0];
                                     cpRange.RangeTo = addressesArray[1];
 
-                                    AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_vip_extip + fgCommandEdit.Table, cpRange);
+                                    if (!string.IsNullOrEmpty(cpRange.RangeFrom) && !string.IsNullOrEmpty(cpRange.RangeTo))
+                                    {
+                                        AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_vip_extip + fgCommandEdit.Table, cpRange);
+                                    }
+                                    else
+                                    {
+                                        _errorsList.Add(cpRange.Name + " network range can not been converted becuase it contains wrong start ot end points values");
+                                        _skippedNames.Add(cpRange.Name);
+                                    }
                                 }
                             }
 
@@ -2464,7 +2484,15 @@ namespace FortiGateMigration
                                     cpRange.RangeFrom = addressesArray[0];
                                     cpRange.RangeTo = addressesArray[1];
 
-                                    AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_vip_mappedip + fgCommandEdit.Table, cpRange);
+                                    if (!string.IsNullOrEmpty(cpRange.RangeFrom) && !string.IsNullOrEmpty(cpRange.RangeTo))
+                                    {
+                                        AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_vip_mappedip + fgCommandEdit.Table, cpRange);
+                                    }
+                                    else
+                                    {
+                                        _errorsList.Add(cpRange.Name + " network range can not been converted becuase it contains wrong start ot end points values");
+                                        _skippedNames.Add(cpRange.Name);
+                                    }
                                 }
                             }
 
@@ -4568,77 +4596,7 @@ namespace FortiGateMigration
         {
             string retMessage = null;
 
-            string inZoneNameNew = "";
-
-            string[] inZoneNameParts = inZone.Name.Split('-').ToArray();
-
-            string[] reservedWords = new string[]
-            {
-                "all", "All", "and", "any", "Any",
-                "apr", "Apr", "april", "April", "aug", "Aug", "august", "August",
-                "black", "blackboxs", "blue", "broadcasts", "call", "comment",
-                "conn", "date", "day", "debug", "dec", "Dec", "december", "December",
-                "deffunc", "define", "delete", "delstate", "direction", "do", "domains",
-                "drop", "dst", "dynamic", "else", "expcall", "expires", "export", "fcall",
-                "feb", "Feb", "february", "February", "firebrick", "foreground", "forest",
-                "format", "fri", "Fri", "friday", "Friday", "from", "fw1", "FW1", "fwline",
-                "fwrule", "gateways", "get", "getstate", "gold", "gray", "green", "hashsize",
-                "hold", "host", "hosts", "if", "ifaddr", "ifid", "implies", "in", "inbound",
-                "instate", "interface", "interfaces", "ipsecdata", "ipsecmethods", "is",
-                "jan", "Jan", "january", "January", "jul", "Jul", "july", "July", "jun",
-                "Jun", "june", "June", "kbuf", "keep", "limit", "local", "localhost", "log",
-                "LOG", "logics", "magenta", "mar", "Mar", "march", "March", "may", "May",
-                "mday", "medium", "modify", "mon", "Mon", "monday", "Monday", "month",
-                "mortrap", "navy", "netof", "nets", "nexpires", "not", "nov", "Nov",
-                "november", "November", "oct", "Oct", "october", "October", "or",
-                "orange", "origdport", "origdst", "origsport", "origsrc", "other",
-                "outbound", "packet", "packetid", "packetlen", "pass", "r_arg",
-                "r_call_counter", "r_cdir", "r_cflags", "r_chandler", "r_client_community",
-                "r_client_ifs_grp", "r_community_left", "r_connarg", "r_crule", "r_ctimeout",
-                "r_ctype", "r_curr_feature_id", "r_data_offset", "r_dtmatch", "r_dtmflags",
-                "r_entry", "r_g_offset", "r_ipv6", "r_mapped_ip", "r_mflags", "r_mhandler",
-                "r_mtimeout", "r_oldcdir", "r_pflags", "r_profile_id", "r_ro_client_community",
-                "r_ro_dst_sr", "r_ro_server_community", "r_ro_src_sr", "r_scvres",
-                "r_server_community", "r_server_ifs_grp", "r_service_id", "r_simple_hdrlen",
-                "r_spii_ret", "r_spii_tcpseq", "r_spii_uuid1", "r_spii_uuid2", "r_spii_uuid3",
-                "r_spii_uuid4", "r_str_dport", "r_str_dst", "r_str_ipp", "r_str_sport",
-                "r_str_src", "r_user", "record", "red", "refresh", "reject", "routers",
-                "sat", "Sat", "saturday", "Saturday", "second", "sep", "Sep", "september",
-                "September", "set", "setstate", "skipme", "skippeer", "sr", "src", "static",
-                "sun", "Sun", "sunday", "Sunday", "switchs", "sync", "targets", "thu", "Thu",
-                "thursday", "Thursday", "to", "tod", "tue", "Tue", "tuesday", "Tuesday", "ufp",
-                "vanish", "vars", "wasskipped", "wed", "Wed", "wednesday", "Wednesday",
-                "while", "xlatedport", "xlatedst", "xlatemethod", "xlatesport", "xlatesrc",
-                "xor", "year", "zero", "zero_ip", "mon", "Mon", "monday", "Monday", "tue",
-                "Tue", "tuesday", "Tuesday", "wed", "Wed", "wednesday", "Wednesday", "thu",
-                "Thu", "thursday", "Thursday", "fri", "Fri", "friday", "Friday", "sat", "Sat",
-                "saturday", "Saturday", "sun", "Sun", "sunday", "Sunday", "jan", "Jan",
-                "january", "January", "feb", "Feb", "february", "February", "mar", "Mar",
-                "march", "March", "apr", "Apr", "april", "April", "may", "May", "jun", "Jun",
-                "june", "June", "jul", "Jul", "july", "July", "aug", "Aug", "august", "August",
-                "sep", "Sep", "september", "September", "oct", "Oct", "october", "October",
-                "nov", "Nov", "november", "November", "dec", "Dec", "december", "December",
-                "date", "day", "month", "year", "black", "blue", "cyan", "dark", "firebrick",
-                "foreground", "forest", "gold", "gray", "green", "magenta", "medium", "navy",
-                "orange", "red", "sienna", "yellow", "dark", "light", "medium"
-            };
-
-            foreach (string inZoneNamePart in inZoneNameParts)
-            {
-                if (reservedWords.Contains(inZoneNamePart))
-                {
-                    inZoneNameNew += "_" + inZoneNamePart;
-                }
-                else
-                {
-                    if (!inZoneNameNew.Equals(""))
-                    {
-                        inZoneNameNew += "-";
-                    }
-
-                    inZoneNameNew += inZoneNamePart;
-                }
-            }
+            string inZoneNameNew = Validators.ChangeNameAccordingToRules(inZone.Name);
 
             if (!inZone.Name.Equals(inZoneNameNew))
             {

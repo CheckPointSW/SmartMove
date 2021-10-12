@@ -142,8 +142,13 @@ def addUserObjectToServer(client, apiCommand, payload, userObjectNamePostfix=1, 
             if not changeName:
                 break
             if isNameDuplicated(res_add_obj):
-                payload['name'] = userObjectNameInitial + '_' + str(userObjectNamePostfix)
-                userObjectNamePostfix += 1
+                if (apiCommand == 'add-time' or apiCommand == 'add-time-group') and (len(str(userObjectNamePostfix)) + len(userObjectNameInitial) + 1) > 11:
+                    #if we have time object need to fill name with condition 11 symbols as max length
+                    payload['name'] = userObjectNameInitial[:-(len(str(userObjectNamePostfix))+1)] + '_' + str(userObjectNamePostfix)
+                    userObjectNamePostfix += 1
+                else:
+                    payload['name'] = userObjectNameInitial + '_' + str(userObjectNamePostfix)
+                    userObjectNamePostfix += 1
             else:
                 break
         else:
