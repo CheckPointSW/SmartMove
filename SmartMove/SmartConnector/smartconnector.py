@@ -197,7 +197,8 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                                 isFinished = True
                                 break
                             for serverObject in res_get_obj_with_ip.data:
-                                mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
+                                # if more then one network in res_get_obj_with_ip, map to the one that matches subnet
+                                mergedObjectsNamesMap[userObjectNameInitial] = next((x['name'] for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet']))
                                 if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (
                                         isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
                                     break
