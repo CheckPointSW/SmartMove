@@ -22,3 +22,14 @@ https://supportcenter.checkpoint.com/supportcenter/portal?action=portlets.DCFile
 
 ## Development Environment
 The tool is developed using Microsoft C# language and .Net framework version 4.5 (WPF application). The project solution file is configured for Microsoft Visual Studio 2012 and above.
+
+
+## 💧 Community
+Join the welcoming community of Check Point SmartMove developers on CheckMATES: https://community.checkpoint.com/t5/SmartMove/bd-p/smartmove
+
+## 🚀 Contributing
+To contribute a feature or idea to SmartMove, create an post explaining your idea or bring it up on CheckMATES (https://community.checkpoint.com/t5/SmartMove/bd-p/smartmove)
+
+If you find a bug, please create an post and notify us on CheckMATES : https://community.checkpoint.com/t5/SmartMove/bd-p/smartmove 
+
+If you find a security vulnerability, please notify us as soon as possible: https://www.checkpoint.com/security-issue/
