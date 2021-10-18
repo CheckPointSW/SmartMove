@@ -90,6 +90,7 @@ namespace CheckPointObjects
 
         protected static string GetSafeName(string name)
         {
+            name = Validators.ChangeNameAccordingToRules(name);
             return Regex.Replace(name, NameValidityRegex, "_");
         }
 

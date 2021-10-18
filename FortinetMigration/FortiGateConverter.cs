@@ -33,6 +33,8 @@ namespace FortiGateMigration
         private List<string> _errorsList = new List<string>(); //storing conversion errors for config or each VDOM
         private List<string> _warningsList = new List<string>(); //storing conversion warnings for config or each VDOM
 
+        private HashSet<string> _skippedNames = new HashSet<string>(); //if objects was skipped by error of validation here need to be placed his name
+
         private Dictionary<string, List<CheckPointObject>> _localMapperFgCp = new Dictionary<string, List<CheckPointObject>>(); //storing map of FG names to CheckPoint objects
 
         private Dictionary<string, List<CheckPoint_Host>> _interfacesMapperFgCp = new Dictionary<string, List<CheckPoint_Host>>(); //storing information about interfaces
@@ -942,6 +944,9 @@ namespace FortiGateMigration
             //if it is w/o VDOM then report will be in the same folder as config file
             ChangeTargetFolder(targetFolderNew, targetFileNameNew);
 
+            //Validate parsing
+            _errorsList.AddRange(ValidateConversion(fgCommandsList));
+
             if (!OptimizeConf)
             {
                 foreach (string fgInterface in _interfacesMapperFgCp.Keys)
@@ -1049,8 +1054,44 @@ namespace FortiGateMigration
                 }
             }
 
-            if (!OptimizeConf) //adding objects if Optimized configuration is not required
+            HashSet<string> cpUsedFirewallObjectNamesList = new HashSet<string>(); //set of names of used firewall objects
+            HashSet<string> usedObjInFirewall = CreateUsedInPoliciesObjects(fgCommandsList);
+            foreach (string key in _localMapperFgCp.Keys)
             {
+                if (key.StartsWith(FG_PREFIX_KEY_user_group)) //already added because Access_Roles are added always
+                {
+                    continue;
+                }
+
+                List<CheckPointObject> cpObjectsList = _localMapperFgCp[key];
+                foreach (CheckPointObject cpObject in cpObjectsList)
+                {
+                    if (!OptimizeConf) //adding objects if Optimized configuration is not required
+                        AddCheckPointObject(cpObject);
+                    else               //if optimized mode is enabled
+                    {
+                        foreach (string objectName in usedObjInFirewall)
+                        {
+                            if (cpObject.Name.Contains(objectName))
+                            {
+                                if (cpObject.GetType() == typeof(CheckPoint_NetworkGroup))
+                                {
+                                    CheckPoint_NetworkGroup networkGroup = (CheckPoint_NetworkGroup)cpObject;
+                                    foreach (string firewallObject in networkGroup.Members)
+                                    {
+                                        if (!_skippedNames.Contains(firewallObject))
+                                            cpUsedFirewallObjectNamesList.Add(firewallObject);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            //add domains opt
+            if (OptimizeConf)
+            { //adding objects if Optimized configuration is required
                 foreach (string key in _localMapperFgCp.Keys)
                 {
                     if (key.StartsWith(FG_PREFIX_KEY_user_group)) //already added because Access_Roles are added always
@@ -1061,7 +1102,12 @@ namespace FortiGateMigration
                     List<CheckPointObject> cpObjectsList = _localMapperFgCp[key];
                     foreach (CheckPointObject cpObject in cpObjectsList)
                     {
-                        AddCheckPointObject(cpObject);
+                        foreach (string firewallObjectName in cpUsedFirewallObjectNamesList)
+                        {
+                            string firewallObjectCorrectName = firewallObjectName.StartsWith(".") ? firewallObjectName.Substring(1) : firewallObjectName;
+                            if (key.Replace(" ", "_").Contains(firewallObjectCorrectName.Replace(" ", "_")))
+                                AddCheckPointObject(cpObject);
+                        }
                     }
                 }
             }
@@ -1113,12 +1159,12 @@ namespace FortiGateMigration
             {
                 FgCommand_Edit fgCommandEdit = (FgCommand_Edit)fgCommandE;
 
-                FgStaticRoute fgStaticRoute = new FgStaticRoute();
-
-                fgStaticRoute.Name = fgCommandEdit.Table.Trim('"').Trim();
-
-                fgStaticRoute.Network = "0.0.0.0";
-                fgStaticRoute.Mask = "255.255.255.255";
+                FgStaticRoute fgStaticRoute = new FgStaticRoute(
+                    name: fgCommandEdit.Table.Trim('"').Trim(), 
+                    network: "0.0.0.0", 
+                    mask: "255.255.255.255", 
+                    gateway: null, 
+                    device: null);
 
                 foreach (FgCommand fgCommandS in fgCommandEdit.SubCommandsList)
                 {
@@ -1149,18 +1195,21 @@ namespace FortiGateMigration
 
                 List<FgStaticRoute> routesList = null;
 
-                if (_localFgRoutesDict.ContainsKey(fgStaticRoute.Device))
+                if (fgStaticRoute.Device != null)
                 {
-                    routesList = _localFgRoutesDict[fgStaticRoute.Device];
-                }
-                else
-                {
-                    routesList = new List<FgStaticRoute>();
-                }
+                    if (_localFgRoutesDict.ContainsKey(fgStaticRoute.Device))
+                    {
+                        routesList = _localFgRoutesDict[fgStaticRoute.Device];
+                    }
+                    else
+                    {
+                        routesList = new List<FgStaticRoute>();
+                    }
 
-                routesList.Add(fgStaticRoute);
+                    routesList.Add(fgStaticRoute);
 
-                _localFgRoutesDict[fgStaticRoute.Device] = routesList;
+                    _localFgRoutesDict[fgStaticRoute.Device] = routesList;
+                }
             }
         }
 
@@ -1462,7 +1511,7 @@ namespace FortiGateMigration
             else
             {
                 CheckPoint_TcpService cpTcpService = new CheckPoint_TcpService();
-                cpTcpService.Name = GetSafeName(nameEdit);
+                cpTcpService.Name = GetSafeName(nameEdit) + "-" + dest.ToString() + "-tcp";
                 cpTcpService.Port = dest;
                 if (!src.Equals(""))
                 {
@@ -1512,7 +1561,7 @@ namespace FortiGateMigration
             else
             {
                 CheckPoint_UdpService cpUdpService = new CheckPoint_UdpService();
-                cpUdpService.Name = GetSafeName(nameEdit);
+                cpUdpService.Name = GetSafeName(nameEdit) + "-" + dest.ToString() + "-udp";
                 cpUdpService.Port = dest;
                 if (!src.Equals(""))
                 {
@@ -2022,12 +2071,12 @@ namespace FortiGateMigration
                         }
                     }
 
-                    if (!cpRange.RangeFrom.Equals("") && !cpRange.RangeTo.Equals(""))
+                    if (!string.IsNullOrEmpty(cpRange.RangeFrom) && !string.IsNullOrEmpty(cpRange.RangeTo))
                     {
                         AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_ippool + fgCommandEdit.Table, cpRange);
                     }
 
-                    if (!cpRangeSrc.RangeFrom.Equals("") && !cpRangeSrc.RangeTo.Equals(""))
+                    if (!string.IsNullOrEmpty(cpRangeSrc.RangeFrom) && !string.IsNullOrEmpty(cpRangeSrc.RangeTo))
                     {
                         //AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_ippool_source + fgCommandEdit.Table, cpRangeSrc);
                         AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_ippool + fgCommandEdit.Table, cpRangeSrc);
@@ -2297,7 +2346,16 @@ namespace FortiGateMigration
 
             cpRange.Comments = comment;
 
-            return cpRange;
+            if (!string.IsNullOrEmpty(cpRange.RangeFrom) && !string.IsNullOrEmpty(cpRange.RangeTo))
+            {
+                return cpRange;
+            }
+            else
+            {
+                _warningsList.Add(cpRange.Name + " network range can not been converted becuase it contains wrong start ot end points values");
+                _skippedNames.Add(cpRange.Name);
+                return null;
+            }
         }
 
         public CheckPointObject Add_Subnet(FgCommand_Edit fgCommandEdit)
@@ -2390,7 +2448,15 @@ namespace FortiGateMigration
                                     cpRange.RangeFrom = addressesArray[0];
                                     cpRange.RangeTo = addressesArray[1];
 
-                                    AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_vip_extip + fgCommandEdit.Table, cpRange);
+                                    if (!string.IsNullOrEmpty(cpRange.RangeFrom) && !string.IsNullOrEmpty(cpRange.RangeTo))
+                                    {
+                                        AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_vip_extip + fgCommandEdit.Table, cpRange);
+                                    }
+                                    else
+                                    {
+                                        _errorsList.Add(cpRange.Name + " network range can not been converted becuase it contains wrong start ot end points values");
+                                        _skippedNames.Add(cpRange.Name);
+                                    }
                                 }
                             }
 
@@ -2418,7 +2484,15 @@ namespace FortiGateMigration
                                     cpRange.RangeFrom = addressesArray[0];
                                     cpRange.RangeTo = addressesArray[1];
 
-                                    AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_vip_mappedip + fgCommandEdit.Table, cpRange);
+                                    if (!string.IsNullOrEmpty(cpRange.RangeFrom) && !string.IsNullOrEmpty(cpRange.RangeTo))
+                                    {
+                                        AddCpObjectToLocalMapper(FG_PREFIX_KEY_firewall_vip_mappedip + fgCommandEdit.Table, cpRange);
+                                    }
+                                    else
+                                    {
+                                        _errorsList.Add(cpRange.Name + " network range can not been converted becuase it contains wrong start ot end points values");
+                                        _skippedNames.Add(cpRange.Name);
+                                    }
                                 }
                             }
 
@@ -4522,77 +4596,7 @@ namespace FortiGateMigration
         {
             string retMessage = null;
 
-            string inZoneNameNew = "";
-
-            string[] inZoneNameParts = inZone.Name.Split('-').ToArray();
-
-            string[] reservedWords = new string[]
-            {
-                "all", "All", "and", "any", "Any",
-                "apr", "Apr", "april", "April", "aug", "Aug", "august", "August",
-                "black", "blackboxs", "blue", "broadcasts", "call", "comment",
-                "conn", "date", "day", "debug", "dec", "Dec", "december", "December",
-                "deffunc", "define", "delete", "delstate", "direction", "do", "domains",
-                "drop", "dst", "dynamic", "else", "expcall", "expires", "export", "fcall",
-                "feb", "Feb", "february", "February", "firebrick", "foreground", "forest",
-                "format", "fri", "Fri", "friday", "Friday", "from", "fw1", "FW1", "fwline",
-                "fwrule", "gateways", "get", "getstate", "gold", "gray", "green", "hashsize",
-                "hold", "host", "hosts", "if", "ifaddr", "ifid", "implies", "in", "inbound",
-                "instate", "interface", "interfaces", "ipsecdata", "ipsecmethods", "is",
-                "jan", "Jan", "january", "January", "jul", "Jul", "july", "July", "jun",
-                "Jun", "june", "June", "kbuf", "keep", "limit", "local", "localhost", "log",
-                "LOG", "logics", "magenta", "mar", "Mar", "march", "March", "may", "May",
-                "mday", "medium", "modify", "mon", "Mon", "monday", "Monday", "month",
-                "mortrap", "navy", "netof", "nets", "nexpires", "not", "nov", "Nov",
-                "november", "November", "oct", "Oct", "october", "October", "or",
-                "orange", "origdport", "origdst", "origsport", "origsrc", "other",
-                "outbound", "packet", "packetid", "packetlen", "pass", "r_arg",
-                "r_call_counter", "r_cdir", "r_cflags", "r_chandler", "r_client_community",
-                "r_client_ifs_grp", "r_community_left", "r_connarg", "r_crule", "r_ctimeout",
-                "r_ctype", "r_curr_feature_id", "r_data_offset", "r_dtmatch", "r_dtmflags",
-                "r_entry", "r_g_offset", "r_ipv6", "r_mapped_ip", "r_mflags", "r_mhandler",
-                "r_mtimeout", "r_oldcdir", "r_pflags", "r_profile_id", "r_ro_client_community",
-                "r_ro_dst_sr", "r_ro_server_community", "r_ro_src_sr", "r_scvres",
-                "r_server_community", "r_server_ifs_grp", "r_service_id", "r_simple_hdrlen",
-                "r_spii_ret", "r_spii_tcpseq", "r_spii_uuid1", "r_spii_uuid2", "r_spii_uuid3",
-                "r_spii_uuid4", "r_str_dport", "r_str_dst", "r_str_ipp", "r_str_sport",
-                "r_str_src", "r_user", "record", "red", "refresh", "reject", "routers",
-                "sat", "Sat", "saturday", "Saturday", "second", "sep", "Sep", "september",
-                "September", "set", "setstate", "skipme", "skippeer", "sr", "src", "static",
-                "sun", "Sun", "sunday", "Sunday", "switchs", "sync", "targets", "thu", "Thu",
-                "thursday", "Thursday", "to", "tod", "tue", "Tue", "tuesday", "Tuesday", "ufp",
-                "vanish", "vars", "wasskipped", "wed", "Wed", "wednesday", "Wednesday",
-                "while", "xlatedport", "xlatedst", "xlatemethod", "xlatesport", "xlatesrc",
-                "xor", "year", "zero", "zero_ip", "mon", "Mon", "monday", "Monday", "tue",
-                "Tue", "tuesday", "Tuesday", "wed", "Wed", "wednesday", "Wednesday", "thu",
-                "Thu", "thursday", "Thursday", "fri", "Fri", "friday", "Friday", "sat", "Sat",
-                "saturday", "Saturday", "sun", "Sun", "sunday", "Sunday", "jan", "Jan",
-                "january", "January", "feb", "Feb", "february", "February", "mar", "Mar",
-                "march", "March", "apr", "Apr", "april", "April", "may", "May", "jun", "Jun",
-                "june", "June", "jul", "Jul", "july", "July", "aug", "Aug", "august", "August",
-                "sep", "Sep", "september", "September", "oct", "Oct", "october", "October",
-                "nov", "Nov", "november", "November", "dec", "Dec", "december", "December",
-                "date", "day", "month", "year", "black", "blue", "cyan", "dark", "firebrick",
-                "foreground", "forest", "gold", "gray", "green", "magenta", "medium", "navy",
-                "orange", "red", "sienna", "yellow", "dark", "light", "medium"
-            };
-
-            foreach (string inZoneNamePart in inZoneNameParts)
-            {
-                if (reservedWords.Contains(inZoneNamePart))
-                {
-                    inZoneNameNew += "_" + inZoneNamePart;
-                }
-                else
-                {
-                    if (!inZoneNameNew.Equals(""))
-                    {
-                        inZoneNameNew += "-";
-                    }
-
-                    inZoneNameNew += inZoneNamePart;
-                }
-            }
+            string inZoneNameNew = Validators.ChangeNameAccordingToRules(inZone.Name);
 
             if (!inZone.Name.Equals(inZoneNameNew))
             {
@@ -4698,34 +4702,38 @@ namespace FortiGateMigration
 
             string cpObjectName = cpObject.Name;
 
-            while (isNameExist)
+            if (!string.IsNullOrEmpty(cpObjectName))
             {
-                isNameExist = false;
-
-                foreach (CheckPointObject cpObj in cpObjectsList)
+                while (isNameExist)
                 {
-                    if (cpObj.Name.Trim().ToLower().Equals(cpObjectName.Trim().ToLower()))
+                    isNameExist = false;
+
+                    foreach (CheckPointObject cpObj in cpObjectsList)
                     {
-                        isNameExist = true;
+                        if (cpObj.Name.Trim().ToLower().Equals(cpObjectName.Trim().ToLower()))
+                        {
+                            isNameExist = true;
 
-                        zIndex += 1;
+                            zIndex += 1;
 
-                        cpObjectName = cpObject.Name + "_" + zIndex;
+                            cpObjectName = cpObject.Name + "_" + zIndex;
 
-                        break;
+                            break;
+                        }
                     }
                 }
+
+
+                if (!cpObject.Name.Equals(cpObjectName))
+                {
+                    _warningsList.Add(cpObject.Name + " object was renamed to " + cpObjectName + " for solving duplicate names issue.");
+                    cpObject.Name = cpObjectName;
+                }
+
+                cpObjectsList.Add(cpObject);
+
+                _localMapperFgCp[fgObjectName] = cpObjectsList;
             }
-
-            if (!cpObject.Name.Equals(cpObjectName))
-            {
-                _warningsList.Add(cpObject.Name + " object was renamed to " + cpObjectName + " for solving duplicate names issue.");
-                cpObject.Name = cpObjectName;
-            }
-
-            cpObjectsList.Add(cpObject);
-
-            _localMapperFgCp[fgObjectName] = cpObjectsList;
         }
 
         #endregion
@@ -4734,6 +4742,7 @@ namespace FortiGateMigration
         {
             if (name != null && !name.Trim().Equals(""))
             {
+                name = Validators.ChangeNameAccordingToRules(name);
                 return Regex.Replace(name, @"[^A-Za-z0-9_.-]", "_");
             }
             else
@@ -4768,6 +4777,176 @@ namespace FortiGateMigration
         {
             return Vendor.FortiGate.ToString();
         }
+
+        /// <summary>
+        /// Generate a list of firewall objects names whitch was used in politycs
+        /// </summary>
+        /// <param name="fgCommandsList">parsed config file</param>
+        /// <returns>set of names</returns>
+        public HashSet<string> CreateUsedInPoliciesObjects(List<FgCommand> fgCommandsList)
+        {
+            FgCommand_Config firewall_policy_search = null;
+            HashSet<string> UsedObjInFirewall = new HashSet<string>();      //used objects in policies
+            foreach (FgCommand fgCommand in fgCommandsList)
+            {
+                if (fgCommand.GetType() == typeof(FgCommand_Config))
+                {
+                    FgCommand_Config fgCommandConfig = (FgCommand_Config)fgCommand;
+
+                    if (fgCommandConfig.ObjectName.Equals("firewall policy"))
+                    {
+                        firewall_policy_search = fgCommandConfig;
+                        break;
+                    }
+
+                }
+            }
+            if (firewall_policy_search != null)
+            {
+                foreach (FgCommand_Edit subCommand in firewall_policy_search.SubCommandsList)
+                {
+                    foreach (FgCommand subCommand_addr in subCommand.SubCommandsList)
+                    {
+                        if (subCommand_addr.GetType() == typeof(FgCommand_Set))
+                        {
+                            var subCommand_addr_set = (FgCommand_Set)subCommand_addr;
+                            if (subCommand_addr_set.Field.Equals("dstaddr") ||
+                                subCommand_addr_set.Field.Equals("srcaddr") ||
+                                subCommand_addr_set.Field.Equals("srcintf") ||
+                                subCommand_addr_set.Field.Equals("dstintf"))
+                            {
+                                List<string> objects = subCommand_addr_set.Value.Split(' ').ToList();
+                                foreach (string obj in objects)
+                                    UsedObjInFirewall.Add(obj.Replace('"', ' ').Trim());
+                            }
+                        }
+                    }
+                }
+                UsedObjInFirewall.Remove("all");
+            }
+            return UsedObjInFirewall;
+        }
+
+        /// <summary>
+        /// Validate objects (domains, hosts, members) for any conflicts
+        /// </summary>
+        /// <param name="fgCommandsList">parsed elements</param>
+        /// <returns>List of validation problems. If no problems return list will empty</returns>
+        private HashSet<string> ValidateConversion(List<FgCommand> fgCommandsList)
+        {
+            HashSet<string> output = new HashSet<string>();
+            Dictionary<string, string> portsTcp = new Dictionary<string, string>();       //list of used ports for TCP <port, service>
+            Dictionary<string, string> portsUdp = new Dictionary<string, string>();       //list of used ports for UDP <port, service>
+            HashSet<string> groupNames = new HashSet<string>();                     //set of groups names for check duplicates 
+
+            foreach (FgCommand parsedElement in fgCommandsList)
+            {
+                //check ports TCP/UDP
+                if (parsedElement.GetType() == typeof(FgCommand_Config))
+                {
+                    FgCommand_Config parsedElementConfig = (FgCommand_Config)parsedElement;
+                    if (parsedElementConfig.ObjectName.Contains("firewall service custom"))
+                    {
+                        foreach (FgCommand_Edit parsedElementService in parsedElementConfig.SubCommandsList)
+                        {
+                            foreach (FgCommand parsedElementServiceUntypedSet in parsedElementService.SubCommandsList)
+                            {
+                                FgCommand_Set parsedElementServiceSet;
+                                if (parsedElementServiceUntypedSet.GetType() == typeof(FgCommand_Set))
+                                    parsedElementServiceSet = (FgCommand_Set)parsedElementServiceUntypedSet;
+                                else
+                                    continue;
+                                //TCP port
+                                if (parsedElementServiceSet.Field.Equals("tcp-portrange"))
+                                {
+                                    string[] ports = parsedElementServiceSet.Value.Split(' ');
+                                    foreach (string port in ports)
+                                    {
+                                        bool isFound;
+                                        string cpServiceName = _cpObjects.GetKnownServiceName("TCP_" + port, out isFound);
+
+                                        if (isFound)
+                                        {
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            if (portsTcp.ContainsKey(port))
+                                            {
+                                                output.Add($"Conversion validation error: a TCP port {port} already used by service {portsTcp[port]}, but service {parsedElementService.Table} trying to use it");
+                                            }
+                                            else
+                                            {
+                                                portsTcp.Add(port, parsedElementService.Table);
+                                            }
+                                        }
+                                    }
+
+                                }
+                                //UDP
+                                if (parsedElementServiceSet.Field.Equals("udp-portrange"))
+                                {
+                                    string[] ports = parsedElementServiceSet.Value.Split(' ');
+                                    foreach (string port in ports)
+                                    {
+                                        bool isFound;
+                                        string cpServiceName = _cpObjects.GetKnownServiceName("UDP_" + port, out isFound);
+
+                                        if (isFound)
+                                        {
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            if (portsUdp.ContainsKey(port))
+                                            {
+                                                output.Add($"Conversion validation error: a UDP port {port} already used by service {portsUdp[port]}, but service {parsedElementService.Table} trying to use it");
+                                            }
+                                            else
+                                            {
+                                                portsUdp.Add(port, parsedElementService.Table);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    //check group duplicate members
+                    else if (parsedElementConfig.ObjectName.Contains("firewall addrgrp"))
+                    {
+                        foreach (FgCommand_Edit parsedElementGroup in parsedElementConfig.SubCommandsList)
+                        {
+                            foreach (FgCommand parsedElementGroupUntypedSet in parsedElementGroup.SubCommandsList)
+                            {
+                                FgCommand_Set parsedElementGroupSet;
+                                if (parsedElementGroupUntypedSet.GetType() == typeof(FgCommand_Set))
+                                    parsedElementGroupSet = (FgCommand_Set)parsedElementGroupUntypedSet;
+                                else
+                                    continue;
+                                if (parsedElementGroupSet.Field.Equals("member"))
+                                {
+                                    string[] members = parsedElementGroupSet.Value.Split(new string[] { @""" """ }, StringSplitOptions.None);
+                                    foreach (string member in members)
+                                    {
+                                        int count = 0;
+                                        foreach (string memberCheck in members)
+                                        {
+                                            if (memberCheck.Equals(member))
+                                                ++count;
+                                        }
+                                        if (count > 1)
+                                            output.Add($"At the group {parsedElementGroup.Table} found duplicates for member {member}");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return output;
+        }
     }
 
     public class FgInterface
@@ -4780,6 +4959,15 @@ namespace FortiGateMigration
 
     public class FgStaticRoute
     {
+        public FgStaticRoute() { }
+        public FgStaticRoute (string name, string network, string mask, string gateway, string device) : this()
+        {
+            Name = string.IsNullOrEmpty(name) ? string.Empty : name;
+            Network = string.IsNullOrEmpty(network) ? string.Empty : network;
+            Mask = string.IsNullOrEmpty(mask) ? string.Empty : mask;
+            Gateway = string.IsNullOrEmpty(gateway) ? string.Empty : gateway;
+            Device = string.IsNullOrEmpty(device) ? string.Empty : device;
+        }
         public string Name { get; set; }
         public string Network { get; set; }
         public string Mask { get; set; }
