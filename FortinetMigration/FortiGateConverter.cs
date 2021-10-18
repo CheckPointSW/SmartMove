@@ -4823,10 +4823,8 @@ namespace FortiGateMigration
                     }
                 }
                 UsedObjInFirewall.Remove("all");
-                return UsedObjInFirewall;
             }
-            else
-                return null;
+            return UsedObjInFirewall;
         }
 
         /// <summary>
