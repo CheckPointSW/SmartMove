@@ -203,8 +203,6 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                             printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
                                 userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
                             isFinished = True
-                            break
-                            
                     else:
                         isIgnoreWarnings = True
                 else:
