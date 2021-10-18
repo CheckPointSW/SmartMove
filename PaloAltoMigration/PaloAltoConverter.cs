@@ -3618,6 +3618,7 @@ namespace PaloAltoMigration
         {
             if (name != null && !name.Trim().Equals(""))
             {
+                name = Validators.ChangeNameAccordingToRules(name);
                 return Regex.Replace(name, RE_NAME_UNSAFE, "_");
             }
             else

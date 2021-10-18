@@ -142,8 +142,13 @@ def addUserObjectToServer(client, apiCommand, payload, userObjectNamePostfix=1, 
             if not changeName:
                 break
             if isNameDuplicated(res_add_obj):
-                payload['name'] = userObjectNameInitial + '_' + str(userObjectNamePostfix)
-                userObjectNamePostfix += 1
+                if (apiCommand == 'add-time' or apiCommand == 'add-time-group') and (len(str(userObjectNamePostfix)) + len(userObjectNameInitial) + 1) > 11:
+                    #if we have time object need to fill name with condition 11 symbols as max length
+                    payload['name'] = userObjectNameInitial[:-(len(str(userObjectNamePostfix))+1)] + '_' + str(userObjectNamePostfix)
+                    userObjectNamePostfix += 1
+                else:
+                    payload['name'] = userObjectNameInitial + '_' + str(userObjectNamePostfix)
+                    userObjectNamePostfix += 1
             else:
                 break
         else:
@@ -181,29 +186,16 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
                     if len(res_get_obj_with_ip.data) > 0:
-                        if userObjectType == "network" and next((x for x in res_get_obj_with_ip.data if x[
-                                                                                                            'subnet4' if is_valid_ipv4(
-                                                                                                                    payload[
-                                                                                                                        'subnet']) else 'subnet6'] ==
-                                                                                                        payload[
-                                                                                                            'subnet']),
-                                                                None) is None:
+                        if userObjectType == "network" and next((x for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet']), None) is None:
                             isIgnoreWarnings = True
                         else:
-                            if userObjectType == "host":
+                            if userObjectType == "host" or userObjectType == "network":
                                 mergedObjectsNamesMap[userObjectNameInitial] = res_get_obj_with_ip.data[0]['name']
                                 printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
                                     userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
                                 isFinished = True
                             break
-                            for serverObject in res_get_obj_with_ip.data:
-                                mergedObjectsNamesMap[userObjectNameInitial] = serverObject['name']
-                                if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (
-                                        isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
-                                    break
-                            printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
-                                userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
-                            isFinished = True
+                            
                     else:
                         isIgnoreWarnings = True
                 else:
@@ -486,7 +478,9 @@ def processRanges(client, userRanges):
     for userRange in userRanges:
         printStatus(None, "processing range: " + userRange['Name'])
         userRangeNameInitial = userRange['Name']
-        key = userRange['RangeFrom'] + '_' + userRange['RangeTo']
+        rngFrom = '' if userRange['RangeFrom'] is None else userRange['RangeFrom']
+        rngTo =  '' if userRange['RangeTo'] is None else userRange['RangeTo']
+        key = rngFrom + '_' + rngTo
         if key in serverRangesMap:
             printStatus(None, None,
                         "More than one range has the same ip: '" + userRange['RangeFrom'] + "' and '" + userRange[

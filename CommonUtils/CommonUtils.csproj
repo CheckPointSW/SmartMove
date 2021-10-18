@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants.cs" />
     <Compile Include="ConversionIncident.cs" />
     <Compile Include="IPRange.cs" />
     <Compile Include="JsonReport.cs" />
