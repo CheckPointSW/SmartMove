@@ -194,8 +194,16 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                                 printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
                                     userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
                                 isFinished = True
-                            break
-                            
+                                break
+                            for serverObject in res_get_obj_with_ip.data:
+                                # if more then one network in res_get_obj_with_ip, map to the one that matches subnet
+                                mergedObjectsNamesMap[userObjectNameInitial] = next((x['name'] for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet']))
+                                if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (
+                                        isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
+                                    break
+                            printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
+                                userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
+                            isFinished = True
                     else:
                         isIgnoreWarnings = True
                 else:
@@ -231,6 +239,8 @@ def processGroupWithMembers(client, apiCommand, userGroup, mergedObjectsMap, mer
     if isNeedSplitted:
         for i, userGroupMember in enumerate(userGroup['Members']):
             print(userGroupMember)
+            if userGroupMember in mergedObjectsMap:
+                userGroupMember = mergedObjectsMap[userGroupMember]
             res_add_obj = client.api_call(
                 apiSetCommand,
                 {
