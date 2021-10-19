@@ -574,8 +574,9 @@ def processNetGroups(client, userNetworkGroups, mergedNetworkObjectsMap):
             printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is added as " + addedNetworkGroup['name'])
             publishCounter = publishUpdate(publishCounter, True)
             userNetworkGroup["Name"] = addedNetworkGroup['name']
-            processGroupWithMembers(client, "add-group", userNetworkGroup, mergedNetworkObjectsMap,
-                                    mergedGroupsNamesDict, True)
+            if userNetworkGroup['TypeName'] != 'CheckPoint_GroupWithExclusion':
+                processGroupWithMembers(client, "add-group", userNetworkGroup, mergedNetworkObjectsMap,
+                                        mergedGroupsNamesDict, True)
         else:
             printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is not added.")
         printStatus(None, "")
