@@ -5,8 +5,7 @@ At the moment, the tool parses Cisco ASA, FirePower with ASA syntax, Juniper Jun
 
 The tool generates bash scripts by utilizing Check Point Management API's command line interface, to migrate the converted policy into a R80.10 Management (or Multi-Domain) server.
 
-For SmartMove tool release notes and latest updates, please refer to Check Point sk115416 at:
-[sk115416](https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewsolutiondetails=&solutionid=sk115416)
+For SmartMove tool release notes and latest updates, please refer to Check Point [sk115416](https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewsolutiondetails=&solutionid=sk115416)
 
 
 ## Smart Connector and PaloAlto Panorama Instructions
