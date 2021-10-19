@@ -32,6 +32,7 @@ using NetScreenMigration;
 using FortiGateMigration;
 using PaloAltoMigration;
 using PanoramaPaloAltoMigration;
+using System.ComponentModel;
 
 namespace SmartMove
 {
@@ -66,9 +67,17 @@ namespace SmartMove
             _supportedVendors.SelectedVendor = Vendor.CiscoASA;   // this is the default
 
             InitializeComponent();
-            ShowDisclaimer();
             LoadContactInfo();
             HandleCommandLineArgs();
+        }
+
+        void OnLoad(object sender, RoutedEventArgs e)
+        {
+            this.Owner.Hide();
+        }
+        void OnClose(object sender, CancelEventArgs e)
+        {
+            this.Owner.Show();
         }
 
         #endregion
@@ -134,6 +143,18 @@ namespace SmartMove
 
         public static readonly DependencyProperty ConvertUserConfigurationProperty =
             DependencyProperty.Register("ConvertUserConfiguration", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+
+        #endregion
+
+        #region ExportManagmentReport
+        public bool ExportManagmentReport
+        {
+            get { return (bool)GetValue(ExportManagmentReportProperty); }
+            set { SetValue(ExportManagmentReportProperty, value); }
+        }
+
+        public static readonly DependencyProperty ExportManagmentReportProperty =
+            DependencyProperty.Register("ExportManagmentReport", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
 
         #endregion
 
@@ -492,7 +513,7 @@ namespace SmartMove
             try
             {
                 string ciscoFile = ConfigFilePath.Text;
-		switch (_supportedVendors.SelectedVendor)
+		        switch (_supportedVendors.SelectedVendor)
                 {
                     case Vendor.PaloAltoPanorama:
                         PanoramaParser panParser = (PanoramaParser)vendorParser;                        
@@ -620,6 +641,7 @@ namespace SmartMove
                     fgConverter.OptimizeConf = SkipUnusedObjectsConversion;
                     fgConverter.ConvertUserConf = ConvertUserConfiguration;
                     fgConverter.LDAPAccoutUnit = ldapAccountUnit.Trim();
+                    fgConverter.CreateManagnetReport = ExportManagmentReport;
                     vendorConverter = fgConverter;
                     break;
                 case Vendor.PaloAlto:
@@ -634,6 +656,7 @@ namespace SmartMove
                     panoramaConverter.OptimizeConf = SkipUnusedObjectsConversion;
                     panoramaConverter.ConvertUserConf = ConvertUserConfiguration;
                     panoramaConverter.LDAPAccoutUnit = ldapAccountUnit.Trim();
+                    panoramaConverter.CreateManagnetReport = ExportManagmentReport;
                     vendorConverter = panoramaConverter;
                     break;
                 default:
@@ -672,7 +695,7 @@ namespace SmartMove
             vendorConverter.ExportPolicyPackagesAsHtml();
             if (ConvertNATConfiguration)
             {
-		ConvertedNatPolicyLink.MouseUp -= Link_OnClick;
+		        ConvertedNatPolicyLink.MouseUp -= Link_OnClick;
                 vendorConverter.ExportNatLayerAsHtml();
 
                 //check if the user asked for NAT policy and no rules found.
@@ -685,6 +708,10 @@ namespace SmartMove
                     ConvertedNatPolicyLink.Style = (Style)ConvertedNatPolicyLink.FindResource("HyperLinkStyle");
                     ConvertedNatPolicyLink.MouseUp += Link_OnClick;
                 }
+            }
+            if (ExportManagmentReport && (typeof(PanoramaConverter) != vendorConverter.GetType() && typeof(FortiGateConverter) != vendorConverter.GetType()))
+            {
+                vendorConverter.ExportManagmentReport();
             }
             UpdateProgress(100, "");
 
@@ -823,27 +850,7 @@ namespace SmartMove
             RulebaseOptimizedScriptLink.Tag = vendorConverter.PolicyOptimizedScriptFile;
         }
 
-        private void ShowDisclaimer()
-        {
-            // Display the disclaimer document only once per tool version.
-            string version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            if (!File.Exists(version))
-            {
-                var disclaimerWindow = new DisclaimerWindow();
-                var res = disclaimerWindow.ShowDialog();
-
-                if (res.HasValue && res.Value)
-                {
-                    // Create a flag file.
-                    var fsFlag = new FileStream(version, FileMode.CreateNew, FileAccess.Write);
-                    fsFlag.Close();
-                }
-                else
-                {
-                    Close();
-                }
-            }
-        }
+        
 
         private void LoadContactInfo()
         {

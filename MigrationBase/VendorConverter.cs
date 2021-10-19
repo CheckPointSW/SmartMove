@@ -43,6 +43,11 @@ namespace MigrationBase
         protected const string InvalidServiceNamePrefix = "service_";
         protected string GlobalRulesSubpolicyName = "Global Rules";
 
+        protected const string HtmlSeriosImageTagManagerReport = "<img style='width:14px;height:14px;' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAI9SURBVDhPlVQ7SytBGJ19GJMIJoWKJiAKKtpY2Fr4KEQEIT8gNlZWVtoKdhbWgpXYi6ASEhBErLSw08ZUETSJinY+iDPnni+7bG725goOp/heZ+bb2fONBUB5q1RSn5/Ksny35WKx66pUSsVingsUi5iZQVsbLIs7CSKRMJj1Uq6LoSFTKMip0FovLvqJvj4MDCAW890QurowMoL2dto6mcTTk8Lzsw52XVjA6yuurpBI+JEAc3OoVpHLobNTXPZSKCjz+Fij5Tia4Ja7uxrQ+/tiW5Yf7O3V5bJ+f9djY3SN4yAeN0dHivt9sxPbNgQT0ai5vjaAyWbFZdBxzOmpRDIZiVgWg0LO5ZThlkHbHiYm8PUl/Q8Oiru5KZe6vd1UE43i5EShUgmTidVVIRweYn5ejMtLueS/C3wy2/6XTJDJ9fGBhwf+m3D2p5OJ7m68vQl/ZSWcIupkm1brtbSkkkkxlpdVIlEPNS9qsXXbU1MwBhcX2NmRw/f2wgVB22FyTw9KJSoP4+Pi3t4KP5ttqvnvhR0cSPX6uu9OTqJWw8sLhocbNR7ZVCo1WlSSbYuY1tZEYfm8yIsRT2EbGxI8P9eu21AYRYJyWU725DU7K0qqVk0q5cvLi1NkZ2eS2try4jI8x8f1wYjU2+an8obu75HJNNoLMDqKmxvJ8i7pUtEcjMZIxuPo7wdnLSCE0NGBdFoGkx/CsZOR5LorYnqan+0X8SuCNyBAcKl8MPgY5PPk/f4ZchyVTsszpNQfFE0YhqTS/cMAAAAASUVORK5CYII='/>";
+        protected const string HtmlAttentionImageTagManagerReport = "<img style='width:14px;height:14px;' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAH2SURBVDhPlVRNaxRBEH3VPZvZ7CLBS/ASBJOczEHEk3j2PwnezEm8+x+8+Av0LIKKiORmRIwiKImbnd3N7kyVr3pnP4ZdA3kUTVV1va6e6qoRMwNRHKP4ALsAxCCC5CSoIsCq2qRfNtC9g+4ujUT+8hQ/nyAfYnqQRQijFWO30ArgCXPwuFGOG4+w91hs8BVv99GegFkTDJlYidDB9YeQlp2+lupPg78BTDLc/RzQ/4iOOpNZk3h6JpZtHLy02y8s20e52HXhjTYV/feBOjQaos7FuPLSomVPjYomcxHA4ERBEC+J78pcpKIrKb7J4tXmTKYn0xnSR3B7WbwooiOxSkxdqY9YSLp9TV4H66EqYBPoeaNaS/gPmdE6RHkGll2L2rmCS8hAWaA6v3pmwsk9lH+ho9qzgku+ma9Nct9PuXJmr+gYxmeuHatYS/ZnQAv4/hzHh8iSbx2C+bNFY1fNJOlBY6a9d3b6ymLbzWaAUxCCdwynsNEA7BAT2ZL7R3hwgnjTzUZAuho0XTuwE5elEmEQ22vsMuU0AhQhtbANvuHNHjrjxkj6HAnCNjgG+lvqyZ4hBy5auHcUsLmDW89QbaGdoR2RR8kDV3CNvxB/SG7JTMIAhlXXsHOIzu7sNzQ8weATdMyZYAm5pBSOhslgaaF74CmBf99eGsdxpCp/AAAAAElFTkSuQmCC'/>";
+        protected const string HtmlGoodImageTagManagerReport = "<img style='width:14px;height:14px;' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAK9SURBVDhPfVRbSBRRGP7POePs7rjeWm1NQsyHUHMzMTQknwt8jJAgMkMq6AZSYTfBDMGCrF6UDCGjogSDLi/1IF0kghItWtQSSbc0rQ33MrPuzszpn3HDdW39+DjMmTn/f77/P98ZwjkHABy/BX+oXCc4SQxcKlCWa8umlOLUCP7w23146PpQwIORZqqEIAQ4AZeU01FyvCLLRQIRpezFwVExCIqZeRVgqK4C18Eu5ini8I4uOuH3jGtekAE0HfTExLzKfDonhdI6CKpTxD/mn6QacMYJ5YRBIlICFOS5itS8p5XNxVI2REIC0LCuUYIpsW4sxlS9khrXeXCmPm/ng6rWNvfdXs8rEFO4UTumxEKMNmEpKwk6Dspss6uua9vZ2rfNT6YHwJZhvDY7a3Q8MTjIPy+66ptc9bvenHs5NwSSM/Y84oJjj5mAPHu6aO+F4rqGwRt9k/1mJKpZAjXzYAwWrUHICwvz5guGavfnV7dtOXJn4nn7yD1Ijo9E/NuZq05mPb9p38mCGggHMMtWR9Gt8saJ4PTRwXawOpaLigKPwWxcOLA7p7Kl+MCVzYeqnWUkEuwuP8MIrX3X6tNCIFjNxscjalGwpHV86bs21ovTxsI9bWUNrrQNV0cfvp55D9Y1KwUvYqlhmmhv+nzbo/zanlVyqqBmSp695O5ZJRJBUQ56yHASk/yh+ZtfHy9+uDxy/8+Cjwm25W4ziN5AR5ojHlzUXjqI9kffB3yq3PKpu3P8GdgcHO1llhtLA2gtrlNCiEZQmUEQLGML3qr+hiZ3j5pkwzUxbltGDTdFx+cmZ2dyK1gMFSgqTOCjfxIkB1DBuIP/IQWRpoXZRvt6mi6mdJWecEZ0waIyUWMiZ5LIkvB5cRpHY1lWROssPZZpzYj+huYU77BvXNZU46IkBgq2MaEkNX+tzQEAfwH9x2jaNYCEugAAAABJRU5ErkJggg=='/>";
+
+
         protected const string HtmlErrorImageTagFormat = "<img style='width:12px;height:12px;margin-left:2px;' title='{0}' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACWElEQVR4nLWSzUtUYRSHn3fu3HvnzlxnxjGHFC0nXTioLQoNXLgSM4xqTAjaJEEtCly16B+ICtq5CltEuFVatGlRiyioIAvTMkMYCZ0cTcmx+brvvW+LQsnUVp3lc37nOXA48D9r5sSZK1N9/df3ymi7NWZ7Tt2IdSRvhaJW93m7xrg7N/N0p5zYCc51nz4Samt4E6sBX3aFxWXB0teNo+2PH05sz/q2g3RvytQqgqORxkpkpI5ysoN4lQ+hMfqqN2X+U8BGoS+arE1qAQPr8jWsi0No9QlqK0gWHdm3pyDTm7Kt5oYxK6qQBXeTO5pJ1T6baJU99iJ1zt5V4DnecKi9EZnPg9/Y5O7qMnJxgQOWIpddGd5RkDnen7A7Dw9q7nfkzEe89OyWeD5NcfItwc/vqfg0NfhA2Im/BKJQHPX7v+E8e4K7MI9y5daaoAWmiaMZtNRV4wvq9/8QZPTqs0bc18n6AkozEZEoKp/fnFe5NYRuUJIutqHRWhnuumeF++H3H2QPJpdCV7vi7uQHlN8Ex8PLfIFoLQKQ0xNo+5tQJRdVcglLwXh6Yf1cbi2iLfliQ8FLPQNqPQtSgQJvdQWtuY3wyDiBgQs4716j5tOgB0AqdA9s4TcPFcoln3EseccX11GrP0ABHlAuI6wKhN8A3Y8IRVDlMkqAUpCTkoQVoMmybvoVQhe2jlZlgQfKkeiBOrzpl5RHbiPsMDx/hF3fgCooMEEgEGWBJ9SvGyy3tCoVMzeU4yJdhafAKRVx0mk8XLx4LUozcaSLKz2U67GUL9on17LiJ2VA7hlrmrnUAAAAAElFTkSuQmCC'/>";
         protected const string HtmlAlertImageTagFormat = "<img style='width:14px;height:14px;vertical-align:top;margin-left:2px;' title='{0}' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAxlBMVEUAAAAuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEAAAD2nHdHAAAAQHRSTlMABwggleHkmSRl+PlqYe7tchv1xskijp6ak9fEwt376uf8A/MeHfoC0eLj2YPrEBGJEw7sGE7+VUzvUn/LzYIUAaow6gAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAACbSURBVBjTbU/XEoJADFywN+y9IGJXsBes/P9XmQ3jjA/uQ7Zc7pIDFIaJH8TiiTBMptJfn8mGilw+8gUaq8haoi9XRFUNs8aeugQNHjWBFrktQYeiC/TIfQkGFDYwJDsjwNUJ44nSdAbMVS2WSiu5sqbw/I3O3Uqws/jG3j8IuUcucnLY4kk5X6JVr0G0enD7fsa/P2zv+XrjLz5CLiCq6N/XOAAAAABJRU5ErkJggg=='/>";
         protected const string HtmlAlertImageTag = "<img style='vertical-align:top;' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAxlBMVEUAAAAuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEuXJEAAAD2nHdHAAAAQHRSTlMABwggleHkmSRl+PlqYe7tchv1xskijp6ak9fEwt376uf8A/MeHfoC0eLj2YPrEBGJEw7sGE7+VUzvUn/LzYIUAaow6gAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAACbSURBVBjTbU/XEoJADFywN+y9IGJXsBes/P9XmQ3jjA/uQ7Zc7pIDFIaJH8TiiTBMptJfn8mGilw+8gUaq8haoi9XRFUNs8aeugQNHjWBFrktQYeiC/TIfQkGFDYwJDsjwNUJ44nSdAbMVS2WSiu5sqbw/I3O3Uqws/jG3j8IuUcucnLY4kk5X6JVr0G0enD7fsa/P2zv+XrjLz5CLiCq6N/XOAAAAABJRU5ErkJggg=='/>";
@@ -104,7 +109,8 @@ namespace MigrationBase
         #endregion
 
         #region Properties
-
+        public int TotalRules { get; set; }
+        public float OptimizationPotential { get; set; }
         public string ObjectsScriptFile { get; set; }
         public string ObjectsHtmlFile { get; set; }
         public string PolicyScriptFile { get; set; }
@@ -113,6 +119,7 @@ namespace MigrationBase
         public string PolicyOptimizedHtmlFile { get; set; }
         public string NatHtmlFile { get; set; }
         public string VendorHtmlFile { get; set; }
+        public string VendorManagmentReportHtmlFile { get; set; }
         public string WarningsHtmlFile { get; set; }
         public string ErrorsHtmlFile { get; set; }
         public int ConversionIncidentCategoriesCount { get; set; }
@@ -126,6 +133,16 @@ namespace MigrationBase
             {
                 _calledFromConsole = value;
             }
+        }
+
+        public string GetOptPhraze(int percent)
+        {
+            if (percent == 0)
+            { return "Current policy is well defined, thus there is no significant policy improvement potential"; }
+            else if (percent < 16)
+            { return "Current policy could be improved after moving to Check Point security solutions"; }
+            else
+            { return "Current policy could be dramatically improved after moving to Check Point security solutions"; }
         }
 
         //console progressbar
@@ -173,6 +190,7 @@ namespace MigrationBase
 
             // HTML files
             VendorHtmlFile = _targetFolder + "\\" + _vendorFileName + ".html";
+            VendorManagmentReportHtmlFile = $"{_targetFolder}\\{_vendorFileName}_managment_report.html";
             WarningsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_warnings.html";
             ErrorsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_errors.html";
             ObjectsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_objects.html";
@@ -197,6 +215,7 @@ namespace MigrationBase
 
             // HTML files
             VendorHtmlFile = _targetFolder + "\\" + _vendorFileName + ".html";
+            VendorManagmentReportHtmlFile = $"{_targetFolder}\\{_vendorFileName}_managment_report.html";
             WarningsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_warnings.html";
             ErrorsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_errors.html";
             ObjectsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_objects.html";
@@ -235,14 +254,25 @@ namespace MigrationBase
         #region Abstract
 
         public abstract Dictionary<string, int> Convert(bool convertNat);
+        public abstract float Analyze();
         public abstract int RulesInConvertedPackage();
         public abstract int RulesInConvertedOptimizedPackage();
         public abstract int RulesInNatLayer();
         public abstract void ExportConfigurationAsHtml();
         public abstract void ExportPolicyPackagesAsHtml();
         protected abstract string GetVendorName();
+        public abstract void ExportManagmentReport();
 
         #endregion
+
+        public static string ChoosePict(float percent, float middle_limit, float hight_limit)
+        {
+            if (percent <= middle_limit)
+                return HtmlGoodImageTagManagerReport;
+            else if (percent < hight_limit)
+                return HtmlAttentionImageTagManagerReport;
+            return HtmlSeriosImageTagManagerReport;
+        }
 
         public void ExportNatLayerAsHtml()
         {

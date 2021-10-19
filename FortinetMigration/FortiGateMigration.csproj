@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FortiGateAnalizStatic.cs" />
     <Compile Include="FortiGateCommands.cs" />
     <Compile Include="FortiGateConverter.cs" />
     <Compile Include="FortiGateParser.cs" />

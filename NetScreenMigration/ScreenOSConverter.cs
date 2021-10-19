@@ -3539,6 +3539,10 @@ namespace NetScreenMigration
             OutputFormat = outputFormat;
             base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
+        public override float Analyze()
+        {
+            throw new NotImplementedException();
+        }
 
         public override Dictionary<string, int> Convert(bool convertNat = false)
         {
@@ -3662,6 +3666,73 @@ namespace NetScreenMigration
             return _cpNatRules.Count;
         }
 
+        public override void ExportManagmentReport()
+        {
+            ScreenOSKAnalizStatistic screenOSKAnalizStatistic = new ScreenOSKAnalizStatistic();
+            screenOSKAnalizStatistic.CalculateRules(new List<CheckPoint_Package> { _cpPackages[0] }, new List<CheckPoint_NAT_Rule>());
+            screenOSKAnalizStatistic.CalculateNetworks(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges);
+            screenOSKAnalizStatistic.CalculateServices(_cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
+
+            var potentialCount = this.RulesInConvertedPackage() - this.RulesInConvertedOptimizedPackage();
+            using (var file = new StreamWriter(VendorManagmentReportHtmlFile))
+            {
+                file.WriteLine("<html>");
+                file.WriteLine("<head>");
+                file.WriteLine("<style>");
+                file.WriteLine("  body { font-family: Arial; }");
+                file.WriteLine("  .report_table { border-collapse: separate;border-spacing: 0px; font-family: Lucida Console;}");
+                file.WriteLine("  td {padding: 5px; vertical-align: top}");
+                file.WriteLine("  .line_number {background: lightgray;}");
+                file.WriteLine("  .unhandeled {color: Fuchsia;}");
+                file.WriteLine("  .notimportant {color: Gray;}");
+                file.WriteLine("  .converterr {color: Red;}");
+                file.WriteLine("  .convertinfo {color: Blue;}");
+                file.WriteLine("  .err_title {color: Red;}");
+                file.WriteLine("  .info_title {color: Blue;}");
+                file.WriteLine("</style>");
+                file.WriteLine("</head>");
+
+                file.WriteLine("<body>");
+                file.WriteLine("<h2>ScreenOSK managment report file</h2>");
+                file.WriteLine("<h3>OBJECTS DATABASE</h3>");
+
+                file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
+                file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.TotalNetworkObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._totalNetworkObjectsCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.TotalNetworkObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.UnusedNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._unusedNetworkObjectsCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.UnusedNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(screenOSKAnalizStatistic.UnusedNetworkObjectsPercent > 0 ? "Consider deleting these objects." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.DuplicateNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._duplicateNetworkObjectsCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.DuplicateNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Network Groups</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.NestedNetworkGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._nestedNetworkGroupsCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.NestedNetworkGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine("</table>");
+
+                file.WriteLine("<h3>SERVICES DATABASE</h3>");
+                file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
+                file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.TotalServicesObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._totalServicesObjectsCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.TotalServicesObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.UnusedServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._unusedServicesObjectsCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.UnusedServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(screenOSKAnalizStatistic._unusedServicesObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.DuplicateServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._duplicateServicesObjectsCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.DuplicateServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Services Groups</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.NestedServicesGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._nestedServicesGroupsCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.NestedServicesGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine("</table>");
+
+                file.WriteLine("<h3>POLICY ANALYSIS</h3>");
+                file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
+                file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Rules</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.TotalServicesRulesPercent, 100, 100)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._totalServicesRulesCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.TotalServicesRulesPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Rules utilizing \"Any\"</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.RulesServicesutilizingServicesAnyPercent, 5, 15)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._rulesServicesutilizingServicesAnyCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.RulesServicesutilizingServicesAnyPercent.ToString("F")}%</td> <td style='font-size: 14px;'>- ANY in Source: {screenOSKAnalizStatistic._rulesServicesutilizingServicesAnySourceCount}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Destination: {screenOSKAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount} </td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Service: {screenOSKAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Disabled Rules</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.DisabledServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._disabledServicesRulesCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.DisabledServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(screenOSKAnalizStatistic._disabledServicesRulesCount > 0 ? "Check if rules are required." : "")}</tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unnamed Rules</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.UnnamedServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._unnamedServicesRulesCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.UnnamedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(screenOSKAnalizStatistic._unnamedServicesRulesCount > 0 ? "Naming rules helps log analysis." : "")}</tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Times Rules</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.TimesServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._timesServicesRulesCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.TimesServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Non Logging Rules</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.NonServicesLoggingServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._nonServicesLoggingServicesRulesCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.NonServicesLoggingServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'> {(screenOSKAnalizStatistic._nonServicesLoggingServicesRulesCount > 0 ? "Enable logging for these rules for better tracking and change management." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Stealth Rule</td> <td style='font-size: 14px;'>{(screenOSKAnalizStatistic._stealthServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._stealthServicesRuleCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.StealthServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(screenOSKAnalizStatistic._stealthServicesRuleCount > 0 ? "Found" : "Consider adding stealth rule near the top of the policy after necessary administrative rules denies all traffic to the <a href=\'https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewsolutiondetails=&solutionid=sk102812\'>firewall</a>")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Cleanup Rule</td> <td style='font-size: 14px;'>{(screenOSKAnalizStatistic._cleanupServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._cleanupServicesRuleCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.CleanupServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(screenOSKAnalizStatistic._cleanupServicesRuleCount > 0 ? "Found" : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Uncommented Rules</td> <td style='font-size: 14px;'>{ChoosePict(screenOSKAnalizStatistic.UncommentedServicesRulesPercent, 25, 100)}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic._uncommentedServicesRulesCount}</td> <td style='font-size: 14px;'>{screenOSKAnalizStatistic.UncommentedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(screenOSKAnalizStatistic._uncommentedServicesRulesCount > 0 ? "Comment rules for better tracking and change management compliance." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Optimization Potential</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? HtmlGoodImageTagManagerReport : HtmlAttentionImageTagManagerReport)}</td> <td style='font-size: 14px;'>{potentialCount}</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? 100 * potentialCount / this.RulesInConvertedPackage() : 0).ToString("F")}%</td> <td style='font-size: 14px;'>{GetOptPhraze(potentialCount > 0 ? 100 * potentialCount / this.RulesInConvertedPackage() : 0)}</td></tr>");
+                file.WriteLine("</table>");
+                file.WriteLine("</body>");
+                file.WriteLine("</html>");
+            }
+        }
         public override void ExportConfigurationAsHtml()
         {
             using (var file = new StreamWriter(VendorHtmlFile))
