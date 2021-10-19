@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SupportedVendors.cs" />
+    <Compile Include="VendorAnalizStatistic.cs" />
     <Compile Include="VendorConverter.cs" />
     <Compile Include="VendorDescriptionConverter.cs" />
     <Compile Include="VendorParser.cs" />

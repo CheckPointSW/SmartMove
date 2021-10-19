@@ -27,6 +27,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
+using CiscoMigration.CiscoMigration;
 
 namespace CiscoMigration
 {
@@ -4685,6 +4686,11 @@ namespace CiscoMigration
             base.Initialize(vendorParser, vendorFilePath, toolVersion, targetFolder, domainName, outputFormat);
         }
 
+        public override float Analyze()
+        {
+            throw new NotImplementedException();
+        }
+
         public override Dictionary<string, int> Convert(bool convertNat)
         {
             if (IsConsoleRunning)
@@ -4812,6 +4818,77 @@ namespace CiscoMigration
         {
             return _cpNatRules.Count;
         }
+
+        public override void ExportManagmentReport()
+        {
+            CiscoAnalizStatistic ciscoAnalizStatistic = new CiscoAnalizStatistic();
+            ciscoAnalizStatistic.CalculateRules(new List<CheckPoint_Package> { _cpPackages[0]}, new List<CheckPoint_NAT_Rule>());
+            ciscoAnalizStatistic.CalculateNetworks(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges);
+            ciscoAnalizStatistic.CalculateServices(_cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
+
+            var potentialCount = this.RulesInConvertedPackage() - this.RulesInConvertedOptimizedPackage();
+
+            using (var file = new StreamWriter(VendorManagmentReportHtmlFile))
+            {
+                file.WriteLine("<html>");
+                file.WriteLine("<head>");
+                file.WriteLine("<style>");
+                file.WriteLine("  body { font-family: Arial; }");
+                file.WriteLine("  .report_table { border-collapse: separate;border-spacing: 0px; font-family: Lucida Console;}");
+                file.WriteLine("  td {padding: 5px; vertical-align: top}");
+                file.WriteLine("  .line_number {background: lightgray;}");
+                file.WriteLine("  .unhandeled {color: Fuchsia;}");
+                file.WriteLine("  .notimportant {color: Gray;}");
+                file.WriteLine("  .converterr {color: Red;}");
+                file.WriteLine("  .convertinfo {color: Blue;}");
+                file.WriteLine("  .err_title {color: Red;}");
+                file.WriteLine("  .info_title {color: Blue;}");
+                file.WriteLine("</style>");
+                file.WriteLine("</head>");
+
+                file.WriteLine("<body>");
+                file.WriteLine("<h2>Cisco managment report file</h2>");
+                file.WriteLine("<h3>OBJECTS DATABASE</h3>");
+
+                file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
+                file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.TotalNetworkObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._totalNetworkObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.TotalNetworkObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.UnusedNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._unusedNetworkObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.UnusedNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._unusedNetworkObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.DuplicateNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._duplicateNetworkObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.DuplicateNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Network Groups</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.NestedNetworkGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._nestedNetworkGroupsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.NestedNetworkGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine("</table>");
+
+                file.WriteLine("<h3>SERVICES DATABASE</h3>");
+                file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
+                file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.TotalServicesObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._totalServicesObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.TotalServicesObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.UnusedServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._unusedServicesObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.UnusedServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._unusedServicesObjectsCount > 0 ? "Consider deleting these objects." : "" )}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.DuplicateServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._duplicateServicesObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.DuplicateServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Services Groups</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.NestedServicesGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._nestedServicesGroupsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.NestedServicesGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine("</table>");
+
+                file.WriteLine("<h3>POLICY ANALYSIS</h3>");
+                file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
+                file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.TotalServicesRulesPercent, 100, 100)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._totalServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.TotalServicesRulesPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Rules utilizing \"Any\"</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.RulesServicesutilizingServicesAnyPercent, 5, 15)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._rulesServicesutilizingServicesAnyCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.RulesServicesutilizingServicesAnyPercent.ToString("F")}%</td> <td style='font-size: 14px;'>- ANY in Source: {ciscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Destination: {ciscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount} </td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Service: {ciscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Disabled Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.DisabledServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._disabledServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.DisabledServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(ciscoAnalizStatistic._disabledServicesRulesCount > 0 ? "Check if rules are required." : "")}</tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unnamed Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.UnnamedServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._unnamedServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.UnnamedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(ciscoAnalizStatistic._unnamedServicesRulesCount > 0 ? "Naming rules helps log analysis." : "")}</tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Times Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.TimesServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._timesServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.TimesServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Non Logging Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.NonServicesLoggingServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._nonServicesLoggingServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.NonServicesLoggingServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'> {(ciscoAnalizStatistic._nonServicesLoggingServicesRulesCount > 0 ? "Enable logging for these rules for better tracking and change management." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Stealth Rule</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._stealthServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._stealthServicesRuleCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.StealthServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._stealthServicesRuleCount > 0 ? "Found" : "Consider adding stealth rule near the top of the policy after necessary administrative rules denies all traffic to the <a href=\'https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewsolutiondetails=&solutionid=sk102812\'>firewall</a>")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Cleanup Rule</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._cleanupServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._cleanupServicesRuleCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.CleanupServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._cleanupServicesRuleCount > 0 ? "Found" : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Uncommented Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.UncommentedServicesRulesPercent, 25, 100)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._uncommentedServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.UncommentedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._uncommentedServicesRulesCount > 0 ? "Comment rules for better tracking and change management compliance." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Optimization Potential</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? HtmlGoodImageTagManagerReport : HtmlAttentionImageTagManagerReport)}</td> <td style='font-size: 14px;'>{potentialCount}</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? 100 * potentialCount / this.RulesInConvertedPackage() : 0).ToString("F")}%</td> <td style='font-size: 14px;'>{GetOptPhraze(potentialCount > 0 ? 100 * potentialCount / this.RulesInConvertedPackage() : 0)}</td></tr>");
+                file.WriteLine("</table>");
+                file.WriteLine("</body>");
+                file.WriteLine("</html>");
+            }
+        }
+
+        
 
         public override void ExportConfigurationAsHtml()
         {

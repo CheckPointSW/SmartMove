@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CiscoAnalizStatistic.cs" />
     <Compile Include="CiscoCommands.cs" />
     <Compile Include="CiscoConverter.cs" />
     <Compile Include="CiscoKnownServices.cs" />

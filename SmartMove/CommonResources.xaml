@@ -2,11 +2,14 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Image resources -->
+    <BitmapImage x:Key="AnalyzeIcon" UriSource="/Resources/AnalyzeIcon.png"/>
+    <BitmapImage x:Key="AnalyzeLogo" UriSource="/Resources/AnalyzeLogo.png"/>
+    <BitmapImage x:Key="ConversionIcon" UriSource="/Resources/ConversionIcon.png"/>
     <BitmapImage x:Key="ConversionLogo" UriSource="/Resources/ConversionLogo.png"/>
     <BitmapImage x:Key="CpLogo" UriSource="/Resources/CPLogo.png"/>
     <BitmapImage x:Key="ErrorIcon" UriSource="/Resources/big_error.png"/>
     <BitmapImage x:Key="WarningIcon" UriSource="/Resources/big_warning.png"/>
-    <BitmapImage x:Key="InfoIcon" UriSource="/Resources/big_info.png"/>
+    <BitmapImage x:Key="InfoIcon" UriSource="/Resources/big_info.png"/> 
 
     <!-- Icon resources -->
     <DrawingBrush x:Key="MinimizeIconBrush" Viewbox="0,0,16,16" ViewboxUnits="Absolute">
@@ -195,6 +198,22 @@
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="Content" Value="GO"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#458F08"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="#3a7807"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="AnalyzeButtonControlStyle" TargetType="ButtonBase" BasedOn="{StaticResource BrowseButtonControlStyle}">
+        <Setter Property="Width" Value="100"/>
+        <Setter Property="Background" Value="#4B9C09"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Content" Value="Analyze"/>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="#458F08"/>
