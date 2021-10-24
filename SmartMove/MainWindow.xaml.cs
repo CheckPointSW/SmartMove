@@ -801,8 +801,8 @@ namespace SmartMove
 
                 case Vendor.FortiGate:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
-                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
 
                     FortiGateConverter fgConverter = (FortiGateConverter)vendorConverter;
                     ConvertedPolicyRulesCount = (fgConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInConvertedPackage()) : " Check report.";

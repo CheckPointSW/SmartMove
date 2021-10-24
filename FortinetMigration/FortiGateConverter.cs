@@ -62,6 +62,7 @@ namespace FortiGateMigration
         private int _errorsConvertedPackage = 0; //flag
 
         private int _rulesInConvertedPackage = 0; //counter
+        private int _rulesInOptConvertedPackage = 0; //counter
         private int _rulesInNatLayer = 0; //counter
 
         /*
@@ -140,7 +141,7 @@ namespace FortiGateMigration
 
         public override int RulesInConvertedOptimizedPackage()
         {
-            return 0;
+            return _rulesInOptConvertedPackage;
         }
 
         //count of NAT rules
@@ -162,6 +163,8 @@ namespace FortiGateMigration
 
         public void ExportManagmentReport(bool optimazed)
         {
+            
+            
             NewFortigateAnalizStatistic._unusedNetworkObjectsCount += _cpNetworks.Count * (optimazed ? -1 : 1);
             NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpTcpServices.Count * (optimazed ? -1 : 1);
             NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpUdpServices.Count * (optimazed ? -1 : 1);
@@ -172,6 +175,14 @@ namespace FortiGateMigration
             }
             else
             {
+                if (_cpPackages.Count > 1)
+                {
+                    foreach (var sub_policy in _cpPackages[1].SubPolicies)
+                    {
+                        _rulesInOptConvertedPackage += sub_policy.Rules.Select(x => x.ConversionComments).Where(x => x.Contains("Matched")).Count();
+                    }
+                }
+
                 NewFortigateAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
                 ExportManagmentReport();
                 OptimizationPotential = -1;
@@ -182,8 +193,8 @@ namespace FortiGateMigration
 
         public override void ExportManagmentReport()
         {
-            var potentialCount = NewFortigateAnalizStatistic._fullrullPackcount - NewFortigateAnalizStatistic._totalServicesRulesCount;
-            var potentialPersent = NewFortigateAnalizStatistic._fullrullPackcount > 0 ? (potentialCount * 100 / (float)NewFortigateAnalizStatistic._fullrullPackcount) : 0;
+            var potentialCount = RulesInConvertedPackage() - RulesInConvertedOptimizedPackage();
+            var potentialPersent = RulesInConvertedPackage() > 0 ? (potentialCount * 100 / (float)RulesInConvertedPackage()) : 0;
             NewFortigateAnalizStatistic._fullrullPackageCount += NewFortigateAnalizStatistic._fullrullPackcount;
             NewFortigateAnalizStatistic._totalrullPackageCount += NewFortigateAnalizStatistic._totalServicesRulesCount;
             using (var file = new StreamWriter(VendorManagmentReportHtmlFile))
@@ -886,7 +897,6 @@ namespace FortiGateMigration
                 CreateCatalogPolicies();
                 CreateCatalogErrors();
                 CreateCatalogWarnings();
-                if (CreateManagnetReport) CreateCatalogExportManagment();
             }
 
             VendorHtmlFile = _vendorFilePath;
@@ -1166,7 +1176,7 @@ namespace FortiGateMigration
 
                     if (fgCommandConfig.ObjectName.Equals("firewall policy"))
                     {
-                        Add_Package(fgCommandConfig.SubCommandsList, convertNat);
+                        Add_Package(fgCommandConfig.SubCommandsList, convertNat, "Convert policy...");
                     }
                 }
             }
@@ -1226,6 +1236,15 @@ namespace FortiGateMigration
                                 AddCheckPointObject(cpObject);
                         }
                     }
+                }
+            }
+
+            if(_cpPackages.Count > 0)
+            {
+                Add_Optimized_Package();
+                foreach (var sub_policy in _cpPackages[1].SubPolicies)
+                {
+                    _rulesInOptConvertedPackage += sub_policy.Rules.Select(x => x.ConversionComments).Where(x => x.Contains("Matched")).Count();
                 }
             }
 
@@ -1378,13 +1397,17 @@ namespace FortiGateMigration
             _cpObjects.Initialize();   // must be first!!!
             CleanCheckPointObjectsLists(); // must be first!!!
 
+
+            //change folder path for writing reports
+            //if it is VDOM then each report will be placed to own folder
+            //if it is w/o VDOM then report will be in the same folder as config file
+            ChangeTargetFolder(targetFolderNew, targetFileNameNew);
+
+            //Validate parsing
+            _errorsList.AddRange(ValidateConversion(fgCommandsList));
+
             if (!OptimizeConf)
             {
-                //change folder path for writing reports
-                //if it is VDOM then each report will be placed to own folder
-                //if it is w/o VDOM then report will be in the same folder as config file
-                ChangeTargetFolder(targetFolderNew, targetFileNameNew);
-
                 foreach (string fgInterface in _interfacesMapperFgCp.Keys)
                 {
                     List<CheckPoint_Host> cpHostsList = _interfacesMapperFgCp[fgInterface];
@@ -1485,7 +1508,7 @@ namespace FortiGateMigration
 
                     if (fgCommandConfig.ObjectName.Equals("firewall policy"))
                     {
-                        Add_Package(fgCommandConfig.SubCommandsList, convertNat);
+                        Add_Package(fgCommandConfig.SubCommandsList, convertNat, "Analyze policy...");
                     }
                 }
             }
@@ -1515,7 +1538,8 @@ namespace FortiGateMigration
                                     CheckPoint_NetworkGroup networkGroup = (CheckPoint_NetworkGroup)cpObject;
                                     foreach (string firewallObject in networkGroup.Members)
                                     {
-                                        cpUsedFirewallObjectNamesList.Add(firewallObject);
+                                        if (!_skippedNames.Contains(firewallObject))
+                                            cpUsedFirewallObjectNamesList.Add(firewallObject);
                                     }
                                 }
                             }
@@ -1544,6 +1568,11 @@ namespace FortiGateMigration
                         }
                     }
                 }
+            }
+
+            if (_cpPackages.Count > 0)
+            {
+                Add_Optimized_Package();
             }
 
             ExportManagmentReport(OptimizeConf);
@@ -3218,15 +3247,63 @@ namespace FortiGateMigration
         #endregion
 
         #region Convert Policy Rules && prepare for NATs converting
+        private void Add_Optimized_Package()
+        {
+            CheckPoint_Package regularPackage = _cpPackages[0];
 
-        public void Add_Package(List<FgCommand> fgCommandsList, bool convertNat)
+            var optimizedPackage = new CheckPoint_Package();
+            optimizedPackage.Name = _policyPackageOptimizedName;
+            optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;
+            optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;
+
+            var regular2OptimizedLayers = new Dictionary<string, string>();
+
+            foreach (CheckPoint_Layer layer in regularPackage.SubPolicies)
+            {
+                string optimizedSubPolicyName = layer.Name + "_opt";
+
+                CheckPoint_Layer optimizedLayer = RuleBaseOptimizer.Optimize(layer, optimizedSubPolicyName);
+                foreach (CheckPoint_Rule subSubRule in optimizedLayer.Rules)
+                {
+                    if (subSubRule.SubPolicyName.Equals(GlobalRulesSubpolicyName))
+                    {
+                        //The Global sub-sub rule subpolicy name should also be renamed for consistency
+                        subSubRule.SubPolicyName += "_opt";
+                    }
+                }
+                if (!regular2OptimizedLayers.ContainsKey(layer.Name))
+                {
+                    regular2OptimizedLayers.Add(layer.Name, optimizedSubPolicyName);
+                    optimizedPackage.SubPolicies.Add(optimizedLayer);
+                    validatePackage(optimizedPackage);
+                }
+            }
+
+            foreach (CheckPoint_Rule rule in regularPackage.ParentLayer.Rules)
+            {
+                CheckPoint_Rule newRule = rule.Clone();
+                if (newRule.Action == CheckPoint_Rule.ActionType.SubPolicy)
+                {
+                    newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];
+                }
+                newRule.Layer = optimizedPackage.ParentLayer.Name;
+                newRule.ConversionComments = rule.ConversionComments;
+
+                optimizedPackage.ParentLayer.Rules.Add(newRule);
+            }
+
+            AddCheckPointObject(optimizedPackage);
+        }
+
+
+        public void Add_Package(List<FgCommand> fgCommandsList, bool convertNat, string commentPhraze)
         {
             if (IsConsoleRunning) {
-                Console.WriteLine("Convert policy...");
+                Console.WriteLine(commentPhraze);
                 Progress.SetProgress(70);
                 Thread.Sleep(1000);
             }
-            RaiseConversionProgress(70, "Convert policy...");
+            RaiseConversionProgress(70, commentPhraze);
 
             var cpPackage = new CheckPoint_Package();
             cpPackage.Name = _policyPackageName;
@@ -5418,6 +5495,7 @@ namespace FortiGateMigration
 
 public class NewAnalizStatistic
 {
+    public int _optPackageCount = 0;
     public int _fullrullPackcount = 0;
     public int _fullrullPackageCount = 0;
     public int _totalrullPackageCount = 0;
