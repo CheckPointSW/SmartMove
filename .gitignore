@@ -1,4 +1,5 @@
 SmartMove/SmartConnector/*.pyc
+SmartMove/SmartConnector/.idea
 SmartMove/compressors/*.exe
 SmartMove/compressors/*.dll
 bin/
