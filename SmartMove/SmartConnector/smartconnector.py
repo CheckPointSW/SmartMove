@@ -240,17 +240,20 @@ def processGroupWithMembers(client, apiCommand, userGroup, mergedObjectsMap, mer
         apiSetCommand = "set-service-group"
 
     if isNeedSplitted:
-        for i, userGroupMember in enumerate(userGroup['Members']):
-            print(userGroupMember)
-            if userGroupMember in mergedObjectsMap:
-                userGroupMember = mergedObjectsMap[userGroupMember]
-            res_add_obj = client.api_call(
-                apiSetCommand,
-                {
-                    "name": userGroup['Name'],
-                    "members": {"add": userGroupMember}
-                })
-            printStatus(None, "REPORT: " + userGroup['Name'] + " is set with new member " + str(userGroupMember))
+        if ("Members" in userGroup):    #group with list of members
+            for i, userGroupMember in enumerate(userGroup['Members']):
+                print(userGroupMember)
+                if userGroupMember in mergedObjectsMap:
+                    userGroupMember = mergedObjectsMap[userGroupMember]
+                res_add_obj = client.api_call(
+                    apiSetCommand,
+                    {
+                        "name": userGroup['Name'],
+                        "members": {"add": userGroupMember}
+                    })
+                printStatus(None, "REPORT: " + userGroup['Name'] + " is set with new member " + str(userGroupMember))
+        else:   #group with exclusion with include/exclude fields with groups name
+            printStatus(None, "WARN: " + userGroup['Name'] + " hasn't any member by the type GroupWithExlusions")
     else:
         addedGroup = addUserObjectToServer(
             client,
@@ -575,8 +578,9 @@ def processNetGroups(client, userNetworkGroups, mergedNetworkObjectsMap):
             printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is added as " + addedNetworkGroup['name'])
             publishCounter = publishUpdate(publishCounter, True)
             userNetworkGroup["Name"] = addedNetworkGroup['name']
-            processGroupWithMembers(client, "add-group", userNetworkGroup, mergedNetworkObjectsMap,
-                                    mergedGroupsNamesDict, True)
+            if ("Members" in userNetworkGroup):
+                processGroupWithMembers(client, "add-group", userNetworkGroup, mergedNetworkObjectsMap,
+                                            mergedGroupsNamesDict, True)
         else:
             printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is not added.")
         printStatus(None, "")
