@@ -1131,39 +1131,63 @@ namespace CiscoMigration
         {
             foreach(CheckPoint_NAT_Rule rule in _cpNatRules)
             {
-                //Destination
+                //Orig-Destination
                 if (rule.Destination != null)
                 {
-                    if (rule.Destination?.GetType() == typeof(CheckPoint_PredifinedObject))
-                        continue;
-                    else
+                    if (rule.Destination.GetType() != typeof(CheckPoint_PredifinedObject))
                     {
                         if (!rule.Destination.Name.Contains("Err_in_"))
                             _usedNetObjects[rule.Destination.SafeName()] = rule.Destination;
                     }
                 }
 
-                //Service
+                //Orig-Service
                 if (rule.Service != null)
                 {
-                    if (rule.Service?.GetType() == typeof(CheckPoint_PredifinedObject))
-                        continue;
-                    else
+                    if (rule.Service.GetType() != typeof(CheckPoint_PredifinedObject))
                     {
                         if (!rule.Service.Name.Contains("Err_in_"))
                             _usedNetObjects[rule.Service.SafeName()] = rule.Service;
                     }
                 }
 
-                //Source
+                //Orig-Source
                 if (rule.Source != null)
                 {
-                    if (rule.Source?.GetType() == typeof(CheckPoint_PredifinedObject))
-                        continue;
-                    else
+                    if (rule.Source.GetType() != typeof(CheckPoint_PredifinedObject))
                     {
                         if (!rule.Source.Name.Contains("Err_in_"))
                             _usedNetObjects[rule.Source.SafeName()] = rule.Source;
+                    }
+                }
+                
+                //Translated-Destination
+                if (rule.TranslatedDestination != null)
+                {
+                    if (rule.TranslatedDestination.GetType() != typeof(CheckPoint_PredifinedObject))
+                    {
+                        if (!rule.TranslatedDestination.Name.Contains("Err_in_"))
+                            _usedNetObjects[rule.TranslatedDestination.SafeName()] = rule.TranslatedDestination;
+                    }
+                }
+
+                //Translated-Service
+                if (rule.TranslatedService != null)
+                {
+                    if (rule.TranslatedService.GetType() != typeof(CheckPoint_PredifinedObject))
+                    {
+                        if (!rule.TranslatedService.Name.Contains("Err_in_"))
+                            _usedNetObjects[rule.TranslatedService.SafeName()] = rule.TranslatedService;
+                    }
+                }
+
+                //Translated-Source
+                if (rule.TranslatedSource != null)
+                {
+                    if (rule.TranslatedSource.GetType() != typeof(CheckPoint_PredifinedObject))
+                    {
+                        if (!rule.TranslatedSource.Name.Contains("Err_in_"))
+                            _usedNetObjects[rule.TranslatedSource.SafeName()] = rule.TranslatedSource;
                     }
                 }
             }
@@ -1409,7 +1433,6 @@ namespace CiscoMigration
         private void CollectOnlyUsedObjects()
         {
             #region temp lists
-            List<CheckPoint_Domain> newDomainsList = new List<CheckPoint_Domain>();
             List<CheckPoint_Host> newHostList = new List<CheckPoint_Host>();
             List<CheckPoint_Network> newNetList = new List<CheckPoint_Network>();
             List<CheckPoint_Range> newRangeList = new List<CheckPoint_Range>();
@@ -1431,14 +1454,6 @@ namespace CiscoMigration
             {
                 switch (typeName)
                 {
-                    case "CheckPoint_Domain":
-                        foreach(var domain in _cpDomains)
-                        {
-                            if (_usedObjects[typeName].Contains(domain.Name))
-                                newDomainsList.Add(domain);
-                        }
-                        break;
-
                     case "CheckPoint_Host":
                         foreach(var host in _cpHosts)
                         {
@@ -1562,7 +1577,6 @@ namespace CiscoMigration
 
             }
 
-            _cpDomains = newDomainsList;
             _cpHosts = newHostList;
             _cpNetworks = newNetList;
             _cpRanges = newRangeList;
