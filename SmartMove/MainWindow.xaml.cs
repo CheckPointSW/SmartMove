@@ -300,6 +300,7 @@ namespace SmartMove
             {
                 case Vendor.CiscoASA:
                     ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
+                    SkipUnusedObjects.Visibility = Visibility.Visible;
                     break;
                 case Vendor.JuniperJunosOS:
                     ConfigurationFileLabel = SupportedVendors.JuniperConfigurationFileLabel;
@@ -353,7 +354,7 @@ namespace SmartMove
             switch (_supportedVendors.SelectedVendor)
             {
                 case Vendor.CiscoASA:
-                    filter = "conf files (*.conf, *.txt)|*.conf; *.txt|All files (*.*)|*.*";
+                    filter = "conf files (*.conf, *.txt, *.cfg)|*.conf; *.txt; *.cfg|All files (*.*)|*.*";
                     break;
                 case Vendor.JuniperJunosOS:
                     filter = "xml files (*.xml)|*.xml";
@@ -623,7 +624,9 @@ namespace SmartMove
             switch (_supportedVendors.SelectedVendor)
             {
                 case Vendor.CiscoASA:
-                    vendorConverter = new CiscoConverter();
+                    CiscoConverter ciscoConverter = new CiscoConverter();
+                    ciscoConverter.SkipUnusedObjects = SkipUnusedObjectsConversion;
+                    vendorConverter = ciscoConverter;
                     break;
                 case Vendor.FirePower:
                     vendorConverter = new CiscoConverter() {
@@ -775,6 +778,7 @@ namespace SmartMove
             BrowseTargetFolder.IsEnabled = enable;
             DomainName.IsEnabled = enable;
             ConvertNAT.IsEnabled = enable;
+            SkipUnusedObjects.IsEnabled = enable;
             Go.IsEnabled = enable;
         }
 
