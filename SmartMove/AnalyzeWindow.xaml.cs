@@ -336,7 +336,7 @@ namespace SmartMove
             OptimizationPotential.Visibility = Visibility.Visible;
             OrigConfigFilePanel.Visibility = Visibility.Visible;
             TotalRules.Text = $@"{vendorConverter.TotalRules} rules";
-            OptPotential.Text = $@"{vendorConverter.OptimizationPotential}%";
+            OptPotential.Text = $@"{vendorConverter.OptimizationPotential.ToString("0.00")}%";
             OriginalFileLink.Tag = vendorConverter.VendorManagmentReportHtmlFile;
             //ConversionIssuesPanel.Visibility = (vendorConverter.ConversionIncidentCategoriesCount > 0) ? Visibility.Visible : Visibility.Collapsed;
             //ConvertedNatPolicyPanel.Visibility = ConvertNATConfiguration ? Visibility.Visible : Visibility.Collapsed;

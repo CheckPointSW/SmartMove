@@ -175,26 +175,36 @@ namespace FortiGateMigration
             }
             else
             {
+                int optimazed_count = 0;
                 if (_cpPackages.Count > 1)
                 {
+                    
                     foreach (var sub_policy in _cpPackages[1].SubPolicies)
                     {
-                        _rulesInOptConvertedPackage += sub_policy.Rules.Select(x => x.ConversionComments).Where(x => x.Contains("Matched")).Count();
+                        optimazed_count += sub_policy.Rules.Select(x => x.ConversionComments).Where(x => x.Contains("Matched")).Count();
                     }
+                    optimazed_count += _cpPackages[1].ParentLayer.Rules.Select(x => x.ConversionComments).Where(x => x.Contains("Matched")).Count();
+                    _rulesInOptConvertedPackage += optimazed_count;
+                    NewFortigateAnalizStatistic._totalServicesRulesOptCount = optimazed_count;
                 }
-
-                NewFortigateAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
-                ExportManagmentReport();
-                OptimizationPotential = -1;
-                TotalRules += NewFortigateAnalizStatistic._totalServicesRulesCount;
+                if(_cpPackages.Count > 0)
+                {
+                    this.OptimizationPotential = RulesInConvertedPackage() > 0 ? ((RulesInConvertedPackage() - RulesInConvertedOptimizedPackage()) * 100 / (float)RulesInConvertedPackage()) : 0;
+                    NewFortigateAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
+                    ExportManagmentReport();
+                    OptimizationPotential = -1;
+                    TotalRules += NewFortigateAnalizStatistic._totalServicesRulesCount;
+                }
 
             }
         }
 
         public override void ExportManagmentReport()
         {
-            var potentialCount = RulesInConvertedPackage() - RulesInConvertedOptimizedPackage();
-            var potentialPersent = RulesInConvertedPackage() > 0 ? (potentialCount * 100 / (float)RulesInConvertedPackage()) : 0;
+            NewFortigateAnalizStatistic._totalFileRules += NewFortigateAnalizStatistic._totalServicesRulesCount;
+            NewFortigateAnalizStatistic._totalFileRulesOpt += NewFortigateAnalizStatistic._totalServicesRulesOptCount;
+            var potentialCount = NewFortigateAnalizStatistic._totalServicesRulesCount - NewFortigateAnalizStatistic._totalServicesRulesOptCount;
+            var potentialPersent = NewFortigateAnalizStatistic._totalServicesRulesCount > 0 ? (potentialCount * 100 / (float)NewFortigateAnalizStatistic._totalServicesRulesCount) : 0;
             NewFortigateAnalizStatistic._fullrullPackageCount += NewFortigateAnalizStatistic._fullrullPackcount;
             NewFortigateAnalizStatistic._totalrullPackageCount += NewFortigateAnalizStatistic._totalServicesRulesCount;
             using (var file = new StreamWriter(VendorManagmentReportHtmlFile))
@@ -637,6 +647,36 @@ namespace FortiGateMigration
         }
 
         //Catalog is Root file if VDOM exists
+        public void CreateCatalogOptPolicies()
+        {
+            string filename = this.PolicyOptimizedHtmlFile;
+
+            using (var file = new StreamWriter(filename, false))
+            {
+                file.WriteLine("<html>");
+                file.WriteLine("<head>");
+                file.WriteLine("</head>");
+                file.WriteLine("<body>");
+                file.WriteLine("<h1>List of VDOMs Policies for " + this._vendorFileName + "</h1>");
+                file.WriteLine("<ul>");
+                foreach (string vDomName in _vDomNames)
+                {
+                    if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_policy_opt.html"))
+                    {
+                        file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_policy_opt.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
+                    }
+                    else
+                    {
+                        file.WriteLine("<li>" + "<h2>" + vDomName + "</h2>" + "</li>");
+                    }
+                }
+                file.WriteLine("</ul>");
+                file.WriteLine("</body>");
+                file.WriteLine("</html>");
+            }
+        }
+
+        //Catalog is Root file if VDOM exists
         public void CreateCatalogNATs()
         {
             string filename = this.NatHtmlFile;
@@ -895,6 +935,7 @@ namespace FortiGateMigration
                 CreateCatalogObjects();
                 CreateCatalogNATs();
                 CreateCatalogPolicies();
+                CreateCatalogOptPolicies();
                 CreateCatalogErrors();
                 CreateCatalogWarnings();
             }
@@ -1336,7 +1377,7 @@ namespace FortiGateMigration
                 Progress.SetProgress(100);
                 Progress.Dispose();
             }
-            this.OptimizationPotential = (NewFortigateAnalizStatistic._fullrullPackageCount - NewFortigateAnalizStatistic._totalrullPackageCount) * 100 / (float)NewFortigateAnalizStatistic._fullrullPackageCount; 
+            OptimizationPotential = NewFortigateAnalizStatistic._totalFileRules > 0 ? ((NewFortigateAnalizStatistic._totalFileRules - NewFortigateAnalizStatistic._totalFileRulesOpt) * 100 / (float)NewFortigateAnalizStatistic._totalFileRules) : 0;
             return optimization_potencial;
         }
 
@@ -5512,6 +5553,7 @@ public class NewAnalizStatistic
     public int _nestedServicesGroupsCountAll = 0;
 
     public int _totalServicesRulesCount = 0;
+    public int _totalServicesRulesOptCount = 0;
     public int _rulesServicesutilizingServicesAnyCount = 0;
     public int _rulesServicesutilizingServicesAnySourceCount = 0;
     public int _rulesServicesutilizingServicesAnyDestinationCount = 0;
@@ -5523,6 +5565,10 @@ public class NewAnalizStatistic
     public int _stealthServicesRuleCount = 0;
     public int _cleanupServicesRuleCount = 0;
     public int _uncommentedServicesRulesCount = 0;
+
+    public int _totalFileRules = 0;
+    public int _totalFileRulesOpt = 0;
+
 
     public int TotalNetworkObjectsPercent { get { return 100; } }
     public float UnusedNetworkObjectsPercent { get { return _totalNetworkObjectsCount > 0 ? ((float)_unusedNetworkObjectsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }

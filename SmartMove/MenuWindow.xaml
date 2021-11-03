@@ -154,7 +154,7 @@
                             </StackPanel>
                         </Button>
                     </Grid>
-                    <Grid x:Name="SmartAnalye" Grid.Row="0" Grid.Column="1" IsEnabled="False">
+                    <Grid x:Name="SmartAnalye" Grid.Row="0" Grid.Column="1" IsEnabled="True">
                         <Button Height="300" Width="300" Margin="30,40,70,40" Background="White" BorderBrush="#C9C9C9" Click="ButtonSmartAnalyze_Click">
                             <StackPanel >
                                 <Image Source="{StaticResource AnalyzeIcon}" Width="100" Height="100" Margin="0,0,0,30"/>

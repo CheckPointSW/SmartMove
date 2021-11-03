@@ -806,6 +806,7 @@ namespace SmartMove
 
                     FortiGateConverter fgConverter = (FortiGateConverter)vendorConverter;
                     ConvertedPolicyRulesCount = (fgConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInConvertedPackage()) : " Check report.";
+                    ConvertedOptimizedPolicyRulesCount = (fgConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
                     ConvertedNATPolicyRulesCount = (fgConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInNatLayer()) : " Check report.";
                     ConvertingWarningsCount = (fgConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", fgConverter.WarningsInConvertedPackage()) : " Check report.";
                     ConvertingErrorsCount = (fgConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", fgConverter.ErrorsInConvertedPackage()) : " Check report.";
