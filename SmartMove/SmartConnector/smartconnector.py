@@ -28,7 +28,10 @@ def printStatus(res_action, message, error=None):
             for msg_wrn in res_action.data['warnings']:
                 line += "WARN:" + "\t" + msg_wrn['message'] + "\n"
         if line == "":
-            line = "WARN:" + "\t" + res_action.data['message'] + "\n"
+            if "message" in res_action.data:
+                line = "WARN:" + "\t" + res_action.data['message'] + "\n"
+            else:
+                line = "WARN:" + "\t" + "Err of getting message from the mgmt server" + "\n"
     elif message is not None:
         line += "\t" + message + "\n"
     elif error is not None:
