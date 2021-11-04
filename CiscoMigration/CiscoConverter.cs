@@ -40,6 +40,12 @@ namespace CiscoMigration
         //if we are using cisco code for fire power vendor we need set this flag to true value
         public bool isUsingForFirePower { get; set; } = false;
 
+        #region GUI params
+
+        public bool SkipUnusedObjects { get; set; } //check if Optimized configuration is requested
+
+        #endregion
+
         #region Helper Classes
 
         private class DuplicateNameInfo
@@ -513,6 +519,9 @@ namespace CiscoMigration
         private string _outputFormat;
 
         private List<CheckPoint_NAT_Rule> _cpPreorderedNatRules = new List<CheckPoint_NAT_Rule>();
+
+        private Dictionary<string, CheckPointObject> _usedNetObjects = new Dictionary<string, CheckPointObject>();
+        private Dictionary<string, HashSet<string>> _usedObjects = new Dictionary<string, HashSet<string>>(); //<type, [names of objects]>
 
         private Dictionary<string, DuplicateNameInfo> _duplicateNamesLookup = new Dictionary<string, DuplicateNameInfo>(StringComparer.InvariantCultureIgnoreCase);
         private List<string> _ciscoServiceInvalidNames = new List<string>();
@@ -1087,6 +1096,510 @@ namespace CiscoMigration
                                                                     ConversionIncidentType.Informative));
                 }
             }
+        }
+
+        private void BuildListOfUsedObjects(bool convertNat)
+        {
+            CheckPoint_Package package = Add_Package(true);
+
+            //parent_layer
+            PopulateUsedNetObjectsFromRules(package.ParentLayer.Rules);
+
+            //sub policies
+            foreach (CheckPoint_Layer layer in package.SubPolicies)
+            {
+                PopulateUsedNetObjectsFromRules(layer.Rules);
+
+            }
+            
+            //NAT
+            if (convertNat)
+            {
+                PopulateUsedNetObjectsFromNatRules();
+            }
+
+            //we may add groups with nested objects. need to add them as used recoursive, because groups can contain groups and etc.
+            foreach (string key in _usedNetObjects.Keys)
+            {
+                BuildUsedNetObjectsRecoursive(_usedNetObjects[key].Name);
+            }
+
+            
+        }
+
+        private void PopulateUsedNetObjectsFromNatRules()
+        {
+            foreach(CheckPoint_NAT_Rule rule in _cpNatRules)
+            {
+                //Orig-Destination
+                if (rule.Destination != null)
+                {
+                    if (rule.Destination.GetType() != typeof(CheckPoint_PredifinedObject))
+                    {
+                        if (!rule.Destination.Name.Contains("Err_in_"))
+                            _usedNetObjects[rule.Destination.SafeName()] = rule.Destination;
+                    }
+                }
+
+                //Orig-Service
+                if (rule.Service != null)
+                {
+                    if (rule.Service.GetType() != typeof(CheckPoint_PredifinedObject))
+                    {
+                        if (!rule.Service.Name.Contains("Err_in_"))
+                            _usedNetObjects[rule.Service.SafeName()] = rule.Service;
+                    }
+                }
+
+                //Orig-Source
+                if (rule.Source != null)
+                {
+                    if (rule.Source.GetType() != typeof(CheckPoint_PredifinedObject))
+                    {
+                        if (!rule.Source.Name.Contains("Err_in_"))
+                            _usedNetObjects[rule.Source.SafeName()] = rule.Source;
+                    }
+                }
+                
+                //Translated-Destination
+                if (rule.TranslatedDestination != null)
+                {
+                    if (rule.TranslatedDestination.GetType() != typeof(CheckPoint_PredifinedObject))
+                    {
+                        if (!rule.TranslatedDestination.Name.Contains("Err_in_"))
+                            _usedNetObjects[rule.TranslatedDestination.SafeName()] = rule.TranslatedDestination;
+                    }
+                }
+
+                //Translated-Service
+                if (rule.TranslatedService != null)
+                {
+                    if (rule.TranslatedService.GetType() != typeof(CheckPoint_PredifinedObject))
+                    {
+                        if (!rule.TranslatedService.Name.Contains("Err_in_"))
+                            _usedNetObjects[rule.TranslatedService.SafeName()] = rule.TranslatedService;
+                    }
+                }
+
+                //Translated-Source
+                if (rule.TranslatedSource != null)
+                {
+                    if (rule.TranslatedSource.GetType() != typeof(CheckPoint_PredifinedObject))
+                    {
+                        if (!rule.TranslatedSource.Name.Contains("Err_in_"))
+                            _usedNetObjects[rule.TranslatedSource.SafeName()] = rule.TranslatedSource;
+                    }
+                }
+            }
+        }
+
+        private void PopulateUsedNetObjectsFromRules(List<CheckPoint_Rule> rules)
+        {
+            foreach (CheckPoint_Rule rule in rules)
+            {
+                foreach (var dest in rule.Destination)
+                {
+                    if (dest.GetType() == typeof(CheckPoint_PredifinedObject))
+                        continue;
+                    else
+                    {
+                        if (!dest.Name.Contains("Err_in_"))
+                            _usedNetObjects[ dest.SafeName()] = dest;
+                    }
+                }
+
+                foreach (var src in rule.Source)
+                {
+                    if  (src.Name.StartsWith("bsr-sep-02") || src.Name.StartsWith("bsr-02.bbs"))
+                    {
+                        int i = 1;
+                        i += 1;
+                    }
+                    if (src.GetType() == typeof(CheckPoint_PredifinedObject))
+                        continue;
+                    else
+                    {
+                        if (!src.Name.Contains("Err_in_"))
+                            _usedNetObjects[src.SafeName()] = src;
+                    }
+                }
+
+                foreach (var src in rule.Service)
+                {
+                    if (_usedNetObjects.Keys.Contains(src.Name))
+                        continue;
+                    else
+                    {
+                        if (!src.Name.Contains("Err_in_"))
+                            _usedNetObjects[src.SafeName()] = src;
+                    }
+                }
+            }
+        }
+
+        private void BuildUsedNetObjectsRecoursive(string checkName)
+        {
+            //host
+            foreach (CheckPoint_Host host in _cpHosts)
+            {
+                //if checked name is host
+                if (host.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_Host>(host.Name);
+                    return;
+                }
+            }
+
+            //network
+            foreach (CheckPoint_Network net in _cpNetworks)
+            {
+                //if checked name is network
+                if (net.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_Network>(checkName);
+                    return;
+                }
+            }
+
+            //checking on address range name
+            foreach (CheckPoint_Range range in _cpRanges)
+            {
+                //if checked name is address range
+                if (range.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_Range>(checkName);
+                    return;
+                }
+            }
+
+
+            //checking on net group
+            foreach (CheckPoint_NetworkGroup gr in _cpNetworkGroups)
+            {
+                if (gr.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_NetworkGroup>(gr.Name);
+                    //if has members
+                    if (gr.Members.Count > 0)
+                    {
+                        foreach (string member in gr.Members)
+                        {
+                            BuildUsedNetObjectsRecoursive(member);
+                        }
+                    }
+                }
+            }
+
+            //checking on address net group with exclusions
+            foreach (CheckPoint_GroupWithExclusion gr in _cpGroupsWithExclusion)
+            {
+                if (gr.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_GroupWithExclusion>(gr.Name);
+
+                    if (!string.IsNullOrEmpty(gr.Include))
+                        AddUsedObject<CheckPoint_NetworkGroup>(gr.Include);
+                    if (!string.IsNullOrEmpty(gr.Except))
+                        AddUsedObject<CheckPoint_NetworkGroup>(gr.Except);
+                    return;
+                }
+            }
+
+            //checking on zone
+            foreach (CheckPoint_Zone zone in _cpZones)
+            {
+                //if checked name is zone
+                if (zone.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_Zone>(checkName);
+                    return;
+                }
+            }
+
+            //checking on TcpService
+            foreach (CheckPoint_TcpService tcp in _cpTcpServices)
+            {
+                if (tcp.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_TcpService>(checkName);
+                    return;
+                }
+            }
+
+            //checking on UdpService
+            foreach (CheckPoint_UdpService udp in _cpUdpServices)
+            {
+                if (udp.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_UdpService>(checkName);
+                    return;
+                }
+            }
+
+            //checking on Sctp
+            foreach (CheckPoint_SctpService sctp in _cpSctpServices)
+            {
+                if (sctp.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_SctpService>(checkName);
+                    return;
+                }
+            }
+
+            //checking on Icmp
+            foreach (CheckPoint_IcmpService icmp in _cpIcmpServices)
+            {
+                if (icmp.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_IcmpService>(checkName);
+                    return;
+                }
+            }
+
+            //checking on Rpc
+            foreach (CheckPoint_RpcService rpc in _cpRpcServices)
+            {
+                if (rpc.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_RpcService>(checkName);
+                    return;
+                }
+            }
+
+            //checking on DceRpc
+            foreach (CheckPoint_DceRpcService rpc in _cpDceRpcServices)
+            {
+                if (rpc.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_DceRpcService>(checkName);
+                    return;
+                }
+            }
+
+            //checking on Other services
+            foreach (CheckPoint_OtherService os in _cpOtherServices)
+            {
+                if (os.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_OtherService>(checkName);
+                    return;
+                }
+            }
+
+            //checking on service group
+            foreach (CheckPoint_ServiceGroup os in _cpServiceGroups)
+            {
+                if (os.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_ServiceGroup>(os.Name);
+                    //if has members
+                    if (os.Members.Count > 0)
+                    {
+                        foreach (string member in os.Members)
+                        {
+                            BuildUsedNetObjectsRecoursive(member);
+                        }
+                    }
+                }
+            }
+
+            //checking on time obj
+            foreach (CheckPoint_Time os in _cpTimes)
+            {
+                if (os.Name == checkName)
+                {
+                    AddUsedObject<CheckPoint_Time>(checkName);
+                    return;
+                }
+            }
+
+            //checking on time group
+            foreach (CheckPoint_TimeGroup os in _cpTimeGroups)
+            {
+                if (os.Name == checkName)
+                {
+                    //if has members
+                    if (os.Members.Count > 0)
+                    {
+                        foreach (string member in os.Members)
+                        {
+                            BuildUsedNetObjectsRecoursive(member);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void CollectOnlyUsedObjects()
+        {
+            #region temp lists
+            List<CheckPoint_Host> newHostList = new List<CheckPoint_Host>();
+            List<CheckPoint_Network> newNetList = new List<CheckPoint_Network>();
+            List<CheckPoint_Range> newRangeList = new List<CheckPoint_Range>();
+            List<CheckPoint_NetworkGroup> newNetworkGroups = new List<CheckPoint_NetworkGroup>();
+            List<CheckPoint_GroupWithExclusion> newNetworkGroupsWI = new List<CheckPoint_GroupWithExclusion>();
+            List<CheckPoint_Zone> newZoneList = new List<CheckPoint_Zone>();
+            List<CheckPoint_DceRpcService> newDceList = new List<CheckPoint_DceRpcService>();
+            List<CheckPoint_RpcService> newRpcList = new List<CheckPoint_RpcService>();
+            List<CheckPoint_IcmpService> newIcmpList = new List<CheckPoint_IcmpService>();
+            List<CheckPoint_SctpService> newSctpList = new List<CheckPoint_SctpService>();
+            List<CheckPoint_UdpService> newUDPList = new List<CheckPoint_UdpService>();
+            List<CheckPoint_TcpService> newTCPList = new List<CheckPoint_TcpService>();
+            List<CheckPoint_OtherService> newOSList = new List<CheckPoint_OtherService>();
+            List<CheckPoint_Time> newTimeList = new List<CheckPoint_Time>();
+            List<CheckPoint_TimeGroup> newTimeGList = new List<CheckPoint_TimeGroup>();
+            #endregion
+
+            foreach (string typeName in _usedObjects.Keys)
+            {
+                switch (typeName)
+                {
+                    case "CheckPoint_Host":
+                        foreach(var host in _cpHosts)
+                        {
+                            if (_usedObjects[typeName].Contains(host.Name))
+                                newHostList.Add(host);
+                        }
+                        break;
+
+                    case "CheckPoint_Network":
+                        foreach (var network in _cpNetworks)
+                        {
+                            if (_usedObjects[typeName].Contains(network.Name))
+                                newNetList.Add(network);
+                        }
+                        break;
+
+                    case "CheckPoint_Range":
+                        foreach (var range in _cpRanges)
+                        {
+                            if (_usedObjects[typeName].Contains(range.Name))
+                                newRangeList.Add(range);
+                        }
+                        break;
+
+                    case "CheckPoint_NetworkGroup":
+                        foreach (var gr in _cpNetworkGroups)
+                        {
+                            if (_usedObjects[typeName].Contains(gr.Name))
+                                newNetworkGroups.Add(gr);
+                        }
+                        break;
+
+                    case "CheckPoint_GroupWithExclusion":
+                        foreach (var gr in _cpGroupsWithExclusion)
+                        {
+                            if (_usedObjects[typeName].Contains(gr.Name))
+                                newNetworkGroupsWI.Add(gr);
+                        }
+                        break;
+
+                    case "CheckPoint_Zone":
+                        foreach (var zone in _cpZones)
+                        {
+                            if (_usedObjects[typeName].Contains(zone.Name))
+                                newZoneList.Add(zone);
+                        }
+                        break;
+
+                    case "CheckPoint_DceRpcService":
+                        foreach (var dce in _cpDceRpcServices)
+                        {
+                            if (_usedObjects[typeName].Contains(dce.Name))
+                                newDceList.Add(dce);
+                        }
+                        break;
+
+                    case "CheckPoint_RpcService":
+                        foreach (var rpc in _cpRpcServices)
+                        {
+                            if (_usedObjects[typeName].Contains(rpc.Name))
+                                newRpcList.Add(rpc);
+                        }
+                        break;
+
+                    case "CheckPoint_IcmpService":
+                        foreach (var icmp in _cpIcmpServices)
+                        {
+                            if (_usedObjects[typeName].Contains(icmp.Name))
+                                newIcmpList.Add(icmp);
+                        }
+                        break;
+
+                    case "CheckPoint_SctpService":
+                        foreach (var sctp in _cpSctpServices)
+                        {
+                            if (_usedObjects[typeName].Contains(sctp.Name))
+                                newSctpList.Add(sctp);
+                        }
+                        break;
+
+                    case "CheckPoint_UdpService":
+                        foreach (var udp in _cpUdpServices)
+                        {
+                            if (_usedObjects[typeName].Contains(udp.Name))
+                                newUDPList.Add(udp);
+                        }
+                        break;
+
+                    case "CheckPoint_TcpService":
+                        foreach (var os in _cpTcpServices)
+                        {
+                            if (_usedObjects[typeName].Contains(os.Name))
+                                newTCPList.Add(os);
+                        }
+                        break;
+
+                    case "CheckPoint_OtherService":
+                        foreach (var os in _cpOtherServices)
+                        {
+                            if (_usedObjects[typeName].Contains(os.Name))
+                                newOSList.Add(os);
+                        }
+                        break;
+
+                    case "CheckPoint_Time":
+                        foreach (var time in _cpTimes)
+                        {
+                            if (_usedObjects[typeName].Contains(time.Name))
+                                newTimeList.Add(time);
+                        }
+                        break;
+
+                    case "CheckPoint_TimeGroup":
+                        foreach (var time in _cpTimeGroups)
+                        {
+                            if (_usedObjects[typeName].Contains(time.Name))
+                                newTimeGList.Add(time);
+                        }
+                        break;
+                }
+
+            }
+
+            _cpHosts = newHostList;
+            _cpNetworks = newNetList;
+            _cpRanges = newRangeList;
+            _cpNetworkGroups = newNetworkGroups;
+            _cpGroupsWithExclusion = newNetworkGroupsWI;
+            _cpZones = newZoneList;
+            _cpDceRpcServices = newDceList;
+            _cpRpcServices = newRpcList;
+            _cpIcmpServices = newIcmpList;
+            _cpSctpServices = newSctpList;
+            _cpUdpServices = newUDPList;
+            _cpTcpServices = newTCPList;
+            _cpOtherServices = newOSList;
+            _cpServiceGroups = new List<CheckPoint_ServiceGroup>();
+            _cpTimes = newTimeList;
+            _cpTimeGroups = newTimeGList;
+        }
+
+        private void AddUsedObject<T>(string name)
+        {
+            if (!_usedObjects.Keys.Contains(typeof(T).ToString().Split('.').Last()))
+                _usedObjects[typeof(T).ToString().Split('.').Last()] = new HashSet<string>();
+            _usedObjects[typeof(T).ToString().Split('.').Last()].Add(Validators.ChangeNameAccordingToRules(name));
         }
 
         private void Add_Networks()
@@ -1968,7 +2481,7 @@ namespace CiscoMigration
             return weekDayCP;
         }
 
-        private void Add_Package()
+        private CheckPoint_Package Add_Package(bool isPreExecution = false)
         {
             var cpPackage = new CheckPoint_Package();
             cpPackage.Name = _policyPackageName;
@@ -1987,7 +2500,10 @@ namespace CiscoMigration
 
             DetectCheckPointFirewallRulesAffectedByInspectPolicy(cpPackage);
 
-            AddCheckPointObject(cpPackage);
+            if (!isPreExecution)
+                AddCheckPointObject(cpPackage);
+
+            return cpPackage;
         }
 
         private void Add_ParentLayer(CheckPoint_Package package)
@@ -4698,17 +5214,18 @@ namespace CiscoMigration
 
             if (IsConsoleRunning)
             {
-                Console.WriteLine("Converting obects ...");
+                Console.WriteLine("Converting objects ...");
                 Progress.SetProgress(20);
                 Thread.Sleep(1000);
             }
-            RaiseConversionProgress(20, "Converting obects ...");
+            RaiseConversionProgress(20, "Converting objects ...");
             _cpObjects.Initialize();   // must be first!!!
 
             foreach (var cpObject in _cpObjects.GetPredefinedObjects())
             {
                 _duplicateNamesLookup.Add(cpObject.Name, new DuplicateNameInfo(true));
             }
+
 
             PopulateCiscoNetworkObjects();
             CheckCiscoInterfacesTraffic();
@@ -4721,6 +5238,7 @@ namespace CiscoMigration
             Add_or_Modify_InterfaceNetworkGroups();
             Add_ServicesAndServiceGroups();
             Add_TimeRanges();
+
 
             if (IsConsoleRunning)
             {
@@ -4765,6 +5283,18 @@ namespace CiscoMigration
             // This should be done here, after all objects are converted!!!
             EnforceObjectNameValidity();
 
+            if (SkipUnusedObjects)
+            {
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Analyzing using of objects ...");
+                    Progress.SetProgress(65);
+                    Thread.Sleep(1000);
+                }
+                RaiseConversionProgress(65, "Analyzing using of objects ...");
+                BuildListOfUsedObjects(convertNat);
+            }
+
             if (IsConsoleRunning)
             {
                 Console.WriteLine("Optimizing Firewall rulebase ...");
@@ -4781,6 +5311,19 @@ namespace CiscoMigration
                 Thread.Sleep(1000);
             }
             RaiseConversionProgress(80, "Generating CLI scripts ...");
+
+            if (SkipUnusedObjects)
+            {
+                if (IsConsoleRunning)
+                {
+                    Console.WriteLine("Optimizing objects ...");
+                    Progress.SetProgress(90);
+                    Thread.Sleep(1000);
+                }
+                RaiseConversionProgress(90, "Optimizing objects ...");
+                CollectOnlyUsedObjects();
+            }
+
             CreateObjectsScript();
             CreatePackagesScript();
             CreateObjectsHtml();
