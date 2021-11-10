@@ -1109,7 +1109,6 @@ namespace CiscoMigration
             foreach (CheckPoint_Layer layer in package.SubPolicies)
             {
                 PopulateUsedNetObjectsFromRules(layer.Rules);
-
             }
             
             //NAT
@@ -1124,7 +1123,6 @@ namespace CiscoMigration
                 BuildUsedNetObjectsRecoursive(_usedNetObjects[key].Name);
             }
 
-            
         }
 
         private void PopulateUsedNetObjectsFromNatRules()
@@ -5336,7 +5334,8 @@ namespace CiscoMigration
             ConversionIncidentCategoriesCount = _conversionIncidents.GroupBy(error => error.Title).Count();
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
 
-            CreateSmartConnector();
+            CreateSmartConnector(true, false);      //cp_objects.json
+            CreateSmartConnector(true, true);       //cp_objects_opt.json
 
 
             if (IsConsoleRunning)

@@ -106,6 +106,10 @@ namespace MigrationBase
 
         protected string LDAP_Account_Unit = null;
 
+
+        protected string optimizedNameJson = "cp_objects_opt.json";
+        protected string regularNameJson = "cp_objects.json";
+
         #endregion
 
         #region Properties
@@ -2017,8 +2021,10 @@ namespace MigrationBase
         /*
         * This method generates cp_objects.json file containing CheckPoint objects.
         * Further it creates archive containing cp_objects.json file and SmartConnector.py script.
+        * isNeedGenOpt - if need create 2 file with optimized-based objects and comments (Cisco)
+        * isCurrenctOptimized - if current json obj builds by opt package
         */
-        public void CreateSmartConnector()
+        public void CreateSmartConnector(bool isNeedGenOpt = false, bool isCurrentOptimized = false)
         {
             const string dirLibName = "cpapi";
 
@@ -2057,8 +2063,8 @@ namespace MigrationBase
                     Thread.Sleep(1000);
                 }
                 RaiseConversionProgress(90, "Generating Smart Connector ...");
-                string cpObjectsJsonFN = "cp_objects.json";
-                string cpObjectsJsonFP = _targetFolder + Path.DirectorySeparatorChar + cpObjectsJsonFN;
+                string cpObjectsJsonFN = !isCurrentOptimized ? regularNameJson : optimizedNameJson;
+                string cpObjectsJsonPath = _targetFolder + Path.DirectorySeparatorChar;
 
                 #region adding objects and rules to list for generating JSON
 
@@ -2120,83 +2126,114 @@ namespace MigrationBase
                 cpJsonObjects.AddRange(_cpTimes);
                 // objects are added
                 // adding Security rules
-                cpJsonObjects.Add(_cpPackages.FirstOrDefault());
+                if (!isCurrentOptimized)
+                    cpJsonObjects.Add(_cpPackages.FirstOrDefault());
+                else
+                    cpJsonObjects.Add(_cpPackages.ElementAtOrDefault(1));
                 // adding NAT rules
-                _cpNatRules.ForEach(x => x.Package = _cpPackages[0].Name);
+                if (!isCurrentOptimized)
+                    _cpNatRules.ForEach(x => x.Package = _cpPackages[0].Name);
+                else
+                    _cpNatRules.ForEach(x => x.Package = _cpPackages[1].Name);
                 cpJsonObjects.AddRange(_cpNatRules);
 
                 //remove all NULL elements
                 cpJsonObjects.RemoveAll(x => x == null);
                 #endregion
 
-                File.WriteAllText(cpObjectsJsonFP, JsonConvert.SerializeObject(cpJsonObjects, Formatting.Indented));
+                File.WriteAllText(cpObjectsJsonPath + cpObjectsJsonFN, JsonConvert.SerializeObject(cpJsonObjects, Formatting.Indented));
 
                 string smartConnectorArchiveName = "smartconnector_" + _vendorFileName;
                 string smartConnectorArchivePath = _targetFolder + Path.DirectorySeparatorChar + smartConnectorArchiveName;
 
-                #region preparing smarctconnector to archiving
-                if (Directory.Exists(smartConnectorArchivePath))
-                    Directory.Delete(smartConnectorArchivePath, true);
+                //if we need two json files and currenct is not optimized then it means what next file will be optimized and then can be created zip
+                if (isNeedGenOpt && !isCurrentOptimized)
+                    return;
 
-                Directory.CreateDirectory(smartConnectorArchivePath);
-                foreach (var pySmartConnectorFN in pySmartConnectorFNs)
-                {
-                    Directory.CreateDirectory(Directory.GetParent(smartConnectorArchivePath + Path.DirectorySeparatorChar + pySmartConnectorFN).FullName);
-                    File.Copy(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "SmartConnector" + Path.DirectorySeparatorChar + pySmartConnectorFN,
-                                smartConnectorArchivePath + Path.DirectorySeparatorChar + pySmartConnectorFN);
-                }
-                if (!string.IsNullOrWhiteSpace(this._domainName)) // update by Domain
-                {
-                    Encoding utf8Enc = new UTF8Encoding(false);
-                    string smartConnectorSFP = smartConnectorArchivePath + Path.DirectorySeparatorChar + "smartconnector.py";
-                    string smartConnectorFC = File.ReadAllText(smartConnectorSFP, utf8Enc);
-                    smartConnectorFC = smartConnectorFC.Replace(
-                                            "parser.add_argument('-d', '--domain', default=None,",
-                                            "parser.add_argument('-d', '--domain', default='" + this._domainName + "',");
-                    File.WriteAllText(smartConnectorSFP, smartConnectorFC, utf8Enc);
-                }
-                File.Copy(cpObjectsJsonFP, smartConnectorArchivePath + Path.DirectorySeparatorChar + cpObjectsJsonFN);
-                #endregion
-
-                ProcessStartInfo startInfo = new ProcessStartInfo();
-                startInfo.UseShellExecute = false;
-                startInfo.CreateNoWindow = true;
-                Process compressProc = null;
-
-                #region createing ZIP archive
-                if (File.Exists(smartConnectorArchivePath + ".zip"))
-                    File.Delete(smartConnectorArchivePath + ".zip");
-
-                startInfo.FileName = compressorZip;
-                startInfo.WorkingDirectory = _targetFolder + Path.DirectorySeparatorChar + smartConnectorArchiveName;
-                startInfo.Arguments = "-r" + " ..\\" + smartConnectorArchiveName + ".zip" + " *";
-                compressProc = Process.Start(startInfo);
-                compressProc.WaitForExit();
-                #endregion
-
-                #region createing TAR.GZ archive
-                if (File.Exists(smartConnectorArchivePath + ".tar.gz"))
-                    File.Delete(smartConnectorArchivePath + ".tar.gz");
-
-                startInfo.FileName = compressorGtar;
-                startInfo.WorkingDirectory = _targetFolder + Path.DirectorySeparatorChar + smartConnectorArchiveName;
-                startInfo.Arguments = "cf" + " ..\\" + smartConnectorArchiveName + ".tar" + " *";
-                compressProc = Process.Start(startInfo);
-                compressProc.WaitForExit();
-
-                startInfo.FileName = compressorGzip;
-                startInfo.WorkingDirectory = _targetFolder;
-                startInfo.Arguments = smartConnectorArchiveName + ".tar";
-                compressProc = Process.Start(startInfo);
-                compressProc.WaitForExit();
-                #endregion
-
-                if (File.Exists(cpObjectsJsonFP))
-                    File.Delete(cpObjectsJsonFP);
-
-                if (Directory.Exists(smartConnectorArchivePath))
-                    Directory.Delete(smartConnectorArchivePath, true);
+                CreateZip(compressorsDirPath, pySmartConnectorFNs, smartConnectorArchivePath, smartConnectorArchiveName, cpObjectsJsonPath, isNeedGenOpt);
             }
+        }
+
+        private void CreateZip(string compressorsDirPath, string[] pySmartConnectorFNs, string smartConnectorArchivePath, string smartConnectorArchiveName, string cpObjectsJsonPath, bool isOptNeeded = false)
+        {
+            string compressorZip = Path.Combine(compressorsDirPath, "zip.exe");
+            string compressorGtar = Path.Combine(compressorsDirPath, "gtar.exe");
+            string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
+
+            if (isOptNeeded)
+            {
+                if (!File.Exists(cpObjectsJsonPath + optimizedNameJson)) 
+                    return;
+            }
+
+            #region preparing smarctconnector to archiving
+            if (Directory.Exists(smartConnectorArchivePath))
+                Directory.Delete(smartConnectorArchivePath, true);
+
+            Directory.CreateDirectory(smartConnectorArchivePath);
+            foreach (var pySmartConnectorFN in pySmartConnectorFNs)
+            {
+                Directory.CreateDirectory(Directory.GetParent(smartConnectorArchivePath + Path.DirectorySeparatorChar + pySmartConnectorFN).FullName);
+                File.Copy(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "SmartConnector" + Path.DirectorySeparatorChar + pySmartConnectorFN,
+                            smartConnectorArchivePath + Path.DirectorySeparatorChar + pySmartConnectorFN);
+            }
+            if (!string.IsNullOrWhiteSpace(this._domainName)) // update by Domain
+            {
+                Encoding utf8Enc = new UTF8Encoding(false);
+                string smartConnectorSFP = smartConnectorArchivePath + Path.DirectorySeparatorChar + "smartconnector.py";
+                string smartConnectorFC = File.ReadAllText(smartConnectorSFP, utf8Enc);
+                smartConnectorFC = smartConnectorFC.Replace(
+                                        "parser.add_argument('-d', '--domain', default=None,",
+                                        "parser.add_argument('-d', '--domain', default='" + this._domainName + "',");
+                File.WriteAllText(smartConnectorSFP, smartConnectorFC, utf8Enc);
+            }
+            File.Copy(cpObjectsJsonPath + regularNameJson, smartConnectorArchivePath + Path.DirectorySeparatorChar + regularNameJson);
+            if (isOptNeeded)
+                File.Copy(cpObjectsJsonPath + optimizedNameJson, smartConnectorArchivePath + Path.DirectorySeparatorChar + optimizedNameJson);
+            #endregion
+
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.UseShellExecute = false;
+            startInfo.CreateNoWindow = true;
+            Process compressProc = null;
+
+            #region creating ZIP archive
+            if (File.Exists(smartConnectorArchivePath + ".zip"))
+                File.Delete(smartConnectorArchivePath + ".zip");
+
+            startInfo.FileName = compressorZip;
+            startInfo.WorkingDirectory = _targetFolder + Path.DirectorySeparatorChar + smartConnectorArchiveName;
+            startInfo.Arguments = "-r" + " ..\\" + smartConnectorArchiveName + ".zip" + " *";
+            compressProc = Process.Start(startInfo);
+            compressProc.WaitForExit();
+            #endregion
+
+            #region createing TAR.GZ archive
+            if (File.Exists(smartConnectorArchivePath + ".tar.gz"))
+                File.Delete(smartConnectorArchivePath + ".tar.gz");
+
+            startInfo.FileName = compressorGtar;
+            startInfo.WorkingDirectory = _targetFolder + Path.DirectorySeparatorChar + smartConnectorArchiveName;
+            startInfo.Arguments = "cf" + " ..\\" + smartConnectorArchiveName + ".tar" + " *";
+            compressProc = Process.Start(startInfo);
+            compressProc.WaitForExit();
+
+            startInfo.FileName = compressorGzip;
+            startInfo.WorkingDirectory = _targetFolder;
+            startInfo.Arguments = smartConnectorArchiveName + ".tar";
+            compressProc = Process.Start(startInfo);
+            compressProc.WaitForExit();
+            #endregion
+
+            if (isOptNeeded)
+                if (File.Exists(cpObjectsJsonPath + optimizedNameJson))
+                    File.Delete(cpObjectsJsonPath + optimizedNameJson);
+
+            if (File.Exists(cpObjectsJsonPath + regularNameJson))
+                File.Delete(cpObjectsJsonPath + regularNameJson);
+
+            if (Directory.Exists(smartConnectorArchivePath))
+                Directory.Delete(smartConnectorArchivePath, true);
         }
     }
 }
