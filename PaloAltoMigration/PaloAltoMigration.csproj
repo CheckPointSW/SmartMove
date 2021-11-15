@@ -48,6 +48,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PaloAltoAnalizStatistic.cs" />
+    <Compile Include="PanoramaAnalizStatistic.cs" />
     <Compile Include="PanoramaParser.cs" />
     <Compile Include="PanoramaConverter.cs" />
     <Compile Include="Panorama_Config.cs" />

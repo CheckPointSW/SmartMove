@@ -15,12 +15,15 @@ namespace FortiGateMigration
 {
     public class FortiGateConverter : VendorConverter
     {
+        public NewAnalizStatistic NewFortigateAnalizStatistic = new NewAnalizStatistic(0, 0);
+
         #region GUI params
 
         public bool OptimizeConf { get; set; } //check if Optimized configuration is requested
         public bool ConvertUserConf { get; set; } //check if User converion is requested
         public string LDAPAccoutUnit { get; set; } //read LDAP Account Unit Name for gethering users
         public string OutputFormat { get; set; } //json or text format for output file
+        public bool CreateManagnetReport { get; set; }
 
         #endregion
 
@@ -32,9 +35,9 @@ namespace FortiGateMigration
 
         private List<string> _errorsList = new List<string>(); //storing conversion errors for config or each VDOM
         private List<string> _warningsList = new List<string>(); //storing conversion warnings for config or each VDOM
-
+        
         private HashSet<string> _skippedNames = new HashSet<string>(); //if objects was skipped by error of validation here need to be placed his name
-
+        
         private Dictionary<string, List<CheckPointObject>> _localMapperFgCp = new Dictionary<string, List<CheckPointObject>>(); //storing map of FG names to CheckPoint objects
 
         private Dictionary<string, List<CheckPoint_Host>> _interfacesMapperFgCp = new Dictionary<string, List<CheckPoint_Host>>(); //storing information about interfaces
@@ -59,6 +62,7 @@ namespace FortiGateMigration
         private int _errorsConvertedPackage = 0; //flag
 
         private int _rulesInConvertedPackage = 0; //counter
+        private int _rulesInOptConvertedPackage = 0; //counter
         private int _rulesInNatLayer = 0; //counter
 
         /*
@@ -137,7 +141,7 @@ namespace FortiGateMigration
 
         public override int RulesInConvertedOptimizedPackage()
         {
-            return 0;
+            return _rulesInOptConvertedPackage;
         }
 
         //count of NAT rules
@@ -155,6 +159,110 @@ namespace FortiGateMigration
         public override void ExportPolicyPackagesAsHtml()
         {
             //not used as we have vDOMs
+        }
+
+        public void ExportManagmentReport(bool optimazed)
+        {
+            
+            
+            NewFortigateAnalizStatistic._unusedNetworkObjectsCount += _cpNetworks.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpTcpServices.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpUdpServices.Count * (optimazed ? -1 : 1);
+
+            if (optimazed)
+            {
+                NewFortigateAnalizStatistic.Flush();
+            }
+            else
+            {
+                int optimazed_count = 0;
+                if (_cpPackages.Count > 1)
+                {
+                    
+                    foreach (var sub_policy in _cpPackages[1].SubPolicies)
+                    {
+                        optimazed_count += sub_policy.Rules.Select(x => x.ConversionComments).Where(x => x.Contains("Matched")).Count();
+                    }
+                    optimazed_count += _cpPackages[1].ParentLayer.Rules.Select(x => x.ConversionComments).Where(x => x.Contains("Matched")).Count();
+                    _rulesInOptConvertedPackage += optimazed_count;
+                    NewFortigateAnalizStatistic._totalServicesRulesOptCount = optimazed_count;
+                }
+                if(_cpPackages.Count > 0)
+                {
+                    this.OptimizationPotential = RulesInConvertedPackage() > 0 ? ((RulesInConvertedPackage() - RulesInConvertedOptimizedPackage()) * 100 / (float)RulesInConvertedPackage()) : 0;
+                    NewFortigateAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
+                    ExportManagmentReport();
+                    OptimizationPotential = -1;
+                    TotalRules += NewFortigateAnalizStatistic._totalServicesRulesCount;
+                }
+
+            }
+        }
+
+        public override void ExportManagmentReport()
+        {
+            NewFortigateAnalizStatistic._totalFileRules += NewFortigateAnalizStatistic._totalServicesRulesCount;
+            NewFortigateAnalizStatistic._totalFileRulesOpt += NewFortigateAnalizStatistic._totalServicesRulesOptCount;
+            var potentialCount = NewFortigateAnalizStatistic._totalServicesRulesCount - NewFortigateAnalizStatistic._totalServicesRulesOptCount;
+            var potentialPersent = NewFortigateAnalizStatistic._totalServicesRulesCount > 0 ? (potentialCount * 100 / (float)NewFortigateAnalizStatistic._totalServicesRulesCount) : 0;
+            NewFortigateAnalizStatistic._fullrullPackageCount += NewFortigateAnalizStatistic._fullrullPackcount;
+            NewFortigateAnalizStatistic._totalrullPackageCount += NewFortigateAnalizStatistic._totalServicesRulesCount;
+            using (var file = new StreamWriter(VendorManagmentReportHtmlFile))
+            {
+                file.WriteLine("<html>");
+                file.WriteLine("<head>");
+                file.WriteLine("<style>");
+                file.WriteLine("  body { font-family: Arial; }");
+                file.WriteLine("  .report_table { border-collapse: separate;border-spacing: 0px; font-family: Lucida Console;}");
+                file.WriteLine("  td {padding: 5px; vertical-align: top}");
+                file.WriteLine("  .line_number {background: lightgray;}");
+                file.WriteLine("  .unhandeled {color: Fuchsia;}");
+                file.WriteLine("  .notimportant {color: Gray;}");
+                file.WriteLine("  .converterr {color: Red;}");
+                file.WriteLine("  .convertinfo {color: Blue;}");
+                file.WriteLine("  .err_title {color: Red;}");
+                file.WriteLine("  .info_title {color: Blue;}");
+                file.WriteLine("</style>");
+                file.WriteLine("</head>");
+
+                file.WriteLine("<body>");
+                file.WriteLine("<h2>FortiGate managment report file</h2>");
+                file.WriteLine("<h3>OBJECTS DATABASE</h3>");
+
+                file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
+                file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.TotalNetworkObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._totalNetworkObjectsCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.TotalNetworkObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.UnusedNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._unusedNetworkObjectsCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.UnusedNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewFortigateAnalizStatistic._unusedNetworkObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.DuplicateNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._duplicateNetworkObjectsCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.DuplicateNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Network Groups</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.NestedNetworkGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._nestedNetworkGroupsCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.NestedNetworkGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine("</table>");
+
+                file.WriteLine("<h3>SERVICES DATABASE</h3>");
+                file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
+                file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.TotalServicesObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._totalServicesObjectsCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.TotalServicesObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.UnusedServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._unusedServicesObjectsCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.UnusedServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewFortigateAnalizStatistic._unusedServicesObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.DuplicateServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._duplicateServicesObjectsCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.DuplicateServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Services Groups</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.NestedServicesGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._nestedServicesGroupsCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.NestedServicesGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine("</table>");
+
+                file.WriteLine("<h3>POLICY ANALYSIS</h3>");
+                file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
+                file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.TotalServicesRulesPercent, 100, 100)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._totalServicesRulesCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.TotalServicesRulesPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Rules utilizing \"Any\"</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.RulesServicesutilizingServicesAnyPercent, 5, 15)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.RulesServicesutilizingServicesAnyPercent.ToString("F")}%</td> <td style='font-size: 14px;'>- ANY in Source: {NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnySourceCount}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Destination: {NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount} </td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Service: {NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Disabled Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.DisabledServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._disabledServicesRulesCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.DisabledServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(NewFortigateAnalizStatistic._disabledServicesRulesCount > 0 ? "Check if rules are required." : "")}</tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Times Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.TimesServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._timesServicesRulesCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.TimesServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Non Logging Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.NonServicesLoggingServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._nonServicesLoggingServicesRulesCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.NonServicesLoggingServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'> {(NewFortigateAnalizStatistic._nonServicesLoggingServicesRulesCount > 0 ? "Enable logging for these rules for better tracking and change management." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Cleanup Rule</td> <td style='font-size: 14px;'>{(NewFortigateAnalizStatistic._cleanupServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._cleanupServicesRuleCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.CleanupServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewFortigateAnalizStatistic._cleanupServicesRuleCount > 0 ? "Found" : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Uncommented Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewFortigateAnalizStatistic.UncommentedServicesRulesPercent, 25, 100)}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic._uncommentedServicesRulesCount}</td> <td style='font-size: 14px;'>{NewFortigateAnalizStatistic.UncommentedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewFortigateAnalizStatistic._uncommentedServicesRulesCount > 0 ? "Comment rules for better tracking and change management compliance." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Optimization Potential</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? HtmlGoodImageTagManagerReport : HtmlAttentionImageTagManagerReport)}</td> <td style='font-size: 14px;'>{potentialCount}</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? potentialPersent : 0).ToString("F")}%</td> <td style='font-size: 14px;'>{GetOptPhraze(potentialCount > 0 ? (int)potentialPersent : 0)}</td></tr>");
+                file.WriteLine("</table>");
+                file.WriteLine("</body>");
+                file.WriteLine("</html>");
+            }
         }
 
         public void ExportPolicyPackagesAsHtmlConfig()
@@ -539,6 +647,36 @@ namespace FortiGateMigration
         }
 
         //Catalog is Root file if VDOM exists
+        public void CreateCatalogOptPolicies()
+        {
+            string filename = this.PolicyOptimizedHtmlFile;
+
+            using (var file = new StreamWriter(filename, false))
+            {
+                file.WriteLine("<html>");
+                file.WriteLine("<head>");
+                file.WriteLine("</head>");
+                file.WriteLine("<body>");
+                file.WriteLine("<h1>List of VDOMs Policies for " + this._vendorFileName + "</h1>");
+                file.WriteLine("<ul>");
+                foreach (string vDomName in _vDomNames)
+                {
+                    if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_policy_opt.html"))
+                    {
+                        file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_policy_opt.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
+                    }
+                    else
+                    {
+                        file.WriteLine("<li>" + "<h2>" + vDomName + "</h2>" + "</li>");
+                    }
+                }
+                file.WriteLine("</ul>");
+                file.WriteLine("</body>");
+                file.WriteLine("</html>");
+            }
+        }
+
+        //Catalog is Root file if VDOM exists
         public void CreateCatalogNATs()
         {
             string filename = this.NatHtmlFile;
@@ -616,6 +754,35 @@ namespace FortiGateMigration
                     if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_warnings.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_warnings.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
+                    }
+                    else
+                    {
+                        file.WriteLine("<li>" + "<h2>" + vDomName + "</h2>" + "</li>");
+                    }
+                }
+                file.WriteLine("</ul>");
+                file.WriteLine("</body>");
+                file.WriteLine("</html>");
+            }
+        }
+
+        public void CreateCatalogExportManagment()
+        {
+            string filename = this._targetFolder + "\\" + _vendorFileName + "_managment_report.html";
+
+            using (var file = new StreamWriter(filename, false))
+            {
+                file.WriteLine("<html>");
+                file.WriteLine("<head>");
+                file.WriteLine("</head>");
+                file.WriteLine("<body>");
+                file.WriteLine("<h1>List of Device Group Warnings for " + this._vendorFileName + "</h1>");
+                file.WriteLine("<ul>");
+                foreach (string vDomName in _vDomNames)
+                {
+                    if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_managment_report.html"))
+                    {
+                        file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_managment_report.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
                     else
                     {
@@ -768,6 +935,7 @@ namespace FortiGateMigration
                 CreateCatalogObjects();
                 CreateCatalogNATs();
                 CreateCatalogPolicies();
+                CreateCatalogOptPolicies();
                 CreateCatalogErrors();
                 CreateCatalogWarnings();
             }
@@ -1049,7 +1217,7 @@ namespace FortiGateMigration
 
                     if (fgCommandConfig.ObjectName.Equals("firewall policy"))
                     {
-                        Add_Package(fgCommandConfig.SubCommandsList, convertNat);
+                        Add_Package(fgCommandConfig.SubCommandsList, convertNat, "Convert policy...");
                     }
                 }
             }
@@ -1112,6 +1280,15 @@ namespace FortiGateMigration
                 }
             }
 
+            if(_cpPackages.Count > 0)
+            {
+                Add_Optimized_Package();
+                foreach (var sub_policy in _cpPackages[1].SubPolicies)
+                {
+                    _rulesInOptConvertedPackage += sub_policy.Rules.Select(x => x.ConversionComments).Where(x => x.Contains("Matched")).Count();
+                }
+            }
+
             CreateObjectsScript();
             CreateObjectsHtml();
 
@@ -1151,6 +1328,302 @@ namespace FortiGateMigration
 
         #endregion
 
+        #region Analyzer
+
+        //MAIN method to convert configuration file.
+        public override float Analyze()
+        {
+            string targetFileNameMain = _vendorFileName;
+            string targetFolderMain = _targetFolder;
+            float optimization_potencial = -1;
+            if (IsConsoleRunning)
+                Progress = new ProgressBar();
+
+            LDAP_Account_Unit = "";
+
+            if (IsConsoleRunning)
+                Progress.SetProgress(5);
+
+            bool isVDom = AnalyzeVDom(targetFolderMain, _fortiGateParser.FgCommandsList);
+
+            if (!isVDom) //if configration file does not conatin any VDOM
+            {
+                InitSystemInterfaces(_fortiGateParser.FgCommandsList);
+                NewFortigateAnalizStatistic = new NewAnalizStatistic(NewFortigateAnalizStatistic._fullrullPackageCount, NewFortigateAnalizStatistic._totalrullPackageCount);
+                AnalyzeConfig(targetFolderMain, targetFileNameMain, _fortiGateParser.FgCommandsList, true, true);
+                AnalyzeConfig(targetFolderMain, targetFileNameMain, _fortiGateParser.FgCommandsList, true, false);
+            }
+            else //if configuration file contains some VDOM then we can not count Errors, Warnings, Rules and NATs
+            {
+                _rulesInConvertedPackage = -1;
+                _rulesInNatLayer = -1;
+                CleanCheckPointObjectsLists();
+            }
+
+            ChangeTargetFolder(targetFolderMain, targetFileNameMain); // chaning target folder path to folder contains config file
+
+            if (_vDomNames.Count > 0) // create HTML files which contain links to each report
+            {
+               CreateCatalogExportManagment();
+            }
+
+            VendorHtmlFile = _vendorFilePath;
+
+            ObjectsScriptFile = _targetFolder;
+            PolicyScriptFile = _targetFolder;
+
+            if (IsConsoleRunning)
+            {
+                Progress.SetProgress(100);
+                Progress.Dispose();
+            }
+            OptimizationPotential = NewFortigateAnalizStatistic._totalFileRules > 0 ? ((NewFortigateAnalizStatistic._totalFileRules - NewFortigateAnalizStatistic._totalFileRulesOpt) * 100 / (float)NewFortigateAnalizStatistic._totalFileRules) : 0;
+            return optimization_potencial;
+        }
+
+        //Convertint VDOMs to each VDOM and then Convert each VDOM as simple Configuration
+        public bool AnalyzeVDom(string targetFolderM, List<FgCommand> fgCommandsList)
+        {
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Checking if vdom is present...");
+                Progress.SetProgress(10);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(10, "Checking if vdom is present...");
+
+            bool isVDom = false;
+
+            foreach (FgCommand fgCommand in fgCommandsList)
+            {
+                if (fgCommand.GetType() == typeof(FgCommand_Config))
+                {
+                    FgCommand_Config fgCommandConfig = (FgCommand_Config)fgCommand;
+                    if (fgCommandConfig.ObjectName.Equals("vdom"))
+                    {
+                        isVDom = true;
+
+                        if (fgCommandConfig.SubCommandsList[0].GetType() == typeof(FgCommand_Edit))
+                        {
+                            FgCommand_Edit fgCommandEdit = (FgCommand_Edit)fgCommandConfig.SubCommandsList[0];
+
+                            string vdomName = fgCommandEdit.Table;
+
+                            _vDomNames.Add(vdomName);
+
+                            string targetFolderVDom = targetFolderM + "\\" + vdomName;
+
+                            System.IO.Directory.CreateDirectory(targetFolderVDom);
+                            NewFortigateAnalizStatistic = new NewAnalizStatistic(NewFortigateAnalizStatistic._fullrullPackageCount, NewFortigateAnalizStatistic._totalrullPackageCount);
+                            AnalyzeConfig(targetFolderVDom, vdomName, fgCommandEdit.SubCommandsList, true, true);
+                            AnalyzeConfig(targetFolderVDom, vdomName, fgCommandEdit.SubCommandsList, true, false);
+
+                        }
+                    }
+
+                    if (fgCommandConfig.ObjectName.Equals("global") && isVDom)
+                    {
+                        InitSystemInterfaces(fgCommandConfig.SubCommandsList);
+                    }
+                }
+            }
+
+            return isVDom;
+        }
+
+        public void AnalyzeConfig(string targetFolderNew, string targetFileNameNew, List<FgCommand> fgCommandsList, bool convertNat, bool isOpt)
+        {
+            OptimizeConf = isOpt;
+
+            _cpObjects.Initialize();   // must be first!!!
+            CleanCheckPointObjectsLists(); // must be first!!!
+
+
+            //change folder path for writing reports
+            //if it is VDOM then each report will be placed to own folder
+            //if it is w/o VDOM then report will be in the same folder as config file
+            ChangeTargetFolder(targetFolderNew, targetFileNameNew);
+
+            //Validate parsing
+            _errorsList.AddRange(ValidateConversion(fgCommandsList));
+
+            if (!OptimizeConf)
+            {
+                foreach (string fgInterface in _interfacesMapperFgCp.Keys)
+                {
+                    List<CheckPoint_Host> cpHostsList = _interfacesMapperFgCp[fgInterface];
+                    foreach (CheckPoint_Host cpHost in cpHostsList)
+                    {
+                        AddCheckPointObject(cpHost);
+                    }
+                }
+            }
+
+            //Check if string of configuration section is related to FG Object
+            foreach (FgCommand fgCommand in fgCommandsList)
+            {
+                if (fgCommand.GetType() == typeof(FgCommand_Config))
+                {
+                    FgCommand_Config fgCommandConfig = (FgCommand_Config)fgCommand;
+
+                    if (fgCommandConfig.ObjectName.Equals("firewall address"))
+                    {
+                        Add_ConfigFirewallAddress(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("firewall vip"))
+                    {
+                        AddFirewallVip(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("firewall vipgrp"))
+                    {
+                        AddFirewallVipGroups(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("firewall addrgrp"))
+                    {
+                        Add_AddressGroups(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("firewall service custom"))
+                    {
+                        AddFirewallServices(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("firewall service group"))
+                    {
+                        AddFirewallServicesGroups(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("firewall schedule recurring"))
+                    {
+                        AddFirewallSchedule(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("firewall schedule onetime"))
+                    {
+                        AddFirewallScheduleOneTime(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("firewall schedule group"))
+                    {
+                        AddFirewallScheduleGroups(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("firewall ippool"))
+                    {
+                        AddFirewallIpPool(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("system zone"))
+                    {
+                        AddSystemZone(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("router static"))
+                    {
+                        AddRoutesStatic(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("router rip"))
+                    {
+                        CheckDynamicRoutesRip(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("router ripng"))
+                    {
+                        CheckDynamicRoutesRipNg(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("router ospf"))
+                    {
+                        CheckDynamicRoutesOspf(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("router bgp"))
+                    {
+                        CheckDynamicRoutesBgp(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("router isis"))
+                    {
+                        CheckDynamicRoutesIsis(fgCommandConfig.SubCommandsList);
+                    }
+                    else if (fgCommandConfig.ObjectName.Equals("user group") && ConvertUserConf)
+                    {
+                        AddUserGroup(fgCommandConfig.SubCommandsList);
+                    }
+                }
+            }
+
+            foreach (FgCommand fgCommand in fgCommandsList)
+            {
+                if (fgCommand.GetType() == typeof(FgCommand_Config))
+                {
+                    FgCommand_Config fgCommandConfig = (FgCommand_Config)fgCommand;
+
+                    if (fgCommandConfig.ObjectName.Equals("firewall policy"))
+                    {
+                        Add_Package(fgCommandConfig.SubCommandsList, convertNat, "Analyze policy...");
+                    }
+                }
+            }
+
+            HashSet<string> cpUsedFirewallObjectNamesList = new HashSet<string>(); //set of names of used firewall objects
+            HashSet<string> usedObjInFirewall = CreateUsedInPoliciesObjects(fgCommandsList);
+            foreach (string key in _localMapperFgCp.Keys)
+            {
+                if (key.StartsWith(FG_PREFIX_KEY_user_group)) //already added because Access_Roles are added always
+                {
+                    continue;
+                }
+
+                List<CheckPointObject> cpObjectsList = _localMapperFgCp[key];
+                foreach (CheckPointObject cpObject in cpObjectsList)
+                {
+                    if (!OptimizeConf) //adding objects if Optimized configuration is not required
+                        AddCheckPointObject(cpObject);
+                    else               //if optimized mode is enabled
+                    {
+                        foreach (string objectName in usedObjInFirewall)
+                        {
+                            if (cpObject.Name.Contains(objectName))
+                            {
+                                if (cpObject.GetType() == typeof(CheckPoint_NetworkGroup))
+                                {
+                                    CheckPoint_NetworkGroup networkGroup = (CheckPoint_NetworkGroup)cpObject;
+                                    foreach (string firewallObject in networkGroup.Members)
+                                    {
+                                        if (!_skippedNames.Contains(firewallObject))
+                                            cpUsedFirewallObjectNamesList.Add(firewallObject);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            //add domains opt
+            if (OptimizeConf)
+            { //adding objects if Optimized configuration is required
+                foreach (string key in _localMapperFgCp.Keys)
+                {
+                    if (key.StartsWith(FG_PREFIX_KEY_user_group)) //already added because Access_Roles are added always
+                    {
+                        continue;
+                    }
+                    List<CheckPointObject> cpObjectsList = _localMapperFgCp[key];
+                    foreach (CheckPointObject cpObject in cpObjectsList)
+                    {
+                        foreach (string firewallObjectName in cpUsedFirewallObjectNamesList)
+                        {
+                            string firewallObjectCorrectName = firewallObjectName.StartsWith(".") ? firewallObjectName.Substring(1) : firewallObjectName;
+                            if (key.Replace(" ", "_").Contains(firewallObjectCorrectName.Replace(" ", "_")))
+                                AddCheckPointObject(cpObject);
+                        }
+                    }
+                }
+            }
+
+            if (_cpPackages.Count > 0)
+            {
+                Add_Optimized_Package();
+            }
+
+            ExportManagmentReport(OptimizeConf);
+            // to clean; must be the last!!!
+            _cpObjects.ClearRepository();
+            CleanSavedData();
+        }
+
+        #endregion
+
         #region Parse Static Routes
 
         public void AddRoutesStatic(List<FgCommand> fgCommandsList)
@@ -1160,10 +1633,10 @@ namespace FortiGateMigration
                 FgCommand_Edit fgCommandEdit = (FgCommand_Edit)fgCommandE;
 
                 FgStaticRoute fgStaticRoute = new FgStaticRoute(
-                    name: fgCommandEdit.Table.Trim('"').Trim(), 
-                    network: "0.0.0.0", 
-                    mask: "255.255.255.255", 
-                    gateway: null, 
+                    name: fgCommandEdit.Table.Trim('"').Trim(),
+                    network: "0.0.0.0",
+                    mask: "255.255.255.255",
+                    gateway: null,
                     device: null);
 
                 foreach (FgCommand fgCommandS in fgCommandEdit.SubCommandsList)
@@ -2815,15 +3288,63 @@ namespace FortiGateMigration
         #endregion
 
         #region Convert Policy Rules && prepare for NATs converting
-
-        public void Add_Package(List<FgCommand> fgCommandsList, bool convertNat)
+        private void Add_Optimized_Package()
         {
-            if (IsConsoleRunning) { 
-                Console.WriteLine("Convert policy...");
+            CheckPoint_Package regularPackage = _cpPackages[0];
+
+            var optimizedPackage = new CheckPoint_Package();
+            optimizedPackage.Name = _policyPackageOptimizedName;
+            optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;
+            optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;
+
+            var regular2OptimizedLayers = new Dictionary<string, string>();
+
+            foreach (CheckPoint_Layer layer in regularPackage.SubPolicies)
+            {
+                string optimizedSubPolicyName = layer.Name + "_opt";
+
+                CheckPoint_Layer optimizedLayer = RuleBaseOptimizer.Optimize(layer, optimizedSubPolicyName);
+                foreach (CheckPoint_Rule subSubRule in optimizedLayer.Rules)
+                {
+                    if (subSubRule.SubPolicyName.Equals(GlobalRulesSubpolicyName))
+                    {
+                        //The Global sub-sub rule subpolicy name should also be renamed for consistency
+                        subSubRule.SubPolicyName += "_opt";
+                    }
+                }
+                if (!regular2OptimizedLayers.ContainsKey(layer.Name))
+                {
+                    regular2OptimizedLayers.Add(layer.Name, optimizedSubPolicyName);
+                    optimizedPackage.SubPolicies.Add(optimizedLayer);
+                    validatePackage(optimizedPackage);
+                }
+            }
+
+            foreach (CheckPoint_Rule rule in regularPackage.ParentLayer.Rules)
+            {
+                CheckPoint_Rule newRule = rule.Clone();
+                if (newRule.Action == CheckPoint_Rule.ActionType.SubPolicy)
+                {
+                    newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];
+                }
+                newRule.Layer = optimizedPackage.ParentLayer.Name;
+                newRule.ConversionComments = rule.ConversionComments;
+
+                optimizedPackage.ParentLayer.Rules.Add(newRule);
+            }
+
+            AddCheckPointObject(optimizedPackage);
+        }
+
+
+        public void Add_Package(List<FgCommand> fgCommandsList, bool convertNat, string commentPhraze)
+        {
+            if (IsConsoleRunning) {
+                Console.WriteLine(commentPhraze);
                 Progress.SetProgress(70);
                 Thread.Sleep(1000);
-            } 
-            RaiseConversionProgress(70, "Convert policy...");
+            }
+            RaiseConversionProgress(70, commentPhraze);
 
             var cpPackage = new CheckPoint_Package();
             cpPackage.Name = _policyPackageName;
@@ -2835,6 +3356,7 @@ namespace FortiGateMigration
 
         public void Add_ParentLayer(CheckPoint_Package package, List<FgCommand> fgCommandsList, bool convertNat)
         {
+            this._rulesInConvertedPackage = 0;
             package.ParentLayer.Name = package.NameOfAccessLayer;
 
             List<CheckPoint_Rule> rootRulesList = new List<CheckPoint_Rule>();
@@ -2892,6 +3414,7 @@ namespace FortiGateMigration
 
             bool isIntfContainsAny = false;
 
+            NewFortigateAnalizStatistic._fullrullPackcount = fgCommandsList.Count;
             foreach (FgCommand fgCommandE in fgCommandsList)
             {
                 if (fgCommandE.GetType() == typeof(FgCommand_Edit))
@@ -2916,6 +3439,8 @@ namespace FortiGateMigration
 
                     List<CheckPointObject> cpUsersGroupsList = new List<CheckPointObject>();
 
+                    bool in_service = false;
+
                     foreach (FgCommand fgCommandS in fgCommand_Edit.SubCommandsList)
                     {
                         if (fgCommandS.GetType() == typeof(FgCommand_Set))
@@ -2934,6 +3459,7 @@ namespace FortiGateMigration
 
                             if (fgCommand_Set.Field.Equals("status") && fgCommand_Set.Value.Trim().ToLower().Equals("disable"))
                             {
+                                NewFortigateAnalizStatistic._disabledServicesRulesCount++;
                                 cpRule.Enabled = false;
                             }
 
@@ -2962,10 +3488,14 @@ namespace FortiGateMigration
                                 }
                             }
 
+
                             if (fgCommand_Set.Field.Equals("srcaddr"))
                             {
                                 if (fgCommand_Set.Value.Equals("all"))
                                 {
+                                    NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                                    in_service = true;
+
                                     cpRule.Source.Add(_cpObjects.GetObject(CheckPointObject.Any));
                                 }
                                 else
@@ -3015,6 +3545,9 @@ namespace FortiGateMigration
                             {
                                 if (fgCommand_Set.Value.Equals("all"))
                                 {
+                                    NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                                    in_service = true;
+
                                     cpRule.Destination.Add(_cpObjects.GetObject(CheckPointObject.Any));
                                     fgDstAddrList.Add("all");
                                 }
@@ -3076,6 +3609,11 @@ namespace FortiGateMigration
                             {
                                 string fgScheduleRule = fgCommand_Set.Value.Trim('"');
 
+                                if(!fgScheduleRule.Equals("always"))
+                                {
+                                    NewFortigateAnalizStatistic._timesServicesRulesCount++;
+                                }
+
                                 bool isAdded = false;
 
                                 string[] fgPrefixes = new string[] { FG_PREFIX_KEY_firewall_schedule_recurring, FG_PREFIX_KEY_firewall_schedule_onetime, FG_PREFIX_KEY_firewall_schedule_group };
@@ -3111,6 +3649,9 @@ namespace FortiGateMigration
 
                                     if (fgSrvName.ToUpper().Equals("ALL"))
                                     {
+                                        NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                                        in_service = true;
+
                                         cpRule.Service.Add(_cpObjects.GetObject(CheckPointObject.Any));
                                     }
                                     else
@@ -3169,6 +3710,7 @@ namespace FortiGateMigration
                             if (fgCommand_Set.Field.Equals("comment") || fgCommand_Set.Field.Equals("comments"))
                             {
                                 cpRule.Comments = fgCommand_Set.Value;
+                                NewFortigateAnalizStatistic._uncommentedServicesRulesCount++;
                             }
 
                             if (fgCommand_Set.Field.Equals("nat") && fgCommand_Set.Value.Equals("enable"))
@@ -3316,12 +3858,15 @@ namespace FortiGateMigration
                         rootLayer.Rules.Add(cpRule);
                         realRulesList.Add(cpRule);
 
+                        NewFortigateAnalizStatistic._totalServicesRulesCount++;
+                        if(in_service) NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
                         _rulesInConvertedPackage += 1;
 
                         if (cpRuleUG != null)
                         {
                             rootLayer.Rules.Add(cpRuleUG);
 
+                            NewFortigateAnalizStatistic._totalServicesRulesCount++;
                             _rulesInConvertedPackage += 1;
                         }
 
@@ -3436,6 +3981,7 @@ namespace FortiGateMigration
                     CheckPoint_Layer cpLayer = rootLayersMap[key];
 
                     CheckPoint_Rule cpRuleCU = new CheckPoint_Rule();
+                    if(!OptimizeConf) NewFortigateAnalizStatistic._cleanupServicesRuleCount++;
                     cpRuleCU.Name = "Sub-Policy Cleanup";
                     cpRuleCU.Layer = cpLayer.Name;
 
@@ -4984,5 +5530,135 @@ namespace FortiGateMigration
         {
             reports = new Dictionary<int, string>();
         }
+    }
+}
+
+
+public class NewAnalizStatistic
+{
+    public int _optPackageCount = 0;
+    public int _fullrullPackcount = 0;
+    public int _fullrullPackageCount = 0;
+    public int _totalrullPackageCount = 0;
+    public int _totalNetworkObjectsCount = 0;
+    public int _unusedNetworkObjectsCount = 0;
+    public int _duplicateNetworkObjectsCount = 0;
+    public int _nestedNetworkGroupsCount = 0;
+    public int _nestedNetworkGroupsCountAll = 0;
+
+    public int _totalServicesObjectsCount = 0;
+    public int _unusedServicesObjectsCount = 0;
+    public int _duplicateServicesObjectsCount = 0;
+    public int _nestedServicesGroupsCount = 0;
+    public int _nestedServicesGroupsCountAll = 0;
+
+    public int _totalServicesRulesCount = 0;
+    public int _totalServicesRulesOptCount = 0;
+    public int _rulesServicesutilizingServicesAnyCount = 0;
+    public int _rulesServicesutilizingServicesAnySourceCount = 0;
+    public int _rulesServicesutilizingServicesAnyDestinationCount = 0;
+    public int _rulesServicesutilizingServicesAnyServiceCount = 0;
+    public int _disabledServicesRulesCount = 0;
+    public int _unnamedServicesRulesCount = 0;
+    public int _timesServicesRulesCount = 0;
+    public int _nonServicesLoggingServicesRulesCount = 0;
+    public int _stealthServicesRuleCount = 0;
+    public int _cleanupServicesRuleCount = 0;
+    public int _uncommentedServicesRulesCount = 0;
+
+    public int _totalFileRules = 0;
+    public int _totalFileRulesOpt = 0;
+
+
+    public int TotalNetworkObjectsPercent { get { return 100; } }
+    public float UnusedNetworkObjectsPercent { get { return _totalNetworkObjectsCount > 0 ? ((float)_unusedNetworkObjectsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }
+    public float DuplicateNetworkObjectsPercent { get { return _totalNetworkObjectsCount > 0 ? ((float)_duplicateNetworkObjectsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }
+    public float NestedNetworkGroupsPercent { get { return _nestedNetworkGroupsCountAll > 0 ? ((float)_nestedNetworkGroupsCount / (float)_nestedNetworkGroupsCountAll) * 100 : 0; } }
+
+    public float TotalServicesObjectsPercent { get { return 100; } }
+    public float UnusedServicesObjectsPercent { get { return _totalServicesObjectsCount > 0 ? ((float)_unusedServicesObjectsCount / (float)_totalServicesObjectsCount) * 100 : 0; } }
+    public float DuplicateServicesObjectsPercent { get { return _totalServicesObjectsCount > 0 ? ((float)_duplicateServicesObjectsCount / (float)_totalServicesObjectsCount) * 100 : 0; } }
+    public float NestedServicesGroupsPercent { get { return _nestedServicesGroupsCountAll > 0 ? ((float)_nestedServicesGroupsCount / (float)_nestedServicesGroupsCountAll) * 100 : 0; } }
+
+    public float TotalServicesRulesPercent { get { return 100; } }
+    public float RulesServicesutilizingServicesAnyPercent { get { return _totalServicesRulesCount > 0 ? ((float)_rulesServicesutilizingServicesAnyCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float DisabledServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_disabledServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float UnnamedServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_unnamedServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float TimesServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_timesServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float NonServicesLoggingServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_nonServicesLoggingServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float StealthServicesRulePercent { get { return _totalServicesRulesCount > 0 ? ((float)_stealthServicesRuleCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float CleanupServicesRulePercent { get { return _totalServicesRulesCount > 0 ? ((float)_cleanupServicesRuleCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float UncommentedServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_uncommentedServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+
+    public NewAnalizStatistic(int fullpackcount, int totalpack)
+    {
+        _fullrullPackageCount = fullpackcount;
+        _totalrullPackageCount = totalpack;
+    }
+
+    public void Flush()
+    {
+        _fullrullPackcount = 0;
+        _totalServicesRulesCount = 0;
+        _rulesServicesutilizingServicesAnyCount = 0;
+        _rulesServicesutilizingServicesAnySourceCount = 0;
+        _rulesServicesutilizingServicesAnyDestinationCount = 0;
+        _rulesServicesutilizingServicesAnyServiceCount = 0;
+        _disabledServicesRulesCount = 0;
+        _unnamedServicesRulesCount = 0;
+        _timesServicesRulesCount = 0;
+        _nonServicesLoggingServicesRulesCount = 0;
+        _stealthServicesRuleCount = 0;
+        _cleanupServicesRuleCount = 0;
+        _uncommentedServicesRulesCount = 0;
+    }
+
+    public void CalculateCorrectAll(List<CheckPoint_Network> _cpNetworks,
+                                               List<CheckPoint_NetworkGroup> _cpNetworkGroups,
+                                               List<CheckPoint_Host> _cpHosts,
+                                               List<CheckPoint_Range> _cpRanges,
+                                               List<CheckPoint_TcpService> _cpTcpServices,
+                                               List<CheckPoint_UdpService> _cpUdpServices,
+                                               List<CheckPoint_SctpService> _cpSctpServices,
+                                               List<CheckPoint_IcmpService> _cpIcmpServices,
+                                               List<CheckPoint_DceRpcService> _cpDceRpcServices,
+                                               List<CheckPoint_OtherService> _cpOtherServices,
+                                               List<CheckPoint_ServiceGroup> _cpServiceGroups)
+    {
+        _unusedNetworkObjectsCount = _unusedNetworkObjectsCount >= 0 ? _unusedNetworkObjectsCount : 0;
+        _unusedServicesObjectsCount = _unusedServicesObjectsCount >= 0 ? _unusedServicesObjectsCount : 0;
+        _uncommentedServicesRulesCount = _totalServicesRulesCount - _uncommentedServicesRulesCount;
+
+        _totalNetworkObjectsCount = _cpNetworks.Count + _cpHosts.Count + _cpNetworkGroups.Count + _cpRanges.Count;
+
+        //DUPLICATE CALCULATION
+        foreach (var item in _cpNetworks)
+        {
+            if (_cpNetworks.Where(nt =>  nt.Netmask == item.Netmask & nt.Subnet == nt.Subnet).Count() > 1) { _duplicateNetworkObjectsCount++; }
+        }
+        foreach (var item in _cpHosts)
+        {
+            if (_cpHosts.Where(nt => nt.IpAddress == item.IpAddress).Count() > 1) { _duplicateNetworkObjectsCount++; }
+        }
+        foreach (var item in _cpRanges)
+        {
+            if (_cpRanges.Where(nt => nt.RangeFrom == item.RangeFrom & nt.RangeTo == nt.RangeTo).Count() > 1) { _duplicateNetworkObjectsCount++; }
+        }
+        //
+        List<string> vs = new List<string>();
+        foreach (var item in _cpNetworkGroups) { vs.AddRange(item.Members); }
+        var count = _nestedNetworkGroupsCountAll = vs.Count;
+        _nestedNetworkGroupsCount = count - vs.Distinct().Count();
+        /////////////////////////////////
+        _totalServicesObjectsCount = _cpTcpServices.Count + _cpUdpServices.Count + _cpSctpServices.Count + _cpIcmpServices.Count + _cpDceRpcServices.Count + _cpOtherServices.Count + _cpServiceGroups.Count;
+        //
+        List<string> allServiceNames = new List<string>();
+        _duplicateServicesObjectsCount += _cpTcpServices.Count - _cpTcpServices.Select(n => n.Port).Distinct().Count();
+        _duplicateServicesObjectsCount += _cpUdpServices.Count - _cpUdpServices.Select(n => n.Port).Distinct().Count();
+        //
+        vs = new List<string>();
+        foreach (var item in _cpServiceGroups) { vs.AddRange(item.Members); }
+        count = _nestedServicesGroupsCountAll = vs.Count;
+        _nestedServicesGroupsCount = count - vs.Distinct().Count();
     }
 }

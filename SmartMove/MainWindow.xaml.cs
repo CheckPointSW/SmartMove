@@ -32,6 +32,7 @@ using NetScreenMigration;
 using FortiGateMigration;
 using PaloAltoMigration;
 using PanoramaPaloAltoMigration;
+using System.ComponentModel;
 
 namespace SmartMove
 {
@@ -66,9 +67,17 @@ namespace SmartMove
             _supportedVendors.SelectedVendor = Vendor.CiscoASA;   // this is the default
 
             InitializeComponent();
-            ShowDisclaimer();
             LoadContactInfo();
             HandleCommandLineArgs();
+        }
+
+        void OnLoad(object sender, RoutedEventArgs e)
+        {
+            this.Owner.Hide();
+        }
+        void OnClose(object sender, CancelEventArgs e)
+        {
+            this.Owner.Show();
         }
 
         #endregion
@@ -134,6 +143,18 @@ namespace SmartMove
 
         public static readonly DependencyProperty ConvertUserConfigurationProperty =
             DependencyProperty.Register("ConvertUserConfiguration", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+
+        #endregion
+
+        #region ExportManagmentReport
+        public bool ExportManagmentReport
+        {
+            get { return (bool)GetValue(ExportManagmentReportProperty); }
+            set { SetValue(ExportManagmentReportProperty, value); }
+        }
+
+        public static readonly DependencyProperty ExportManagmentReportProperty =
+            DependencyProperty.Register("ExportManagmentReport", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
 
         #endregion
 
@@ -279,6 +300,7 @@ namespace SmartMove
             {
                 case Vendor.CiscoASA:
                     ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
+                    SkipUnusedObjects.Visibility = Visibility.Visible;
                     break;
                 case Vendor.JuniperJunosOS:
                     ConfigurationFileLabel = SupportedVendors.JuniperConfigurationFileLabel;
@@ -332,7 +354,7 @@ namespace SmartMove
             switch (_supportedVendors.SelectedVendor)
             {
                 case Vendor.CiscoASA:
-                    filter = "conf files (*.conf, *.txt)|*.conf; *.txt|All files (*.*)|*.*";
+                    filter = "conf files (*.conf, *.txt, *.cfg)|*.conf; *.txt; *.cfg|All files (*.*)|*.*";
                     break;
                 case Vendor.JuniperJunosOS:
                     filter = "xml files (*.xml)|*.xml";
@@ -492,7 +514,7 @@ namespace SmartMove
             try
             {
                 string ciscoFile = ConfigFilePath.Text;
-		switch (_supportedVendors.SelectedVendor)
+		        switch (_supportedVendors.SelectedVendor)
                 {
                     case Vendor.PaloAltoPanorama:
                         PanoramaParser panParser = (PanoramaParser)vendorParser;                        
@@ -602,7 +624,9 @@ namespace SmartMove
             switch (_supportedVendors.SelectedVendor)
             {
                 case Vendor.CiscoASA:
-                    vendorConverter = new CiscoConverter();
+                    CiscoConverter ciscoConverter = new CiscoConverter();
+                    ciscoConverter.SkipUnusedObjects = SkipUnusedObjectsConversion;
+                    vendorConverter = ciscoConverter;
                     break;
                 case Vendor.FirePower:
                     vendorConverter = new CiscoConverter() {
@@ -620,6 +644,7 @@ namespace SmartMove
                     fgConverter.OptimizeConf = SkipUnusedObjectsConversion;
                     fgConverter.ConvertUserConf = ConvertUserConfiguration;
                     fgConverter.LDAPAccoutUnit = ldapAccountUnit.Trim();
+                    fgConverter.CreateManagnetReport = ExportManagmentReport;
                     vendorConverter = fgConverter;
                     break;
                 case Vendor.PaloAlto:
@@ -634,6 +659,7 @@ namespace SmartMove
                     panoramaConverter.OptimizeConf = SkipUnusedObjectsConversion;
                     panoramaConverter.ConvertUserConf = ConvertUserConfiguration;
                     panoramaConverter.LDAPAccoutUnit = ldapAccountUnit.Trim();
+                    panoramaConverter.CreateManagnetReport = ExportManagmentReport;
                     vendorConverter = panoramaConverter;
                     break;
                 default:
@@ -672,7 +698,7 @@ namespace SmartMove
             vendorConverter.ExportPolicyPackagesAsHtml();
             if (ConvertNATConfiguration)
             {
-		ConvertedNatPolicyLink.MouseUp -= Link_OnClick;
+		        ConvertedNatPolicyLink.MouseUp -= Link_OnClick;
                 vendorConverter.ExportNatLayerAsHtml();
 
                 //check if the user asked for NAT policy and no rules found.
@@ -685,6 +711,10 @@ namespace SmartMove
                     ConvertedNatPolicyLink.Style = (Style)ConvertedNatPolicyLink.FindResource("HyperLinkStyle");
                     ConvertedNatPolicyLink.MouseUp += Link_OnClick;
                 }
+            }
+            if (ExportManagmentReport && (typeof(PanoramaConverter) != vendorConverter.GetType() && typeof(FortiGateConverter) != vendorConverter.GetType()))
+            {
+                vendorConverter.ExportManagmentReport();
             }
             UpdateProgress(100, "");
 
@@ -748,6 +778,7 @@ namespace SmartMove
             BrowseTargetFolder.IsEnabled = enable;
             DomainName.IsEnabled = enable;
             ConvertNAT.IsEnabled = enable;
+            SkipUnusedObjects.IsEnabled = enable;
             Go.IsEnabled = enable;
         }
 
@@ -774,11 +805,12 @@ namespace SmartMove
 
                 case Vendor.FortiGate:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
-                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
 
                     FortiGateConverter fgConverter = (FortiGateConverter)vendorConverter;
                     ConvertedPolicyRulesCount = (fgConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInConvertedPackage()) : " Check report.";
+                    ConvertedOptimizedPolicyRulesCount = (fgConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
                     ConvertedNATPolicyRulesCount = (fgConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInNatLayer()) : " Check report.";
                     ConvertingWarningsCount = (fgConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", fgConverter.WarningsInConvertedPackage()) : " Check report.";
                     ConvertingErrorsCount = (fgConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", fgConverter.ErrorsInConvertedPackage()) : " Check report.";
@@ -823,27 +855,7 @@ namespace SmartMove
             RulebaseOptimizedScriptLink.Tag = vendorConverter.PolicyOptimizedScriptFile;
         }
 
-        private void ShowDisclaimer()
-        {
-            // Display the disclaimer document only once per tool version.
-            string version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            if (!File.Exists(version))
-            {
-                var disclaimerWindow = new DisclaimerWindow();
-                var res = disclaimerWindow.ShowDialog();
-
-                if (res.HasValue && res.Value)
-                {
-                    // Create a flag file.
-                    var fsFlag = new FileStream(version, FileMode.CreateNew, FileAccess.Write);
-                    fsFlag.Close();
-                }
-                else
-                {
-                    Close();
-                }
-            }
-        }
+        
 
         private void LoadContactInfo()
         {
