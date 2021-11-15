@@ -96,6 +96,7 @@ class APIResponse:
     def from_http_response(cls, http_response, err_message=""):
         """
         Generate APIResponse from http_response object
+
         :param http_response: input HTTP response object
         :param err_message: if there is an error message included, we include it in the APIResponse
         :return: The APIResponse object we generated
@@ -107,6 +108,7 @@ class APIResponse:
     def set_success_status(self, status):
         """
         This method sets the response success status
+
         :param status: input status
         """
         self.success = status

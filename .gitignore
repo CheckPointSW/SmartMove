@@ -1,0 +1,17 @@
+SmartMove/SmartConnector/*.pyc
+SmartMove/SmartConnector/.idea
+SmartMove/compressors/*.exe
+SmartMove/compressors/*.dll
+bin/
+CheckPointObjects/obj/
+CiscoMigration/obj/
+CommonUtils/obj/
+FortinetMigration/obj/Debug/.NETFramework,Version=v4.5.AssemblyAttributes.cs
+FortinetMigration/obj/
+JuniperMigration/obj/
+MigrationBase/obj/
+NetScreenMigration/obj/
+packages/System.Runtime.Serialization.Json.4.3.0/
+packages/System.Windows.Interactivity.WPF.2.0.20525/
+PaloAltoMigration/obj/
+SmartMove/obj/

@@ -42,7 +42,7 @@ namespace CheckPointObjects
         /// </summary>
         protected const string CommentsValidityRegex = @"[^A-Za-z0-9 @#*$(){}\[\]_.\-=:,/]";
 
-        public const string Any = "any";
+        public const string Any = "Any";
         public const string All = "All";
         public const string All_Internet = "All_Internet";
         public const string icmpProtocol = "icmp-proto";
