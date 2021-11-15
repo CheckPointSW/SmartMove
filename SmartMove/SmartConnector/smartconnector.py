@@ -143,6 +143,7 @@ def addUserObjectToServer(client, apiCommand, payload, userObjectNamePostfix=1, 
         printStatus(res_add_obj, None)
         if res_add_obj.success is False:
             if not changeName:
+                addedObject = None
                 break
             if isNameDuplicated(res_add_obj):
                 if (apiCommand == 'add-time' or apiCommand == 'add-time-group') and (len(str(userObjectNamePostfix)) + len(userObjectNameInitial) + 1) > 11:
@@ -291,7 +292,8 @@ def processDomains(client, userDomains):
                 "is-sub-domain": userDomain['IsSubDomain'],
                 "comments": userDomain['Comments'],
                 "tags": userDomain['Tags']
-            }
+            },
+            changeName = False
         )
         if addedDomain is not None:
             mergedDomainsNamesMap[userDomainNameInitial] = addedDomain['name']
@@ -578,9 +580,9 @@ def processNetGroups(client, userNetworkGroups, mergedNetworkObjectsMap):
             printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is added as " + addedNetworkGroup['name'])
             publishCounter = publishUpdate(publishCounter, True)
             userNetworkGroup["Name"] = addedNetworkGroup['name']
-            if ("Members" in userNetworkGroup):
+            if userNetworkGroup['TypeName'] != 'CheckPoint_GroupWithExclusion':
                 processGroupWithMembers(client, "add-group", userNetworkGroup, mergedNetworkObjectsMap,
-                                            mergedGroupsNamesDict, True)
+                                        mergedGroupsNamesDict, True)
         else:
             printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is not added.")
         printStatus(None, "")

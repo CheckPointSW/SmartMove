@@ -41,7 +41,7 @@ class APIClientArgs:
     # single_conn is set to True by default, when work on parallel set to False
     def __init__(self, port=None, fingerprint=None, sid=None, server="127.0.0.1", http_debug_level=0,
                  api_calls=None, debug_file="", proxy_host=None, proxy_port=8080,
-                 api_version=None, unsafe=False, unsafe_auto_accept=False, context="web_api", single_conn=True):
+                 api_version=None, unsafe=False, unsafe_auto_accept=False, context="web_api", single_conn=True, user_agent="python-api-wrapper"):
         self.port = port
         # management server fingerprint
         self.fingerprint = fingerprint
@@ -69,6 +69,8 @@ class APIClientArgs:
         self.context = context
         # Indicates that the client should use single HTTPS connection
         self.single_conn = single_conn
+        # User agent will be use in api call request header
+        self.user_agent = user_agent
 
 
 class APIClient:
@@ -115,6 +117,9 @@ class APIClient:
         self.conn = None
         # Indicates that the client should use single HTTPS connection
         self.single_conn = api_client_args.single_conn
+        # User agent will be use in api call request header
+        self.user_agent = api_client_args.user_agent
+
 
     def __enter__(self):
         return self
@@ -170,6 +175,7 @@ class APIClient:
               payload=None):
         """
         performs a 'login' API call to the management server
+
         :param api_key: Check Point api-key
         :param continue_last_session: [optional] It is possible to continue the last Check Point session
                                       or to create a new one
@@ -188,6 +194,7 @@ class APIClient:
               payload=None):
         """
         performs a 'login' API call to the management server
+
         :param username: Check Point admin name
         :param password: Check Point admin password
         :param continue_last_session: [optional] It is possible to continue the last Check Point session
@@ -208,6 +215,7 @@ class APIClient:
         This method allows to login into the management server with root permissions.
         In order to use this method the application should be run directly on the management server
         and to have super-user privileges.
+
         :param domain: [optional] name/uid/IP address of the domain you want to log into in an MDS environment
         :param payload: [optional] dict of additional parameters for the login command
         :return: APIResponse object with the relevant details from the login command.
@@ -256,6 +264,7 @@ class APIClient:
     def api_call(self, command, payload=None, sid=None, wait_for_task=True, timeout=-1):
         """
         performs a web-service API request to the management server
+
         :param command: the command is placed in the URL field
         :param payload: a JSON object (or a string representing a JSON object) with the command arguments
         :param sid: [optional]. The Check Point session-id. when omitted use self.sid.
@@ -286,7 +295,7 @@ class APIClient:
 
         # Set headers
         _headers = {
-            "User-Agent": "python-api-wrapper",
+            "User-Agent": self.user_agent,
             "Accept": "*/*",
             "Content-Type": "application/json",
             "Content-Length": len(_data),
@@ -365,6 +374,7 @@ class APIClient:
         This API makes such repeated API calls and return the full list objects.
         note: this function calls gen_api_query and iterates over the generator until it gets all the objects,
         then returns.
+
         :param command: name of API command. This command should be an API that returns an array of
                         objects (for example: show-hosts, show networks, ...)
         :param details_level: query APIs always take a details-level argument.
@@ -392,6 +402,7 @@ class APIClient:
         This is a generator function that yields the list of wanted objects received so far from the management server.
         This is in contrast to normal API calls that return only a limited number of objects.
         This function can be used to show progress when requesting many objects (i.e. "Received x/y objects.")
+
         :param command: name of API command. This command should be an API that returns an array of objects
                         (for example: show-hosts, show networks, ...)
         :param details_level: query APIs always take a details-level argument. Possible values are "standard", "full", "uid"
@@ -474,6 +485,7 @@ class APIClient:
         Using the show-task API it is possible to check on the status of this task until its completion.
         Every two seconds, this function will check for the status of the task.
         The function will return when the task (and its sub-tasks) are no longer in-progress.
+
         :param task_id: The task identifier.
         :param timeout: Optional positive timeout (in seconds) that will end the task even if not completed.
         :return: APIResponse object (response of show-task command).
@@ -524,6 +536,7 @@ class APIClient:
     def __wait_for_tasks(self, task_objects, timeout=-1):
         """
         The version of __wait_for_task function for the collection of tasks
+
         :param task_objects: A list of task objects
         :return: APIResponse object (response of show-task command).
         """
@@ -547,6 +560,7 @@ class APIClient:
     def check_tasks_status(task_result):
         """
         This method checks if one of the tasks failed and if so, changes the response status to be False
+
         :param task_result: api_response returned from "show-task" command
         :return:
         """
@@ -561,6 +575,7 @@ class APIClient:
         If the server's fingerprint is not found, an HTTPS connection is made to the server
         and the user is asked if he or she accepts the server's fingerprint.
         If the fingerprint is trusted, it is stored in the fingerprint file.
+
         :return: False if the user does not accept the server certificate, True in all other cases.
         """
         if self.unsafe:
@@ -607,6 +622,7 @@ class APIClient:
     def ask_yes_no_question(question):
         """
         helper function. Present a question to the user with Y/N options.
+
         :param question: The question to display to the user
         :return: 'True' if the user typed 'Y'. 'False' is the user typed 'N'
         """
@@ -623,6 +639,7 @@ class APIClient:
     def save_fingerprint_to_file(server, fingerprint, filename="fingerprints.txt"):
         """
         store a server's fingerprint into a local file.
+
         :param server: the IP address/name of the Check Point management server.
         :param fingerprint: A SHA1 fingerprint of the server's certificate.
         :param filename: The file in which to store the certificates. The file will hold a JSON structure in which
@@ -672,6 +689,7 @@ class APIClient:
     def read_fingerprint_from_file(server, filename="fingerprints.txt"):
         """
         reads a server's fingerprint from a local file.
+
         :param server: the IP address/name of the Check Point management server.
         :param filename: The file in which to store the certificates. The file will hold a JSON structure in which
                          the key is the server and the value is its fingerprint.
