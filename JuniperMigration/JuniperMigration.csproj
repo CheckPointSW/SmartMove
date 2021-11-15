@@ -46,6 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="JuniperAnalizStatistic.cs" />
     <Compile Include="JuniperConverter.cs" />
     <Compile Include="JuniperKnownApplications.cs" />
     <Compile Include="JuniperObjects.cs" />
