@@ -1303,7 +1303,8 @@ namespace FortiGateMigration
             _warningsConvertedPackage += _warningsList.Count;
             _errorsConvertedPackage += _errorsList.Count;
 
-            CreateSmartConnector();
+            CreateSmartConnector(true, false);      //cp_objects.json
+            CreateSmartConnector(true, true);       //cp_objects_opt.json
 
             // to clean; must be the last!!!
             _cpObjects.ClearRepository();
