@@ -163,11 +163,24 @@ namespace FortiGateMigration
 
         public void ExportManagmentReport(bool optimazed)
         {
-            
-            
+
+
             NewFortigateAnalizStatistic._unusedNetworkObjectsCount += _cpNetworks.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedNetworkObjectsCount += _cpNetworkGroups.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedNetworkObjectsCount += _cpRanges.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedNetworkObjectsCount += _cpHosts.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedNetworkObjectsCount += _cpDomains.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedNetworkObjectsCount += _cpZones.Count * (optimazed ? -1 : 1);
+
             NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpTcpServices.Count * (optimazed ? -1 : 1);
             NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpUdpServices.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpSctpServices.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpIcmpServices.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpDceRpcServices.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpRpcServices.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpOtherServices.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpServiceGroups.Count * (optimazed ? -1 : 1);
+            NewFortigateAnalizStatistic._unusedServicesObjectsCount += _cpApplicationGroups.Count * (optimazed ? -1 : 1);
 
             if (optimazed)
             {
