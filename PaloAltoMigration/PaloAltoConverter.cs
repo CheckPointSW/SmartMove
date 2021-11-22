@@ -49,6 +49,83 @@ namespace PaloAltoMigration
 
         private string outputFormat = "";
 
+        private void Add_Optimized_Package()
+        {
+            CheckPoint_Package regularPackage = _cpPackages[0];
+
+            var optimizedPackage = new CheckPoint_Package();
+            optimizedPackage.Name = _policyPackageOptimizedName;
+            optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;
+            optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;
+
+            var regular2OptimizedLayers = new Dictionary<string, string>();
+
+            foreach (CheckPoint_Layer layer in regularPackage.SubPolicies)
+            {
+                string optimizedSubPolicyName = layer.Name + "_opt";
+
+                CheckPoint_Layer optimizedLayer = RuleBaseOptimizer.Optimize(layer, optimizedSubPolicyName);
+                foreach (CheckPoint_Rule subSubRule in optimizedLayer.Rules)
+                {
+                    if (subSubRule.SubPolicyName.Equals(GlobalRulesSubpolicyName))
+                    {
+                        //The Global sub-sub rule subpolicy name should also be renamed for consistency
+                        subSubRule.SubPolicyName += "_opt";
+                    }
+                }
+                if (!regular2OptimizedLayers.ContainsKey(layer.Name))
+                {
+                    regular2OptimizedLayers.Add(layer.Name, optimizedSubPolicyName);
+                    optimizedPackage.SubPolicies.Add(optimizedLayer);
+                    validatePackage(optimizedPackage);
+                }
+            }
+
+            foreach (CheckPoint_Rule rule in regularPackage.ParentLayer.Rules)
+            {
+                CheckPoint_Rule newRule = rule.Clone();
+                if (newRule.Action == CheckPoint_Rule.ActionType.SubPolicy)
+                {
+                    newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];
+                }
+                newRule.Layer = optimizedPackage.ParentLayer.Name;
+                newRule.ConversionComments = rule.ConversionComments;
+
+                optimizedPackage.ParentLayer.Rules.Add(newRule);
+            }
+
+            AddCheckPointObject(optimizedPackage);
+        }
+
+        public void CreateCatalogOptPolicies()
+        {
+            string filename = PolicyOptimizedHtmlFile;
+
+            using (var file = new StreamWriter(filename, false))
+            {
+                file.WriteLine("<html>");
+                file.WriteLine("<head>");
+                file.WriteLine("</head>");
+                file.WriteLine("<body>");
+                file.WriteLine("<h1>List of VDOMs Policies for " + _vendorFileName + "</h1>");
+                file.WriteLine("<ul>");
+                foreach (string vDomName in _vsysNames)
+                {
+                    if (File.Exists(_targetFolder + vDomName + "\\" + vDomName + "_policy_opt.html"))
+                    {
+                        file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_policy_opt.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
+                    }
+                    else
+                    {
+                        file.WriteLine("<li>" + "<h2>" + vDomName + "</h2>" + "</li>");
+                    }
+                }
+                file.WriteLine("</ul>");
+                file.WriteLine("</body>");
+                file.WriteLine("</html>");
+            }
+        }
+
         #endregion
 
         #region Constants
@@ -950,6 +1027,7 @@ namespace PaloAltoMigration
                                 CreateCatalogObjects();
                                 CreateCatalogNATs();
                                 CreateCatalogPolicies();
+                                CreateCatalogOptPolicies();
                                 CreateCatalogErrors();
                                 CreateCatalogWarnings();
                             }
@@ -1078,7 +1156,7 @@ namespace PaloAltoMigration
                                   appsMatchList, cpAppGroupsDict, paAppFiltersList,
                                   cpSchedulesDict, cpAccessRolesDict);
 
-            (new List<CheckPoint_AccessRole>(cpAccessRolesDict.Values)).ForEach(x => AddCheckPointObject(x));
+            new List<CheckPoint_AccessRole>(cpAccessRolesDict.Values).ForEach(x => AddCheckPointObject(x));
 
             if (_isNatConverted)
             {
@@ -1089,21 +1167,26 @@ namespace PaloAltoMigration
 
             if (!OptimizeConf)
             {
-                (new List<CheckPoint_Zone>(cpZonesDict.Values)).ForEach(x => AddCheckPointObject(x));
-                (new List<CheckPointObject>(cpAddressesDict.Values)).ForEach(x => AddCheckPointObject(x));
-                (new List<CheckPoint_NetworkGroup>(cpNetGroupsDict.Values)).ForEach(x => AddCheckPointObject(x));
-                (new List<CheckPointObject>(cpServicesDict.Values)).ForEach(x =>
+                new List<CheckPoint_Zone>(cpZonesDict.Values).ForEach(x => AddCheckPointObject(x));
+                new List<CheckPointObject>(cpAddressesDict.Values).ForEach(x => AddCheckPointObject(x));
+                new List<CheckPoint_NetworkGroup>(cpNetGroupsDict.Values).ForEach(x => AddCheckPointObject(x));
+                new List<CheckPointObject>(cpServicesDict.Values).ForEach(x =>
                 {
                     if (x.GetType() != typeof(CheckPoint_PredifinedObject))
                         AddCheckPointObject(x);
                 });
-                (new List<CheckPoint_ServiceGroup>(cpServicesGroupsDict.Values)).ForEach(x => AddCheckPointObject(x));
-                (new List<CheckPoint_ApplicationGroup>(cpAppGroupsDict.Values)).ForEach(x => AddCheckPointObject(x));
-                (new List<List<CheckPoint_Time>>(cpSchedulesDict.Values)).ForEach(x => x.ForEach(y => AddCheckPointObject(y)));
+                new List<CheckPoint_ServiceGroup>(cpServicesGroupsDict.Values).ForEach(x => AddCheckPointObject(x));
+                new List<CheckPoint_ApplicationGroup>(cpAppGroupsDict.Values).ForEach(x => AddCheckPointObject(x));
+                new List<List<CheckPoint_Time>>(cpSchedulesDict.Values).ForEach(x => x.ForEach(y => AddCheckPointObject(y)));
+            }
+
+
+            if (_cpPackages.Count > 0)
+            {
+                Add_Optimized_Package();
             }
 
             //Creating Result Files in Scripting Format and their reports in HTML format
-
             CreateObjectsScript();
             CreateObjectsHtml();
 
