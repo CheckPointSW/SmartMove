@@ -28,7 +28,10 @@ def printStatus(res_action, message, error=None):
             for msg_wrn in res_action.data['warnings']:
                 line += "WARN:" + "\t" + msg_wrn['message'] + "\n"
         if line == "":
-            line = "WARN:" + "\t" + res_action.data['message'] + "\n"
+            if "message" in res_action.data:
+                line = "WARN:" + "\t" + res_action.data['message'] + "\n"
+            else:
+                line = "WARN:" + "\t" + "Err of getting message from the mgmt server" + "\n"
     elif message is not None:
         line += "\t" + message + "\n"
     elif error is not None:
@@ -140,6 +143,7 @@ def addUserObjectToServer(client, apiCommand, payload, userObjectNamePostfix=1, 
         printStatus(res_add_obj, None)
         if res_add_obj.success is False:
             if not changeName:
+                addedObject = None
                 break
             if isNameDuplicated(res_add_obj):
                 if (apiCommand == 'add-time' or apiCommand == 'add-time-group') and (len(str(userObjectNamePostfix)) + len(userObjectNameInitial) + 1) > 11:
@@ -237,17 +241,20 @@ def processGroupWithMembers(client, apiCommand, userGroup, mergedObjectsMap, mer
         apiSetCommand = "set-service-group"
 
     if isNeedSplitted:
-        for i, userGroupMember in enumerate(userGroup['Members']):
-            print(userGroupMember)
-            if userGroupMember in mergedObjectsMap:
-                userGroupMember = mergedObjectsMap[userGroupMember]
-            res_add_obj = client.api_call(
-                apiSetCommand,
-                {
-                    "name": userGroup['Name'],
-                    "members": {"add": userGroupMember}
-                })
-            printStatus(None, "REPORT: " + userGroup['Name'] + " is set with new member " + str(userGroupMember))
+        if ("Members" in userGroup):    #group with list of members
+            for i, userGroupMember in enumerate(userGroup['Members']):
+                print(userGroupMember)
+                if userGroupMember in mergedObjectsMap:
+                    userGroupMember = mergedObjectsMap[userGroupMember]
+                res_add_obj = client.api_call(
+                    apiSetCommand,
+                    {
+                        "name": userGroup['Name'],
+                        "members": {"add": userGroupMember}
+                    })
+                printStatus(None, "REPORT: " + userGroup['Name'] + " is set with new member " + str(userGroupMember))
+        else:   #group with exclusion with include/exclude fields with groups name
+            printStatus(None, "WARN: " + userGroup['Name'] + " hasn't any member by the type GroupWithExlusions")
     else:
         addedGroup = addUserObjectToServer(
             client,
@@ -285,7 +292,8 @@ def processDomains(client, userDomains):
                 "is-sub-domain": userDomain['IsSubDomain'],
                 "comments": userDomain['Comments'],
                 "tags": userDomain['Tags']
-            }
+            },
+            changeName = False
         )
         if addedDomain is not None:
             mergedDomainsNamesMap[userDomainNameInitial] = addedDomain['name']
@@ -572,8 +580,9 @@ def processNetGroups(client, userNetworkGroups, mergedNetworkObjectsMap):
             printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is added as " + addedNetworkGroup['name'])
             publishCounter = publishUpdate(publishCounter, True)
             userNetworkGroup["Name"] = addedNetworkGroup['name']
-            processGroupWithMembers(client, "add-group", userNetworkGroup, mergedNetworkObjectsMap,
-                                    mergedGroupsNamesDict, True)
+            if userNetworkGroup['TypeName'] != 'CheckPoint_GroupWithExclusion':
+                processGroupWithMembers(client, "add-group", userNetworkGroup, mergedNetworkObjectsMap,
+                                        mergedGroupsNamesDict, True)
         else:
             printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is not added.")
         printStatus(None, "")

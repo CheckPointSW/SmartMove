@@ -53,6 +53,9 @@ namespace PanoramaPaloAltoMigration
 
         private string outputFormat = "";
 
+        //if total package name over max count of chars (31) do not create *.sh, *.tar.gz, *.zip files
+        private bool _isOverMaxLengthPackageName = false;
+
         #endregion
 
         #region Constants
@@ -1134,6 +1137,7 @@ namespace PanoramaPaloAltoMigration
                                 CreateCatalogObjects();
                                 CreateCatalogNATs();
                                 CreateCatalogPolicies();
+                                CreateCatalogOptPolicies();
                                 CreateCatalogErrors();
                                 CreateCatalogWarnings();
                                 if (CreateManagnetReport) CreateCatalogExportManagment();
@@ -1335,12 +1339,22 @@ namespace PanoramaPaloAltoMigration
                 (new List<List<CheckPoint_Time>>(cpSchedulesDict.Values)).ForEach(x => x.ForEach(y => AddCheckPointObject(y)));
             }
 
+
+            if (_cpPackages.Count > 0)
+            {
+                Add_Optimized_Package();
+            }
+
             //Creating Result Files in Scripting Format and their reports in HTML format
             //Console.WriteLine("Create object scripts...");
             CreateObjectsScript();
             CreateObjectsHtml();
 
-            CreatePackagesScript();
+            if (!_isOverMaxLengthPackageName)
+            {
+                CreatePackagesScript();
+            }
+
             ExportPolicyPackagesAsHtmlConfig();
 
 
@@ -1354,7 +1368,11 @@ namespace PanoramaPaloAltoMigration
 
             if(CreateManagnetReport) ExportManagmentReport();
 
-            CreateSmartConnector();
+            if (!_isOverMaxLengthPackageName)
+            {
+                CreateSmartConnector(true, false);
+                CreateSmartConnector(true, true);
+            }
 
             // to clean; must be the last!!!
             _cpObjects.ClearRepository();
@@ -2593,6 +2611,12 @@ namespace PanoramaPaloAltoMigration
 
             var cpPackage = new CheckPoint_Package();
             cpPackage.Name = _policyPackageName;
+            string pckg_name = _policyPackageName.Replace("_policy", "");
+            if (pckg_name.Length > 20)
+            {
+                _isOverMaxLengthPackageName = true;
+                _errorsList.Add("Package " + pckg_name + " has name length more then 20 chars");
+            }
             cpPackage.ParentLayer.Name = cpPackage.NameOfAccessLayer;
 
             foreach (PA_SecurityRuleEntry paSecurityRuleEntry in paRules)
@@ -4173,6 +4197,90 @@ namespace PanoramaPaloAltoMigration
             }
             Directory.Delete(outConfigsFolder, true);
             return devicesUIDDict;
+        }
+
+        private void Add_Optimized_Package()
+        {
+            CheckPoint_Package regularPackage = _cpPackages[0];
+
+            var optimizedPackage = new CheckPoint_Package();
+            _policyPackageOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
+            string pckg_name = _policyPackageOptimizedName.Replace("_opt", "");
+            if (pckg_name.Length > 20)
+            {
+                _isOverMaxLengthPackageName = true;
+                _errorsList.Add("Package " + pckg_name + " has name length more then 20 chars");
+            }
+            optimizedPackage.Name = _policyPackageOptimizedName;
+            optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;
+            optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;
+
+            var regular2OptimizedLayers = new Dictionary<string, string>();
+
+            foreach (CheckPoint_Layer layer in regularPackage.SubPolicies)
+            {
+                string optimizedSubPolicyName = layer.Name + "_opt";
+
+                CheckPoint_Layer optimizedLayer = RuleBaseOptimizer.Optimize(layer, optimizedSubPolicyName);
+                foreach (CheckPoint_Rule subSubRule in optimizedLayer.Rules)
+                {
+                    if (subSubRule.SubPolicyName.Equals(GlobalRulesSubpolicyName))
+                    {
+                        //The Global sub-sub rule subpolicy name should also be renamed for consistency
+                        subSubRule.SubPolicyName += "_opt";
+                    }
+                }
+                if (!regular2OptimizedLayers.ContainsKey(layer.Name))
+                {
+                    regular2OptimizedLayers.Add(layer.Name, optimizedSubPolicyName);
+                    optimizedPackage.SubPolicies.Add(optimizedLayer);
+                    validatePackage(optimizedPackage);
+                }
+            }
+
+            foreach (CheckPoint_Rule rule in regularPackage.ParentLayer.Rules)
+            {
+                CheckPoint_Rule newRule = rule.Clone();
+                if (newRule.Action == CheckPoint_Rule.ActionType.SubPolicy)
+                {
+                    newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];
+                }
+                newRule.Layer = optimizedPackage.ParentLayer.Name;
+                newRule.ConversionComments = rule.ConversionComments;
+
+                optimizedPackage.ParentLayer.Rules.Add(newRule);
+            }
+
+            AddCheckPointObject(optimizedPackage);
+        }
+
+        public void CreateCatalogOptPolicies()
+        {
+            string filename = PolicyOptimizedHtmlFile;
+
+            using (var file = new StreamWriter(filename, false))
+            {
+                file.WriteLine("<html>");
+                file.WriteLine("<head>");
+                file.WriteLine("</head>");
+                file.WriteLine("<body>");
+                file.WriteLine("<h1>List of VDOMs Policies for " + _vendorFileName + "</h1>");
+                file.WriteLine("<ul>");
+                foreach (string vDomName in _vsysNames)
+                {
+                    if (File.Exists(_targetFolder + vDomName + "\\" + vDomName + "_policy_opt.html"))
+                    {
+                        file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_policy_opt.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
+                    }
+                    else
+                    {
+                        file.WriteLine("<li>" + "<h2>" + vDomName + "</h2>" + "</li>");
+                    }
+                }
+                file.WriteLine("</ul>");
+                file.WriteLine("</body>");
+                file.WriteLine("</html>");
+            }
         }
     }
 }

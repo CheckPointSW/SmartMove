@@ -117,7 +117,7 @@ namespace SmartMove
             Console.WriteLine("\t" + "-d | --domain" + "\t\t" + "domain name (for CiscoASA, FirePower, JuniperSRX, JuniperSSG only)");
             Console.WriteLine("\t" + "-n | --nat" + "\t\t" + @"(""-n false"" |"" -n true"" [default])  convert NAT configuration [enabled by default]");
             Console.WriteLine("\t" + "-l | --ldap" + "\t\t" + "LDAP Account unit for convert user configuration option (for FortiNet, PaloAlto and Panorama only)");
-            Console.WriteLine("\t" + "-k | --skip" + "\t\t" + @"(""-k false"" |"" -k true"" [default]) do not import unused objects (for FortiNet, PaloAlto and Panorama only) [enabled by default]");
+            Console.WriteLine("\t" + "-k | --skip" + "\t\t" + @"(""-k false"" |"" -k true"" [default]) do not import unused objects (for FortiNet, PaloAlto, CiscoASA and Panorama only) [enabled by default]");
             Console.WriteLine("\t" + "-f | --format" + "\t\t" + "format of the output file (JSON[default], TEXT)");
             Console.WriteLine("\t" + "-i | --interactive" + "\t" + @"-i false | -i true [default] Interactive mode provides a better user experience.Disable when automation is required[enabled by default]");
             Console.WriteLine();
@@ -132,9 +132,9 @@ namespace SmartMove
          */
         public int CheckOptionsValidity(CommandLine commandLine)
         {
-            var fullVendorsList = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FortiNet", "PaloAlto", "Panorama", "FirePower" };
-            var vendorsList1 = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FirePower" };
-            var vendorsList2 = new List<string> { "FortiNet", "PaloAlto", "Panorama" };
+            var fullVendorsList = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FortiNet", "PaloAlto", "Panorama", "FirePower" }; //all vendors
+            var vendorsList1 = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FirePower" };                                        //option -d
+            var vendorsList2 = new List<string> { "FortiNet", "PaloAlto", "Panorama", "CiscoASA" };                                             //option -k
             if (String.IsNullOrEmpty(commandLine.Vendor))
             {
                 Console.WriteLine("Option -v is mandatory but not specified.", MessageTypes.Error);
@@ -163,14 +163,18 @@ namespace SmartMove
                     return 0;
                 }
 
-                if (commandLine.DontImportUnusedObjects == true)
+            }
+
+            if (commandLine.DontImportUnusedObjects == true)
+            {
+                if (!vendorsList2.Contains(commandLine.Vendor))
                 {
                     Console.WriteLine("Option -k is not valid for vendor " + commandLine.Vendor + "!");
                     Console.WriteLine("For command help run \"SmartMove.exe -h or --help\"", MessageTypes.Error);
                     return 0;
                 }
-
             }
+
             if (vendorsList2.Contains(commandLine.Vendor))
             {
                 if (commandLine.ConvertUserConfiguration == true && commandLine.LdapAccountUnit == null)
@@ -767,7 +771,9 @@ namespace SmartMove
             switch (commandLine.Vendor)
             {
                 case "CiscoASA":
-                    vendorConverter = new CiscoConverter();
+                    CiscoConverter converter = new CiscoConverter();
+                    converter.SkipUnusedObjects = commandLine.DontImportUnusedObjects;
+                    vendorConverter = converter;
                     break;
                 case "FirePower":
                     vendorConverter = new CiscoConverter()
