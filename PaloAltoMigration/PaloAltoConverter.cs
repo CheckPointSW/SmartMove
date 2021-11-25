@@ -1201,7 +1201,8 @@ namespace PaloAltoMigration
             _warningsConvertedPackage = _warningsList.Count;
             _errorsConvertedPackage = _errorsList.Count;
 
-            CreateSmartConnector();
+            CreateSmartConnector(true, false);
+            CreateSmartConnector(true, true);
 
             // to clean; must be the last!!!
             _cpObjects.ClearRepository();
