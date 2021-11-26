@@ -1225,6 +1225,7 @@ namespace PanoramaPaloAltoMigration
                                         Dictionary<string, string> _devicesUIDDict
                                         )
         {
+            _isOverMaxLengthPackageName = false;
 
             if (IsConsoleRunning)
             {
