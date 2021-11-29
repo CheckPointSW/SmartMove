@@ -190,10 +190,10 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
                     if len(res_get_obj_with_ip.data) > 0:
-                        if userObjectType == "network" and next((x for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet']), None) is None:
+                        if userObjectType == "network" and next((x for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet'] and (x['subnet-mask'] == payload['subnet-mask']) if is_valid_ipv4(payload['subnet'])), None) is None:
                             isIgnoreWarnings = True
                         else:
-                            if userObjectType == "host" or userObjectType == "network":
+                            if userObjectType == "host":
                                 mergedObjectsNamesMap[userObjectNameInitial] = res_get_obj_with_ip.data[0]['name']
                                 printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
                                     userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
@@ -201,7 +201,7 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                                 break
                             for serverObject in res_get_obj_with_ip.data:
                                 # if more then one network in res_get_obj_with_ip, map to the one that matches subnet
-                                mergedObjectsNamesMap[userObjectNameInitial] = next((x['name'] for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet']))
+                                mergedObjectsNamesMap[userObjectNameInitial] = next(x['name'] for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet'] and (x['subnet-mask'] == payload['subnet-mask']) if is_valid_ipv4(payload['subnet']))
                                 if (isServerObjectLocal(serverObject) and not isReplaceFromGlobalFirst) or (
                                         isServerObjectGlobal(serverObject) and isReplaceFromGlobalFirst):
                                     break
