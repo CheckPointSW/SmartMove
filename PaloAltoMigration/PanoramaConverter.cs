@@ -1348,7 +1348,8 @@ namespace PanoramaPaloAltoMigration
 
             //Creating Result Files in Scripting Format and their reports in HTML format
             //Console.WriteLine("Create object scripts...");
-            CreateObjectsScript();
+            if (!_isOverMaxLengthPackageName)
+                CreateObjectsScript();
             CreateObjectsHtml();
 
             if (!_isOverMaxLengthPackageName)
