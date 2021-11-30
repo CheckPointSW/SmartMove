@@ -1357,7 +1357,14 @@ namespace PaloAltoMigration
                             cpNetwork.Comments = paAddressEntry.Description;
                             cpNetwork.Tags = paAddressEntry.TagMembers;
                             cpNetwork.Subnet = paAddressEntry.IpNetmask.Substring(0, indexSlash);
-                            cpNetwork.Netmask = IPNetwork.Parse(paAddressEntry.IpNetmask).Netmask.ToString();
+                            if (NetworkUtils.IsValidIpv6(cpNetwork.Subnet))
+                            {
+                                cpNetwork.MaskLength = paAddressEntry.IpNetmask.Substring(indexSlash + 1);
+                            }
+                            else
+                            {
+                                cpNetwork.Netmask = IPNetwork.Parse(paAddressEntry.IpNetmask).Netmask.ToString();
+                            }
                             cpAddressesDict[paAddressEntry.Name] = cpNetwork;
                         }
                         else if (indexSlash == -1)
@@ -2973,6 +2980,12 @@ namespace PaloAltoMigration
                     bool isNatRuleBiDirectional = false;
                     bool isDestinationTranslationNone = false;
 
+                    if ("nptv6".Equals(paNatRuleEntry.NatType?.ToLower()))
+                    {
+                        _warningsList.Add(String.Format("Unsupported nat-type '{1}' for NAT rule '{0}'.", paNatRuleEntry.Name, paNatRuleEntry.NatType));
+                        continue;
+                    }
+
                     #region converting source translation to list; checking if NAT Rule Method should be Static
                     if (paNatRuleEntry.SourceTranslation != null)
                     {
@@ -3273,6 +3286,9 @@ namespace PaloAltoMigration
                                     }
                                 }
                                 #endregion
+
+                                PostProcessNatRule46(cpNatRule);
+                                PostProcessNatRule64(cpNatRule);
 
                                 #region adding destination translation
 

@@ -285,8 +285,8 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add address-range " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("ipv4-address-first", RangeFrom, "")
-                + WriteParam("ipv4-address-last", RangeTo, "")
+                + WriteParam(NetworkUtils.IsValidIpv6(RangeFrom) ? "ipv6-address-first" : "ipv4-address-first", RangeFrom, "")
+                + WriteParam(NetworkUtils.IsValidIpv6(RangeTo) ? "ipv6-address-last" : "ipv4-address-last", RangeTo, "")
                 + WriteListParam("tags", Tags, true);
         }
 
