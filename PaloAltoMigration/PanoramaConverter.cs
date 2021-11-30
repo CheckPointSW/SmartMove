@@ -1529,7 +1529,14 @@ namespace PanoramaPaloAltoMigration
                             cpNetwork.Comments = paAddressEntry.Description;
                             cpNetwork.Tags = paAddressEntry.TagMembers;
                             cpNetwork.Subnet = paAddressEntry.IpNetmask.Substring(0, indexSlash);
-                            cpNetwork.Netmask = IPNetwork.Parse(paAddressEntry.IpNetmask).Netmask.ToString();
+                            if (NetworkUtils.IsValidIpv6(cpNetwork.Subnet))
+                            {
+                                cpNetwork.MaskLength = paAddressEntry.IpNetmask.Substring(indexSlash + 1);
+                            }
+                            else
+                            {
+                                cpNetwork.Netmask = IPNetwork.Parse(paAddressEntry.IpNetmask).Netmask.ToString();
+                            }
                             cpAddressesDict[paAddressEntry.Name] = cpNetwork;
                         }
                         else if (indexSlash == -1)
@@ -2270,52 +2277,52 @@ namespace PanoramaPaloAltoMigration
         }
 
         public CheckPointObject InspectService(CheckPointObject cpService)
-        {            
-                CheckPointObject cpServiceRet = null;
+        {
+            CheckPointObject cpServiceRet = null;
 
-                if (cpService.GetType() == typeof(CheckPoint_TcpService))
-                {
-                    CheckPoint_TcpService cpTcpService = (CheckPoint_TcpService)cpService;
-                    bool isFound;
-                    string cpServiceName = _cpObjects.GetKnownServiceName(SERVICE_TYPE_TCP + "_" + cpTcpService.Port, out isFound);
+            if (cpService.GetType() == typeof(CheckPoint_TcpService))
+            {
+                CheckPoint_TcpService cpTcpService = (CheckPoint_TcpService)cpService;
+                bool isFound;
+                string cpServiceName = _cpObjects.GetKnownServiceName(SERVICE_TYPE_TCP + "_" + cpTcpService.Port, out isFound);
 
                 if (isFound)
                 {
                     cpServiceRet = _cpObjects.GetObject(cpServiceName);
-                     cpPredefServicesTypes[cpServiceRet.Name] = SERVICE_TYPE_TCP;
-                }
-                    else
-                    {
-                        cpServiceRet = cpTcpService;
-                    }
-                }
-                else if (cpService.GetType() == typeof(CheckPoint_UdpService))
-                {
-                    CheckPoint_UdpService cpUdpService = (CheckPoint_UdpService)cpService;
-                    bool isFound;
-                    string cpServiceName = _cpObjects.GetKnownServiceName(SERVICE_TYPE_UDP + "_" + cpUdpService.Port, out isFound);
-
-                    if (isFound)
-                    {
-                        cpServiceRet = _cpObjects.GetObject(cpServiceName);
-                        cpPredefServicesTypes[cpServiceRet.Name] = SERVICE_TYPE_UDP;
-                    }
-                    else
-                    {
-                        cpServiceRet = cpUdpService;
-                    }
-                }
-                else if (cpService.GetType() == typeof(CheckPoint_ServiceGroup))
-                {
-                    cpServiceRet = cpService;
+                    cpPredefServicesTypes[cpServiceRet.Name] = SERVICE_TYPE_TCP;
                 }
                 else
                 {
-                    _errorsList.Add(cpService.Name + " service is not TCP or UDP or service group.");
+                    cpServiceRet = cpTcpService;
                 }
-
-                return cpServiceRet;
             }
+            else if (cpService.GetType() == typeof(CheckPoint_UdpService))
+            {
+                CheckPoint_UdpService cpUdpService = (CheckPoint_UdpService)cpService;
+                bool isFound;
+                string cpServiceName = _cpObjects.GetKnownServiceName(SERVICE_TYPE_UDP + "_" + cpUdpService.Port, out isFound);
+
+                if (isFound)
+                {
+                    cpServiceRet = _cpObjects.GetObject(cpServiceName);
+                    cpPredefServicesTypes[cpServiceRet.Name] = SERVICE_TYPE_UDP;
+                }
+                else
+                {
+                    cpServiceRet = cpUdpService;
+                }
+            }
+            else if (cpService.GetType() == typeof(CheckPoint_ServiceGroup))
+            {
+                cpServiceRet = cpService;
+            }
+            else
+            {
+                _errorsList.Add(cpService.Name + " service is not TCP or UDP or service group.");
+            }
+
+            return cpServiceRet;
+        }
 
         public Dictionary<string, CheckPoint_ServiceGroup> ConvertServicesGroups(PA_Objects paObjects, Dictionary<string, CheckPoint_ServiceGroup> s_cpServicesGroupsDict)
         {
@@ -3647,6 +3654,9 @@ namespace PanoramaPaloAltoMigration
                                     }
                                 }
                                 #endregion
+
+                                PostProcessNatRule46(cpNatRule);
+                                PostProcessNatRule64(cpNatRule);
 
                                 #region adding destination translation
 
