@@ -2284,6 +2284,65 @@ namespace MigrationBase
             natRule.Method = CheckPoint_NAT_Rule.NatMethod.Nat46;
         }
 
+        protected bool isNatRule46AndHasNonOriginTranslatedService(CheckPoint_NAT_Rule natRule)
+        {
+            return natRule != null
+                    && (isCheckPointObjectIpv4(natRule.Source) || isCheckPointObjectIpv4(natRule.Destination))
+                    && (isCheckPointObjectIpv6(natRule.TranslatedSource))
+                    && (natRule.TranslatedService != null);
+        }
+        protected bool isNatRule46AndTranslatedSourceIsHost(CheckPoint_NAT_Rule natRule)
+        {
+            return natRule != null
+                    && (isCheckPointObjectIpv4(natRule.Source) || isCheckPointObjectIpv4(natRule.Destination))
+                    && (isCheckPointObjectIpv6(natRule.TranslatedSource))
+                    && (natRule.TranslatedSource is CheckPoint_Host);
+        }
+        protected bool isNatRule46AndOriginalDestinationIsNotHost(CheckPoint_NAT_Rule natRule)
+        {
+            return natRule != null
+                    && (isCheckPointObjectIpv4(natRule.Source) || isCheckPointObjectIpv4(natRule.Destination))
+                    && (isCheckPointObjectIpv6(natRule.TranslatedSource))
+                    && !(natRule.Destination is CheckPoint_Host);
+        }
+
+        private bool isCheckPointObjectIpv6(CheckPointObject cpObj)
+        {
+            if (cpObj == null)
+            {
+                return false;
+            }
+            if (cpObj is CheckPoint_Host)
+            {
+                var host = (CheckPoint_Host)cpObj;
+                return NetworkUtils.IsValidIpv6(host.IpAddress);
+            }
+            if (cpObj is CheckPoint_Network)
+            {
+                var network = (CheckPoint_Network)cpObj;
+                return NetworkUtils.IsValidIpv6(network.Subnet);
+            }
+            return false;
+        }
+        private bool isCheckPointObjectIpv4(CheckPointObject cpObj)
+        {
+            if (cpObj == null)
+            {
+                return false;
+            }
+            if (cpObj is CheckPoint_Host)
+            {
+                var host = (CheckPoint_Host)cpObj;
+                return NetworkUtils.IsValidIpv4(host.IpAddress);
+            }
+            if (cpObj is CheckPoint_Network)
+            {
+                var network = (CheckPoint_Network)cpObj;
+                return NetworkUtils.IsValidIpv4(network.Subnet);
+            }
+            return false;
+        }
+
 
         private void CreateZip(string compressorsDirPath, string[] pySmartConnectorFNs, string smartConnectorArchivePath, string smartConnectorArchiveName, string cpObjectsJsonPath, bool isOptNeeded = false)
         {
