@@ -2159,31 +2159,32 @@ namespace MigrationBase
             var isSourceHost = false;
             var isSourceNetwork = false;
             var isSourceIpv6 = false;
-            if (natRule != null && natRule.Source != null)
+            var source = natRule?.Source != null ? natRule?.Source : natRule?.Destination;
+            if (source != null)
             {
-                isSourceHost = natRule.Source is CheckPoint_Host;
-                isSourceNetwork = natRule.Source is CheckPoint_Network;
+                isSourceHost = source is CheckPoint_Host;
+                isSourceNetwork = source is CheckPoint_Network;
                 if (isSourceHost)
                 {
-                    var host = (CheckPoint_Host)natRule.Source;
+                    var host = (CheckPoint_Host)source;
                     isSourceIpv6 = NetworkUtils.IsValidIpv6(host.IpAddress);
                 }
                 if (isSourceNetwork)
                 {
-                    var network = (CheckPoint_Network)natRule.Source;
+                    var network = (CheckPoint_Network)source;
                     isSourceIpv6 = NetworkUtils.IsValidIpv6(network.Subnet);
                 }
             }
             if (!isSourceIpv6)
             {
-                // source is not Ipv6, no sense to continue
+                // destination is not Ipv6, no sense to continue
                 return;
             }
 
             var isTranslatedSourceHost = false;
             var isTranslatedSourceNetwork = false;
             var isTranslatedSourceIpv4 = false;
-            if (natRule != null && natRule.TranslatedSource != null)
+            if (natRule?.TranslatedSource != null)
             {
                 isTranslatedSourceHost = natRule.TranslatedSource is CheckPoint_Host;
                 isTranslatedSourceNetwork = natRule.TranslatedSource is CheckPoint_Network;
@@ -2235,31 +2236,32 @@ namespace MigrationBase
             var isSourceHost = false;
             var isSourceNetwork = false;
             var isSourceIpv4 = false;
-            if (natRule != null && natRule.Source != null)
+            var source = natRule?.Source != null ? natRule?.Source : natRule?.Destination;
+            if (source != null)
             {
-                isSourceHost = natRule.Source is CheckPoint_Host;
-                isSourceNetwork = natRule.Source is CheckPoint_Network;
+                isSourceHost = source is CheckPoint_Host;
+                isSourceNetwork = source is CheckPoint_Network;
                 if (isSourceHost)
                 {
-                    var host = (CheckPoint_Host)natRule.Source;
+                    var host = (CheckPoint_Host)source;
                     isSourceIpv4 = NetworkUtils.IsValidIpv4(host.IpAddress);
                 }
                 if (isSourceNetwork)
                 {
-                    var network = (CheckPoint_Network)natRule.Source;
+                    var network = (CheckPoint_Network)source;
                     isSourceIpv4 = NetworkUtils.IsValidIpv4(network.Subnet);
                 }
             }
             if (!isSourceIpv4)
             {
-                // source is not Ipv4, no sense to continue
+                // destination is not Ipv4, no sense to continue
                 return;
             }
 
             var isTranslatedSourceHost = false;
             var isTranslatedSourceNetwork = false;
             var isTranslatedSourceIpv6 = false;
-            if (natRule != null && natRule.TranslatedSource != null)
+            if (natRule?.TranslatedSource != null)
             {
                 isTranslatedSourceHost = natRule.TranslatedSource is CheckPoint_Host;
                 isTranslatedSourceNetwork = natRule.TranslatedSource is CheckPoint_Network;
