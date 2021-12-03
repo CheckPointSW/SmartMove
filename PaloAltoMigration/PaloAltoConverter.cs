@@ -147,6 +147,8 @@ namespace PaloAltoMigration
 
         private const string NETWORK_NETMASK = "32";
         private const string NETWORK_NETMASK_WS = "/32";
+        private const string NETWORK_NETMASK_V6 = "128";
+        private const string NETWORK_NETMASK_WS_V6 = "/128";
 
         private const string SERVICE_TYPE_TCP = "TCP";
         private const string SERVICE_TYPE_UDP = "UDP";
@@ -1341,7 +1343,17 @@ namespace PaloAltoMigration
                     {
                         int indexSlash = paAddressEntry.IpNetmask.IndexOf("/");
 
-                        if (indexSlash != -1 && paAddressEntry.IpNetmask.Substring(indexSlash + 1).Trim().Equals(NETWORK_NETMASK))
+                        if (indexSlash == -1)
+                        {
+                            CheckPoint_Host cpHost = new CheckPoint_Host();
+                            cpHost.Name = InspectObjectName(paAddressEntry.Name, CP_OBJECT_TYPE_NAME_ADDRESS_HOST);
+                            cpHost.Comments = paAddressEntry.Description;
+                            cpHost.Tags = paAddressEntry.TagMembers;
+                            cpHost.IpAddress = paAddressEntry.IpNetmask;
+                            cpAddressesDict[paAddressEntry.Name] = cpHost;
+                        }
+                        else if (NetworkUtils.IsValidIpv4(paAddressEntry.IpNetmask.Substring(0, indexSlash)) && paAddressEntry.IpNetmask.Substring(indexSlash + 1).Trim().Equals(NETWORK_NETMASK)
+                                    || NetworkUtils.IsValidIpv6(paAddressEntry.IpNetmask.Substring(0, indexSlash)) && paAddressEntry.IpNetmask.Substring(indexSlash + 1).Trim().Equals(NETWORK_NETMASK_V6))
                         {
                             CheckPoint_Host cpHost = new CheckPoint_Host();
                             cpHost.Name = InspectObjectName(paAddressEntry.Name, CP_OBJECT_TYPE_NAME_ADDRESS_HOST);
@@ -1350,24 +1362,22 @@ namespace PaloAltoMigration
                             cpHost.IpAddress = paAddressEntry.IpNetmask.Substring(0, indexSlash);
                             cpAddressesDict[paAddressEntry.Name] = cpHost;
                         }
-                        else if (indexSlash != -1 && !paAddressEntry.IpNetmask.Substring(indexSlash + 1).Trim().Equals(NETWORK_NETMASK))
+                        else
                         {
                             CheckPoint_Network cpNetwork = new CheckPoint_Network();
                             cpNetwork.Name = InspectObjectName(paAddressEntry.Name, CP_OBJECT_TYPE_NAME_ADDRESS_NETWORK);
                             cpNetwork.Comments = paAddressEntry.Description;
                             cpNetwork.Tags = paAddressEntry.TagMembers;
                             cpNetwork.Subnet = paAddressEntry.IpNetmask.Substring(0, indexSlash);
-                            cpNetwork.Netmask = IPNetwork.Parse(paAddressEntry.IpNetmask).Netmask.ToString();
+                            if (NetworkUtils.IsValidIpv6(cpNetwork.Subnet))
+                            {
+                                cpNetwork.MaskLength = paAddressEntry.IpNetmask.Substring(indexSlash + 1);
+                            }
+                            else
+                            {
+                                cpNetwork.Netmask = IPNetwork.Parse(paAddressEntry.IpNetmask).Netmask.ToString();
+                            }
                             cpAddressesDict[paAddressEntry.Name] = cpNetwork;
-                        }
-                        else if (indexSlash == -1)
-                        {
-                            CheckPoint_Host cpHost = new CheckPoint_Host();
-                            cpHost.Name = InspectObjectName(paAddressEntry.Name, CP_OBJECT_TYPE_NAME_ADDRESS_HOST);
-                            cpHost.Comments = paAddressEntry.Description;
-                            cpHost.Tags = paAddressEntry.TagMembers;
-                            cpHost.IpAddress = paAddressEntry.IpNetmask;
-                            cpAddressesDict[paAddressEntry.Name] = cpHost;
                         }
                     }
 
@@ -2973,6 +2983,12 @@ namespace PaloAltoMigration
                     bool isNatRuleBiDirectional = false;
                     bool isDestinationTranslationNone = false;
 
+                    if ("nptv6".Equals(paNatRuleEntry.NatType?.ToLower()))
+                    {
+                        _warningsList.Add(String.Format("Unsupported nat-type '{1}' for NAT rule '{0}'.", paNatRuleEntry.Name, paNatRuleEntry.NatType));
+                        continue;
+                    }
+
                     #region converting source translation to list; checking if NAT Rule Method should be Static
                     if (paNatRuleEntry.SourceTranslation != null)
                     {
@@ -3274,6 +3290,9 @@ namespace PaloAltoMigration
                                 }
                                 #endregion
 
+                                PostProcessNatRule46(cpNatRule);
+                                PostProcessNatRule64(cpNatRule);
+
                                 #region adding destination translation
 
                                 if (paNatRuleEntry.DestinationTranslation != null)
@@ -3335,7 +3354,7 @@ namespace PaloAltoMigration
                                                 if (cpServicesDict.ContainsKey(paNatRuleEntry.Service))
                                                 {
                                                     CheckPointObject cpService = cpServicesDict[paNatRuleEntry.Service];
-                                                    if (cpService.GetType() == typeof(CheckPoint_TcpService))
+                                                    if (cpService.GetType() == typeof(CheckPoint_TcpService) || cpService.GetType() == typeof(CheckPoint_ServiceGroup))
                                                     {
                                                         cpNatRule.TranslatedService = CreateNatServiceTcpFromStatDest(paNatRuleEntry);
                                                     }
@@ -3566,6 +3585,22 @@ namespace PaloAltoMigration
                                             cpNatRuleBi.TranslatedDestination = cpNatRule.Source;
 
                                             _cpNatRules.Add(cpNatRuleBi);
+                                        }
+
+                                        if (isNatRule46AndHasNonOriginTranslatedService(cpNatRule))
+                                        {
+                                            _warningsList.Add(String.Format("NAT Rule {0} has nat46 method and non-origin translated-service.", cpNatRule.Name));
+                                            continue; // skip this Nat rule
+                                        }
+                                        if (isNatRule46AndTranslatedSourceIsHost(cpNatRule))
+                                        {
+                                            _warningsList.Add(string.Format("NAT Rule {0} has nat46 method and host as translated-source.", cpNatRule.Name));
+                                            continue;
+                                        }
+                                        if (isNatRule46AndOriginalDestinationIsNotHost(cpNatRule))
+                                        {
+                                            _warningsList.Add(string.Format("NAT Rule {0} has nat46 method and original-destination is not a host.", cpNatRule.Name));
+                                            continue;
                                         }
 
                                         _cpNatRules.Add(cpNatRule);

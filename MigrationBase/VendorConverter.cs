@@ -2154,6 +2154,198 @@ namespace MigrationBase
             }
         }
 
+        protected void PostProcessNatRule64(CheckPoint_NAT_Rule natRule)
+        {
+            var isSourceHost = false;
+            var isSourceNetwork = false;
+            var isSourceIpv6 = false;
+            var source = natRule?.Source != null ? natRule?.Source : natRule?.Destination;
+            if (source != null)
+            {
+                isSourceHost = source is CheckPoint_Host;
+                isSourceNetwork = source is CheckPoint_Network;
+                if (isSourceHost)
+                {
+                    var host = (CheckPoint_Host)source;
+                    isSourceIpv6 = NetworkUtils.IsValidIpv6(host.IpAddress);
+                }
+                if (isSourceNetwork)
+                {
+                    var network = (CheckPoint_Network)source;
+                    isSourceIpv6 = NetworkUtils.IsValidIpv6(network.Subnet);
+                }
+            }
+            if (!isSourceIpv6)
+            {
+                // destination is not Ipv6, no sense to continue
+                return;
+            }
+
+            var isTranslatedSourceHost = false;
+            var isTranslatedSourceNetwork = false;
+            var isTranslatedSourceIpv4 = false;
+            if (natRule?.TranslatedSource != null)
+            {
+                isTranslatedSourceHost = natRule.TranslatedSource is CheckPoint_Host;
+                isTranslatedSourceNetwork = natRule.TranslatedSource is CheckPoint_Network;
+                if (isTranslatedSourceHost)
+                {
+                    var host = (CheckPoint_Host)natRule.TranslatedSource;
+                    isTranslatedSourceIpv4 = NetworkUtils.IsValidIpv4(host.IpAddress);
+                }
+                if (isTranslatedSourceNetwork)
+                {
+                    var network = (CheckPoint_Network)natRule.TranslatedSource;
+                    isTranslatedSourceIpv4 = NetworkUtils.IsValidIpv4(network.Subnet);
+                }
+            }
+            if (!isTranslatedSourceIpv4)
+            {
+                // translated source is not Ipv4, no sense to continue
+                return;
+            }
+
+            // change NAT rule method
+            natRule.Method = CheckPoint_NAT_Rule.NatMethod.Nat64;
+
+            //  a address-range should be used instead of network of host for translated source
+            IPRange ipRange;
+            if (isTranslatedSourceNetwork)
+            {
+                var network = (CheckPoint_Network)natRule.TranslatedSource;
+                ipRange = network.GetIPRanges().Ranges[0];
+            }
+            else // if translated source is a host
+            {
+                var host = (CheckPoint_Host)natRule.TranslatedSource;
+                ipRange = host.GetIPRanges().Ranges[0];
+            }
+            var checkpointRange = new CheckPoint_Range();
+            checkpointRange.RangeFrom = NetworkUtils.Number2Ip(ipRange.Minimum);
+            checkpointRange.RangeTo = NetworkUtils.Number2Ip(ipRange.Maximum);
+            checkpointRange.Name = "r_" + checkpointRange.RangeFrom + "-" + checkpointRange.RangeTo;
+            if (_cpObjects.GetObject(checkpointRange.Name) == null)
+            {
+                AddCheckPointObject(checkpointRange);
+            }
+            natRule.TranslatedSource = checkpointRange;
+        }
+
+        protected void PostProcessNatRule46(CheckPoint_NAT_Rule natRule)
+        {
+            var isSourceHost = false;
+            var isSourceNetwork = false;
+            var isSourceIpv4 = false;
+            var source = natRule?.Source != null ? natRule?.Source : natRule?.Destination;
+            if (source != null)
+            {
+                isSourceHost = source is CheckPoint_Host;
+                isSourceNetwork = source is CheckPoint_Network;
+                if (isSourceHost)
+                {
+                    var host = (CheckPoint_Host)source;
+                    isSourceIpv4 = NetworkUtils.IsValidIpv4(host.IpAddress);
+                }
+                if (isSourceNetwork)
+                {
+                    var network = (CheckPoint_Network)source;
+                    isSourceIpv4 = NetworkUtils.IsValidIpv4(network.Subnet);
+                }
+            }
+            if (!isSourceIpv4)
+            {
+                // destination is not Ipv4, no sense to continue
+                return;
+            }
+
+            var isTranslatedSourceHost = false;
+            var isTranslatedSourceNetwork = false;
+            var isTranslatedSourceIpv6 = false;
+            if (natRule?.TranslatedSource != null)
+            {
+                isTranslatedSourceHost = natRule.TranslatedSource is CheckPoint_Host;
+                isTranslatedSourceNetwork = natRule.TranslatedSource is CheckPoint_Network;
+                if (isTranslatedSourceHost)
+                {
+                    var host = (CheckPoint_Host)natRule.TranslatedSource;
+                    isTranslatedSourceIpv6 = NetworkUtils.IsValidIpv6(host.IpAddress);
+                }
+                if (isTranslatedSourceNetwork)
+                {
+                    var network = (CheckPoint_Network)natRule.TranslatedSource;
+                    isTranslatedSourceIpv6 = NetworkUtils.IsValidIpv6(network.Subnet);
+                }
+            }
+            if (!isTranslatedSourceIpv6)
+            {
+                // translated source is not Ipv6, no sense to continue
+                return;
+            }
+
+            // change NAT rule method
+            natRule.Method = CheckPoint_NAT_Rule.NatMethod.Nat46;
+        }
+
+        protected bool isNatRule46AndHasNonOriginTranslatedService(CheckPoint_NAT_Rule natRule)
+        {
+            return natRule != null
+                    && (isCheckPointObjectIpv4(natRule.Source) || isCheckPointObjectIpv4(natRule.Destination))
+                    && (isCheckPointObjectIpv6(natRule.TranslatedSource))
+                    && (natRule.TranslatedService != null);
+        }
+        protected bool isNatRule46AndTranslatedSourceIsHost(CheckPoint_NAT_Rule natRule)
+        {
+            return natRule != null
+                    && (isCheckPointObjectIpv4(natRule.Source) || isCheckPointObjectIpv4(natRule.Destination))
+                    && (isCheckPointObjectIpv6(natRule.TranslatedSource))
+                    && (natRule.TranslatedSource is CheckPoint_Host);
+        }
+        protected bool isNatRule46AndOriginalDestinationIsNotHost(CheckPoint_NAT_Rule natRule)
+        {
+            return natRule != null
+                    && (isCheckPointObjectIpv4(natRule.Source) || isCheckPointObjectIpv4(natRule.Destination))
+                    && (isCheckPointObjectIpv6(natRule.TranslatedSource))
+                    && !(natRule.Destination is CheckPoint_Host);
+        }
+
+        private bool isCheckPointObjectIpv6(CheckPointObject cpObj)
+        {
+            if (cpObj == null)
+            {
+                return false;
+            }
+            if (cpObj is CheckPoint_Host)
+            {
+                var host = (CheckPoint_Host)cpObj;
+                return NetworkUtils.IsValidIpv6(host.IpAddress);
+            }
+            if (cpObj is CheckPoint_Network)
+            {
+                var network = (CheckPoint_Network)cpObj;
+                return NetworkUtils.IsValidIpv6(network.Subnet);
+            }
+            return false;
+        }
+        private bool isCheckPointObjectIpv4(CheckPointObject cpObj)
+        {
+            if (cpObj == null)
+            {
+                return false;
+            }
+            if (cpObj is CheckPoint_Host)
+            {
+                var host = (CheckPoint_Host)cpObj;
+                return NetworkUtils.IsValidIpv4(host.IpAddress);
+            }
+            if (cpObj is CheckPoint_Network)
+            {
+                var network = (CheckPoint_Network)cpObj;
+                return NetworkUtils.IsValidIpv4(network.Subnet);
+            }
+            return false;
+        }
+
+
         private void CreateZip(string compressorsDirPath, string[] pySmartConnectorFNs, string smartConnectorArchivePath, string smartConnectorArchiveName, string cpObjectsJsonPath, bool isOptNeeded = false)
         {
             string compressorZip = Path.Combine(compressorsDirPath, "zip.exe");
