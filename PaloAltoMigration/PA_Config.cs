@@ -432,6 +432,9 @@ namespace PaloAltoMigration
 
         [XmlElement("disabled")]
         public string Disabled { get; set; }
+
+        [XmlElement("nat-type")]
+        public string NatType { get; set; }
     }
 
     public class PA_SourceTranslation
