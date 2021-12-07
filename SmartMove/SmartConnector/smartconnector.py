@@ -419,7 +419,7 @@ def processNetworks(client, userNetworks):
     printMessageProcessObjects("networks")
     publishCounter = 0
     mergedNetworksNamesMap = {}
-    userNetworks = sorted(userNetworks, key=lambda K: (K['Netmask'], K['MaskLength']), reverse=True)
+    userNetworks = sorted(userNetworks, key=lambda K: ('' if K['Netmask'] is None else K['Netmask'], '' if K['MaskLength'] is None else K['MaskLength']), reverse=True)
     if len(userNetworks) == 0:
         return mergedNetworksNamesMap
     for userNetwork in userNetworks:
@@ -524,8 +524,10 @@ def processRanges(client, userRanges):
             addedRange = addUserObjectToServer(client, "add-address-range", payload, userRangeNamePostfix)
             if addedRange is not None:
                 mergedRangesNamesMap[userRangeNameInitial] = addedRange['name']
-                key = addedRange['ipv4-address-first'] + '_' + addedRange['ipv4-address-last']
-                if addedRange['ipv4-address-first'] == "":
+                key = ''
+                if 'ipv4-address-first' in addedRange:
+                    key = addedRange['ipv4-address-first'] + '_' + addedRange['ipv4-address-last']
+                else:
                     key = addedRange['ipv6-address-first'] + '_' + addedRange['ipv6-address-last']
                 serverRangesMap[key] = addedRange['name']
                 printStatus(None, "REPORT: " + userRangeNameInitial + " is added as " + addedRange['name'])
