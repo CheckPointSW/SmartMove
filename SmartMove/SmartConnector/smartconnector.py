@@ -190,7 +190,6 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
                     if len(res_get_obj_with_ip.data) > 0:
-                        print (res_get_obj_with_ip.data)
                         if userObjectType == "network" and next((x for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet'] and (x['subnet-mask'] == payload['subnet-mask']) if is_valid_ipv4(payload['subnet'])), None) is None:
                             isIgnoreWarnings = True
                         else:
