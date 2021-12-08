@@ -190,6 +190,7 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
                     if len(res_get_obj_with_ip.data) > 0:
+                        print (res_get_obj_with_ip.data)
                         if userObjectType == "network" and next((x for x in res_get_obj_with_ip.data if x['subnet4' if is_valid_ipv4(payload['subnet']) else 'subnet6'] == payload['subnet'] and (x['subnet-mask'] == payload['subnet-mask']) if is_valid_ipv4(payload['subnet'])), None) is None:
                             isIgnoreWarnings = True
                         else:
@@ -466,8 +467,10 @@ def processRanges(client, userRanges):
     res_get_ranges = client.api_query("show-address-ranges")
     printStatus(res_get_ranges, None)
     for serverRange in res_get_ranges.data:
-        key = serverRange['ipv4-address-first'] + '_' + serverRange['ipv4-address-last']
-        if serverRange['ipv4-address-first'] == "":
+        key = ''
+        if 'ipv4-address-first' in serverRange:
+            key = serverRange['ipv4-address-first'] + '_' + serverRange['ipv4-address-last']
+        else:
             key = serverRange['ipv6-address-first'] + '_' + serverRange['ipv6-address-last']
 
         if isServerObjectGlobal(serverRange) and key not in serverRangesMapGlobal:
