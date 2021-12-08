@@ -53,8 +53,9 @@ namespace PanoramaPaloAltoMigration
 
         private string outputFormat = "";
 
-        //if total package name over max count of chars (31) do not create *.sh, *.tar.gz, *.zip files
+        //if total package name over max count of chars (20) do not create *.sh, *.tar.gz, *.zip files
         private bool _isOverMaxLengthPackageName = false;
+        private int _maxAllowedpackageNameLength = 20;
 
         #endregion
 
@@ -2624,10 +2625,10 @@ namespace PanoramaPaloAltoMigration
             var cpPackage = new CheckPoint_Package();
             cpPackage.Name = _policyPackageName;
             string pckg_name = _policyPackageName.Replace("_policy", "");
-            if (pckg_name.Length > 20)
+            if (pckg_name.Length > _maxAllowedpackageNameLength)
             {
                 _isOverMaxLengthPackageName = true;
-                _errorsList.Add("Package " + pckg_name + " has name length more then 20 chars");
+                _errorsList.Add("Package " + pckg_name + " has name length more then " + _maxAllowedpackageNameLength + " chars");
             }
             cpPackage.ParentLayer.Name = cpPackage.NameOfAccessLayer;
 
@@ -4237,10 +4238,10 @@ namespace PanoramaPaloAltoMigration
             var optimizedPackage = new CheckPoint_Package();
             _policyPackageOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
             string pckg_name = _policyPackageOptimizedName.Replace("_opt", "");
-            if (pckg_name.Length > 20)
+            if (pckg_name.Length > _maxAllowedpackageNameLength)
             {
                 _isOverMaxLengthPackageName = true;
-                _errorsList.Add("Package " + pckg_name + " has name length more then 20 chars");
+                _errorsList.Add("Package " + pckg_name + " has name length more then " + _maxAllowedpackageNameLength + " chars");
             }
             optimizedPackage.Name = _policyPackageOptimizedName;
             optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;

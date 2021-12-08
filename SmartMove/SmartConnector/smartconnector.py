@@ -185,7 +185,7 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
         printStatus(res_add_obj_with_ip, "REPORT: " + userObjectNameInitial + " is added as " + payload['name'])
         if res_add_obj_with_ip.success is False:
             if isIpDuplicated(res_add_obj_with_ip) and not isIgnoreWarnings:
-                res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": True,
+                res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": False,
                                                                                 "type": userObjectType})
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
