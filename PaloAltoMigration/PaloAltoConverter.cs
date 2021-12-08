@@ -49,11 +49,22 @@ namespace PaloAltoMigration
 
         private string outputFormat = "";
 
+        //if total package name over max count of chars (20) do not create *.sh, *.tar.gz, *.zip files
+        private bool _isOverMaxLengthPackageName = false;
+        private int _maxAllowedpackageNameLength = 20;
+
         private void Add_Optimized_Package()
         {
             CheckPoint_Package regularPackage = _cpPackages[0];
 
             var optimizedPackage = new CheckPoint_Package();
+            _policyPackageOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
+            string pckg_name = _policyPackageOptimizedName.Replace("_opt", "");
+            if (pckg_name.Length > _maxAllowedpackageNameLength)
+            {
+                _isOverMaxLengthPackageName = true;
+                _errorsList.Add("Package " + pckg_name + " has name length more then " + _maxAllowedpackageNameLength + " chars");
+            }
             optimizedPackage.Name = _policyPackageOptimizedName;
             optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;
             optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;
@@ -920,6 +931,7 @@ namespace PaloAltoMigration
 
             string targetFileNameMain = _vendorFileName;
             string targetFolderMain = _targetFolder;
+            _isOverMaxLengthPackageName = false;
 
             if (IsConsoleRunning)
                 Progress = new ProgressBar();
@@ -1189,10 +1201,12 @@ namespace PaloAltoMigration
             }
 
             //Creating Result Files in Scripting Format and their reports in HTML format
-            CreateObjectsScript();
+            if (!_isOverMaxLengthPackageName)
+                CreateObjectsScript();
             CreateObjectsHtml();
 
-            CreatePackagesScript();
+            if (!_isOverMaxLengthPackageName)
+                CreatePackagesScript();
             ExportPolicyPackagesAsHtmlConfig();
 
             CreateErrorsHtml(targetFileNameNew);
@@ -1203,8 +1217,11 @@ namespace PaloAltoMigration
             _warningsConvertedPackage = _warningsList.Count;
             _errorsConvertedPackage = _errorsList.Count;
 
-            CreateSmartConnector(true, false);
-            CreateSmartConnector(true, true);
+            if (!_isOverMaxLengthPackageName)
+            {
+                CreateSmartConnector(true, false);
+                CreateSmartConnector(true, true);
+            }
 
             // to clean; must be the last!!!
             _cpObjects.ClearRepository();
@@ -2384,6 +2401,12 @@ namespace PaloAltoMigration
 
             var cpPackage = new CheckPoint_Package();
             cpPackage.Name = _policyPackageName;
+            string pckg_name = _policyPackageName.Replace("_policy", "");
+            if (pckg_name.Length > _maxAllowedpackageNameLength)
+            {
+                _isOverMaxLengthPackageName = true;
+                _errorsList.Add("Package " + pckg_name + " has name length more then " + _maxAllowedpackageNameLength + "chars");
+            }
             cpPackage.ParentLayer.Name = cpPackage.NameOfAccessLayer;
 
             foreach (PA_SecurityRuleEntry paSecurityRuleEntry in paRules)
