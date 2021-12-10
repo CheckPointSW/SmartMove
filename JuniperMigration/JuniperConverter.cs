@@ -171,6 +171,10 @@ namespace JuniperMigration
         private Dictionary<int, List<CheckPoint_Rule>> _natMatchedFirewallRules = new Dictionary<int, List<CheckPoint_Rule>>();
         private string _outputFormat;
 
+        //if total package name over max count of chars (20) do not create *.sh, *.tar.gz, *.zip files
+        private bool _isOverMaxLengthPackageName = false;
+        private int _maxAllowedpackageNameLength = 20;
+
         private IEnumerable<JuniperObject> _juniperZones;
         public IEnumerable<JuniperObject> JuniperZones
         {
@@ -205,6 +209,440 @@ namespace JuniperMigration
             }
 
             return false;
+        }
+
+        private void Add_Optimized_Package()
+        {
+            CheckPoint_Package regularPackage = _cpPackages[0];
+
+            var optimizedPackage = new CheckPoint_Package();
+            _policyPackageOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
+            string pckg_name = _policyPackageOptimizedName.Replace("_opt", "");
+            if (pckg_name.Length > _maxAllowedpackageNameLength)
+            {
+                _isOverMaxLengthPackageName = true;
+                _conversionIncidents.Add(new ConversionIncident(0, "max length exceeded", "Package " + pckg_name + " has name length more then " + _maxAllowedpackageNameLength + " chars", ConversionIncidentType.ManualActionRequired));
+            }
+            optimizedPackage.Name = _policyPackageOptimizedName;
+            optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;
+            optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;
+
+            var regular2OptimizedLayers = new Dictionary<string, string>();
+
+            foreach (CheckPoint_Layer layer in regularPackage.SubPolicies)
+            {
+                string optimizedSubPolicyName = layer.Name + "_opt";
+
+                CheckPoint_Layer optimizedLayer = RuleBaseOptimizer.Optimize(layer, optimizedSubPolicyName);
+                foreach (CheckPoint_Rule subSubRule in optimizedLayer.Rules)
+                {
+                    if (subSubRule.SubPolicyName.Equals(GlobalRulesSubpolicyName))
+                    {
+                        //The Global sub-sub rule subpolicy name should also be renamed for consistency
+                        subSubRule.SubPolicyName += "_opt";
+                    }
+                }
+                if (!regular2OptimizedLayers.ContainsKey(layer.Name))
+                {
+                    regular2OptimizedLayers.Add(layer.Name, optimizedSubPolicyName);
+                    optimizedPackage.SubPolicies.Add(optimizedLayer);
+                    validatePackage(optimizedPackage);
+                }
+            }
+
+            foreach (CheckPoint_Rule rule in regularPackage.ParentLayer.Rules)
+            {
+                CheckPoint_Rule newRule = rule.Clone();
+                if (newRule.Action == CheckPoint_Rule.ActionType.SubPolicy)
+                {
+                    newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];
+                }
+                newRule.Layer = optimizedPackage.ParentLayer.Name;
+                newRule.ConversionComments = rule.ConversionComments;
+
+                optimizedPackage.ParentLayer.Rules.Add(newRule);
+            }
+
+            AddCheckPointObject(optimizedPackage);
+        }
+
+        private void ExportPackageAsHtml(CheckPoint_Package package)
+        {
+            const string ruleIdPrefix = "rule_";
+            package.Name = package.Name.Contains("_opt") ? package.Name.Replace("_opt", "_policy_opt") : package.Name;
+            string filename = _targetFolder + "\\" + package.Name + ".html";
+
+            using (var file = new StreamWriter(filename, false))
+            {
+                var rulesWithConversionErrors = new Dictionary<string, CheckPoint_Rule>();
+                var rulesWithConversionInfos = new Dictionary<string, CheckPoint_Rule>();
+
+                GeneratePackageHtmlReportHeaders(file, package.Name, package.ConversionIncidentType != ConversionIncidentType.None);
+
+                // Generate the report body
+                file.WriteLine("<table>");
+                file.WriteLine("   <tr>");
+                file.WriteLine("      <th colspan='3'>No.</th> <th>Name</th> <th>Source</th> <th>Destination</th> <th>Service</th> <th>Action</th> <th>Track</th> <th>Comments</th> <th>Conversion Comments</th>");
+                file.WriteLine("   </tr>");
+
+                int ruleNumber = 1;
+
+                foreach (CheckPoint_Rule rule in package.ParentLayer.Rules)
+                {
+                    bool isSubPolicy = false;
+                    string action = "";
+                    string actionStyle = "";
+                    var dummy = ConversionIncidentType.None;
+
+                    switch (rule.Action)
+                    {
+                        case CheckPoint_Rule.ActionType.Accept:
+                        case CheckPoint_Rule.ActionType.Drop:
+                        case CheckPoint_Rule.ActionType.Reject:
+                            action = rule.Action.ToString();
+                            actionStyle = rule.Action.ToString().ToLower();
+                            break;
+
+                        case CheckPoint_Rule.ActionType.SubPolicy:
+                            isSubPolicy = true;
+                            action = "Sub-policy: " + rule.SubPolicyName;
+                            actionStyle = "";
+                            break;
+                    }
+
+                    string curParentRuleId = string.Format("{0}{1}", ruleIdPrefix, ruleNumber);
+
+                    if (rule.Enabled)
+                    {
+                        file.WriteLine("  <tr class='parent_rule' id=\"" + curParentRuleId + "\">");
+                        if (isSubPolicy)
+                        {
+                            file.WriteLine("      <td class='rule_number' colspan='3' onclick='toggleSubRules(this)'>" +
+                                string.Format(HtmlSubPolicyArrowImageTagFormat, curParentRuleId + "_img", HtmlDownArrowImageSourceData) + ruleNumber + "</td>");
+                        }
+                        else
+                        {
+                            file.WriteLine("      <td class='rule_number' colspan='3' style='padding-left:22px;'>" + ruleNumber + "</td>");
+                        }
+                    }
+                    else
+                    {
+                        file.WriteLine("  <tr class='parent_rule_disabled' id=\"" + curParentRuleId + "\">");
+                        if (isSubPolicy)
+                        {
+                            file.WriteLine("      <td class='rule_number' colspan='3' onclick='toggleSubRules(this)'>" +
+                                string.Format(HtmlSubPolicyArrowImageTagFormat, curParentRuleId + "_img", HtmlDownArrowImageSourceData) + ruleNumber + HtmlDisabledImageTag + "</td>");
+                        }
+                        else
+                        {
+                            file.WriteLine("      <td class='rule_number' colspan='3' style='padding-left:22px;'>" + ruleNumber + HtmlDisabledImageTag + "</td>");
+                        }
+                    }
+                    file.WriteLine("      <td>" + rule.Name + "</td>");
+                    file.WriteLine("      <td>" + RuleItemsList2Html(rule.Source, rule.SourceNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                    file.WriteLine("      <td>" + RuleItemsList2Html(rule.Destination, rule.DestinationNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                    file.WriteLine("      <td>" + RuleItemsList2Html(rule.Service, false, CheckPointObject.Any, ref dummy) + "</td>");
+                    file.WriteLine("      <td class='" + actionStyle + "'>" + action + "</td>");
+                    file.WriteLine("      <td>" + rule.Track.ToString() + "</td>");
+                    file.WriteLine("      <td>" + rule.Comments + "</td>");
+                    file.WriteLine("      <td>" + rule.ConversionComments + "</td>");
+                    file.WriteLine("  </tr>");
+
+                    if (isSubPolicy)
+                    {
+                        foreach (CheckPoint_Layer subPolicy in package.SubPolicies)
+                        {
+                            int subRuleNumber = 1;
+
+                            foreach (CheckPoint_Rule subRule in subPolicy.Rules)
+                            {
+                                if (subRule.Layer == rule.SubPolicyName)
+                                {
+                                    bool isSubSubPolicy = false;
+                                    string subAction = "";
+                                    string subActionStyle = "";
+
+                                    switch (subRule.Action)
+                                    {
+                                        case CheckPoint_Rule.ActionType.Accept:
+                                        case CheckPoint_Rule.ActionType.Drop:
+                                        case CheckPoint_Rule.ActionType.Reject:
+                                            subAction = subRule.Action.ToString();
+                                            subActionStyle = subRule.Action.ToString().ToLower();
+                                            break;
+
+                                        case CheckPoint_Rule.ActionType.SubPolicy:
+                                            isSubSubPolicy = true;
+                                            subAction = "Sub-policy: " + subRule.SubPolicyName;
+                                            subActionStyle = "";
+                                            break;
+                                    }
+
+                                    var ruleConversionIncidentType = ConversionIncidentType.None;
+                                    string curRuleNumber = ruleNumber + "." + subRuleNumber;
+                                    string curRuleId = ruleIdPrefix + curRuleNumber;
+
+                                    if (subRule.Enabled)
+                                    {
+                                        file.WriteLine("  <tr id=\"" + curRuleId + "\">");
+                                    }
+                                    else
+                                    {
+                                        file.WriteLine("  <tr class='disabled_rule' id=\"" + curRuleId + "\">");
+                                    }
+
+                                    var sbCurRuleNumberColumnTag = new StringBuilder();
+                                    sbCurRuleNumberColumnTag.Append("      <td class='indent_rule_number'/>");
+                                    if (isSubSubPolicy)
+                                    {
+                                        sbCurRuleNumberColumnTag.Append("      <td class='rule_number' colspan='2' onclick='toggleSubRules(this)'>" +
+                                            string.Format(HtmlSubPolicyArrowImageTagFormat, curRuleId + "_img", HtmlDownArrowImageSourceData) + curRuleNumber);
+                                    }
+                                    else
+                                    {
+                                        sbCurRuleNumberColumnTag.Append("      <td class='rule_number' colspan='2'>");
+                                        sbCurRuleNumberColumnTag.Append(curRuleNumber);
+                                    }
+                                    if (subRule.ConversionIncidentType != ConversionIncidentType.None)
+                                    {
+                                        sbCurRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(subRule.ConvertedCommandId));
+                                        ruleConversionIncidentType = subRule.ConversionIncidentType;
+                                    }
+                                    if (!subRule.Enabled)
+                                    {
+                                        sbCurRuleNumberColumnTag.Append(HtmlDisabledImageTag);
+                                    }
+                                    sbCurRuleNumberColumnTag.Append("</td>");
+                                    file.WriteLine(sbCurRuleNumberColumnTag.ToString());
+
+                                    file.WriteLine("      <td>" + subRule.Name + "</td>");
+                                    file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Source, subRule.SourceNegated, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
+                                    file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Destination, subRule.DestinationNegated, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
+                                    file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Service, false, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
+                                    file.WriteLine("      <td class='" + subActionStyle + "'>" + subAction + "</td>");
+                                    file.WriteLine("      <td>" + subRule.Track.ToString() + "</td>");
+                                    file.WriteLine("      <td class='comments'>" + subRule.Comments + "</td>");
+                                    file.WriteLine("      <td class='comments'>" + subRule.ConversionComments + "</td>");
+                                    file.WriteLine("  </tr>");
+
+                                    if (isSubSubPolicy)
+                                    {
+                                        foreach (CheckPoint_Layer subSubPolicy in package.SubPolicies)
+                                        {
+                                            int subSubRuleNumber = 1;
+
+                                            foreach (CheckPoint_Rule subSubRule in subSubPolicy.Rules)
+                                            {
+                                                if (subSubRule.Layer == subRule.SubPolicyName)
+                                                {
+                                                    var subRuleConversionIncidentType = ConversionIncidentType.None;
+                                                    string subCurRuleNumber = ruleNumber + "." + subRuleNumber + "." + subSubRuleNumber;
+                                                    string subCurRuleId = ruleIdPrefix + subCurRuleNumber;
+
+                                                    if (subSubRule.Enabled)
+                                                    {
+                                                        file.WriteLine("  <tr id=\"" + subCurRuleId + "\">");
+                                                    }
+                                                    else
+                                                    {
+                                                        file.WriteLine("  <tr class='disabled_rule' id=\"" + subCurRuleId + "\">");
+                                                    }
+
+                                                    var sbSubCurRuleNumberColumnTag = new StringBuilder();
+                                                    sbSubCurRuleNumberColumnTag.Append("      <td class='indent_rule_number'/>");
+                                                    sbSubCurRuleNumberColumnTag.Append("      <td class='indent_rule_number'/>");
+                                                    sbSubCurRuleNumberColumnTag.Append("      <td class='rule_number'>");
+                                                    sbSubCurRuleNumberColumnTag.Append(subCurRuleNumber);
+                                                    if (subSubRule.ConversionIncidentType != ConversionIncidentType.None)
+                                                    {
+                                                        sbSubCurRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(subSubRule.ConvertedCommandId));
+                                                        subRuleConversionIncidentType = subSubRule.ConversionIncidentType;
+                                                    }
+                                                    if (!subSubRule.Enabled)
+                                                    {
+                                                        sbSubCurRuleNumberColumnTag.Append(HtmlDisabledImageTag);
+                                                    }
+                                                    sbSubCurRuleNumberColumnTag.Append("</td>");
+                                                    file.WriteLine(sbSubCurRuleNumberColumnTag.ToString());
+
+                                                    file.WriteLine("      <td>" + subSubRule.Name + "</td>");
+                                                    file.WriteLine("      <td>" + RuleItemsList2Html(subSubRule.Source, subSubRule.SourceNegated, CheckPointObject.Any, ref subRuleConversionIncidentType) + "</td>");
+                                                    file.WriteLine("      <td>" + RuleItemsList2Html(subSubRule.Destination, subSubRule.DestinationNegated, CheckPointObject.Any, ref subRuleConversionIncidentType) + "</td>");
+                                                    file.WriteLine("      <td>" + RuleItemsList2Html(subSubRule.Service, false, CheckPointObject.Any, ref subRuleConversionIncidentType) + "</td>");
+                                                    file.WriteLine("      <td class='" + subSubRule.Action.ToString().ToLower() + "'>" + subSubRule.Action.ToString() + "</td>");
+                                                    file.WriteLine("      <td>" + subSubRule.Track.ToString() + "</td>");
+                                                    file.WriteLine("      <td class='comments'>" + subSubRule.Comments + "</td>");
+                                                    file.WriteLine("      <td class='comments'>" + subSubRule.ConversionComments + "</td>");
+                                                    file.WriteLine("  </tr>");
+
+                                                    subSubRuleNumber++;
+
+                                                    if (package.ConversionIncidentType != ConversionIncidentType.None && subRuleConversionIncidentType != ConversionIncidentType.None)
+                                                    {
+                                                        if (subRuleConversionIncidentType == ConversionIncidentType.ManualActionRequired)
+                                                        {
+                                                            rulesWithConversionErrors.Add(subCurRuleId, subSubRule);
+                                                        }
+                                                        else
+                                                        {
+                                                            rulesWithConversionInfos.Add(subCurRuleId, subSubRule);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    subRuleNumber++;
+
+                                    if (package.ConversionIncidentType != ConversionIncidentType.None && ruleConversionIncidentType != ConversionIncidentType.None)
+                                    {
+                                        if (ruleConversionIncidentType == ConversionIncidentType.ManualActionRequired)
+                                        {
+                                            rulesWithConversionErrors.Add(curRuleId, subRule);
+                                        }
+                                        else
+                                        {
+                                            rulesWithConversionInfos.Add(curRuleId, subRule);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    ruleNumber++;
+                }
+
+                file.WriteLine("</table>");
+
+                if (rulesWithConversionErrors.Count > 0 || rulesWithConversionInfos.Count > 0)
+                {
+                    file.WriteLine("<div id=\"PolicyConversionIncidents\" style='margin-left: 20px;'><h2>Policy Conversion Issues</h2></div>");
+                }
+
+                // Generate the errors report
+                if (rulesWithConversionErrors.Count > 0)
+                {
+                    file.WriteLine("<script>");
+                    file.WriteLine("   errorsCounter = " + rulesWithConversionErrors.Count + ";");
+                    file.WriteLine("</script>");
+
+                    file.WriteLine("<div id=\"PolicyConversionErrors\" style='margin-left: 20px;'><h3>Conversion Errors</h3></div>");
+                    file.WriteLine("<table style='background-color: rgb(255,255,150);'>");
+                    file.WriteLine("   <tr>");
+                    file.WriteLine("      <th class='errors_header'>No.</th> <th class='errors_header'>Name</th> <th class='errors_header'>Source</th> <th class='errors_header'>Destination</th> <th class='errors_header'>Service</th> <th class='errors_header'>Action</th> <th class='errors_header'>Track</th> <th class='errors_header'>Comments</th> <th class='errors_header'>Conversion Comments</th>");
+                    file.WriteLine("   </tr>");
+
+                    foreach (var ruleEntry in rulesWithConversionErrors)
+                    {
+                        var dummy = ConversionIncidentType.None;
+
+                        if (ruleEntry.Value.Enabled)
+                        {
+                            file.WriteLine("  <tr>");
+                        }
+                        else
+                        {
+                            file.WriteLine("  <tr class='disabled_rule'>");
+                        }
+
+                        var sbCurRuleNumberColumnTag = new StringBuilder();
+                        sbCurRuleNumberColumnTag.Append("      <td class='rule_number'>");
+                        sbCurRuleNumberColumnTag.Append("<a href=\"#");
+                        sbCurRuleNumberColumnTag.Append(ruleEntry.Key);
+                        sbCurRuleNumberColumnTag.Append("\">");
+                        sbCurRuleNumberColumnTag.Append(ruleEntry.Key.Replace(ruleIdPrefix, ""));
+                        sbCurRuleNumberColumnTag.Append("</a>");
+                        if (ruleEntry.Value.ConversionIncidentType != ConversionIncidentType.None)
+                        {
+                            sbCurRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(ruleEntry.Value.ConvertedCommandId));
+                        }
+                        if (!ruleEntry.Value.Enabled)
+                        {
+                            sbCurRuleNumberColumnTag.Append(HtmlDisabledImageTag);
+                        }
+                        sbCurRuleNumberColumnTag.Append("</td>");
+                        file.WriteLine(sbCurRuleNumberColumnTag.ToString());
+
+                        file.WriteLine("      <td>" + ruleEntry.Value.Name + "</td>");
+                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Source, ruleEntry.Value.SourceNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Destination, ruleEntry.Value.DestinationNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Service, false, CheckPointObject.Any, ref dummy) + "</td>");
+                        file.WriteLine("      <td class='" + ruleEntry.Value.Action.ToString().ToLower() + "'>" + ruleEntry.Value.Action.ToString() + "</td>");
+                        file.WriteLine("      <td>" + ruleEntry.Value.Track.ToString() + "</td>");
+                        file.WriteLine("      <td class='comments'>" + ruleEntry.Value.Comments + "</td>");
+                        file.WriteLine("      <td class='comments'>" + ruleEntry.Value.ConversionComments + "</td>");
+                        file.WriteLine("  </tr>");
+                    }
+
+                    file.WriteLine("</table>");
+                }
+
+                if (rulesWithConversionInfos.Count > 0)
+                {
+                    file.WriteLine("<script>");
+                    file.WriteLine("   infosCounter = " + rulesWithConversionInfos.Count + ";");
+                    file.WriteLine("</script>");
+                    file.WriteLine("<div id=\"PolicyConversionInfos\" style='margin-left: 20px;'><h3>Conversion Notifications</h3></div>");
+                }
+
+                // Generate the information report
+                if (rulesWithConversionInfos.Count > 0)
+                {
+                    file.WriteLine("<table style='background-color: rgb(220,240,247);'>");
+                    file.WriteLine("   <tr>");
+                    file.WriteLine("      <th class='errors_header'>No.</th> <th class='errors_header'>Name</th> <th class='errors_header'>Source</th> <th class='errors_header'>Destination</th> <th class='errors_header'>Service</th> <th class='errors_header'>Action</th> <th class='errors_header'>Track</th> <th class='errors_header'>Comments</th> <th class='errors_header'>Conversion Comments</th>");
+                    file.WriteLine("   </tr>");
+
+                    foreach (var ruleEntry in rulesWithConversionInfos)
+                    {
+                        var dummy = ConversionIncidentType.None;
+
+                        if (ruleEntry.Value.Enabled)
+                        {
+                            file.WriteLine("  <tr>");
+                        }
+                        else
+                        {
+                            file.WriteLine("  <tr class='disabled_rule'>");
+                        }
+
+                        var sbCurRuleNumberColumnTag = new StringBuilder();
+                        sbCurRuleNumberColumnTag.Append("      <td class='rule_number'>");
+                        sbCurRuleNumberColumnTag.Append("<a href=\"#");
+                        sbCurRuleNumberColumnTag.Append(ruleEntry.Key);
+                        sbCurRuleNumberColumnTag.Append("\">");
+                        sbCurRuleNumberColumnTag.Append(ruleEntry.Key.Replace(ruleIdPrefix, ""));
+                        sbCurRuleNumberColumnTag.Append("</a>");
+                        if (ruleEntry.Value.ConversionIncidentType != ConversionIncidentType.None)
+                        {
+                            sbCurRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(ruleEntry.Value.ConvertedCommandId));
+                        }
+                        if (!ruleEntry.Value.Enabled)
+                        {
+                            sbCurRuleNumberColumnTag.Append(HtmlDisabledImageTag);
+                        }
+                        sbCurRuleNumberColumnTag.Append("</td>");
+                        file.WriteLine(sbCurRuleNumberColumnTag.ToString());
+
+                        file.WriteLine("      <td>" + ruleEntry.Value.Name + "</td>");
+                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Source, ruleEntry.Value.SourceNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Destination, ruleEntry.Value.DestinationNegated, CheckPointObject.Any, ref dummy) + "</td>");
+                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Service, false, CheckPointObject.Any, ref dummy) + "</td>");
+                        file.WriteLine("      <td class='" + ruleEntry.Value.Action.ToString().ToLower() + "'>" + ruleEntry.Value.Action.ToString() + "</td>");
+                        file.WriteLine("      <td>" + ruleEntry.Value.Track.ToString() + "</td>");
+                        file.WriteLine("      <td class='comments'>" + ruleEntry.Value.Comments + "</td>");
+                        file.WriteLine("      <td class='comments'>" + ruleEntry.Value.ConversionComments + "</td>");
+                        file.WriteLine("  </tr>");
+                    }
+
+                    file.WriteLine("</table>");
+                }
+
+                file.WriteLine("</body>");
+                file.WriteLine("</html>");
+            }
         }
 
         private void Add_NetworkObjects()
@@ -3776,7 +4214,12 @@ namespace JuniperMigration
                 Thread.Sleep(1000);
             }
             RaiseConversionProgress(30, "Converting rules ...");
-            Add_Package();
+            Add_Package(); 
+
+            if (_cpPackages.Count > 0)
+            {
+                Add_Optimized_Package();
+            }
 
             if (convertNat)
             {
@@ -3829,8 +4272,11 @@ namespace JuniperMigration
                 Thread.Sleep(1000);
             }
             RaiseConversionProgress(80, "Generating CLI scripts ...");
-            CreateObjectsScript();
-            CreatePackagesScript();
+            if (!_isOverMaxLengthPackageName)
+            {
+                CreateObjectsScript();
+                CreatePackagesScript();
+            }
             CreateObjectsHtml();
 
             // This data container is important, and is used during html reports generation for incidents lookup!!!
@@ -3840,8 +4286,12 @@ namespace JuniperMigration
             // Resolve the conversion categories/lines count to report to the user.
             ConversionIncidentCategoriesCount = _conversionIncidents.GroupBy(error => error.Title).Count();
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
-			
-            CreateSmartConnector();
+            
+            if (!_isOverMaxLengthPackageName)
+            {
+                CreateSmartConnector(true, false);
+                CreateSmartConnector(true, true);
+            }
 
             if (IsConsoleRunning)
             {
@@ -4071,381 +4521,8 @@ namespace JuniperMigration
 
         public override void ExportPolicyPackagesAsHtml()
         {
-            const string ruleIdPrefix = "rule_";
-            var package = _cpPackages[0];
-            string filename = _targetFolder + "\\" + package.Name + ".html";
-
-            using (var file = new StreamWriter(filename, false))
-            {
-                var rulesWithConversionErrors = new Dictionary<string, CheckPoint_Rule>();
-                var rulesWithConversionInfos = new Dictionary<string, CheckPoint_Rule>();
-
-                GeneratePackageHtmlReportHeaders(file, package.Name, package.ConversionIncidentType != ConversionIncidentType.None);
-
-                // Generate the report body
-                file.WriteLine("<table>");
-                file.WriteLine("   <tr>");
-                file.WriteLine("      <th colspan='3'>No.</th> <th>Name</th> <th>Source</th> <th>Destination</th> <th>Service</th> <th>Action</th> <th>Track</th> <th>Comments</th> <th>Conversion Comments</th>");
-                file.WriteLine("   </tr>");
-
-                int ruleNumber = 1;
-
-                foreach (CheckPoint_Rule rule in package.ParentLayer.Rules)
-                {
-                    bool isSubPolicy = false;
-                    string action = "";
-                    string actionStyle = "";
-                    var dummy = ConversionIncidentType.None;
-
-                    switch (rule.Action)
-                    {
-                        case CheckPoint_Rule.ActionType.Accept:
-                        case CheckPoint_Rule.ActionType.Drop:
-                        case CheckPoint_Rule.ActionType.Reject:
-                            action = rule.Action.ToString();
-                            actionStyle = rule.Action.ToString().ToLower();
-                            break;
-
-                        case CheckPoint_Rule.ActionType.SubPolicy:
-                            isSubPolicy = true;
-                            action = "Sub-policy: " + rule.SubPolicyName;
-                            actionStyle = "";
-                            break;
-                    }
-
-                    string curParentRuleId = string.Format("{0}{1}", ruleIdPrefix, ruleNumber);
-
-                    if (rule.Enabled)
-                    {
-                        file.WriteLine("  <tr class='parent_rule' id=\"" + curParentRuleId + "\">");
-                        if (isSubPolicy)
-                        {
-                            file.WriteLine("      <td class='rule_number' colspan='3' onclick='toggleSubRules(this)'>" +
-                                string.Format(HtmlSubPolicyArrowImageTagFormat, curParentRuleId + "_img", HtmlDownArrowImageSourceData) + ruleNumber + "</td>");
-                        }
-                        else
-                        {
-                            file.WriteLine("      <td class='rule_number' colspan='3' style='padding-left:22px;'>" + ruleNumber + "</td>");
-                        }
-                    }
-                    else
-                    {
-                        file.WriteLine("  <tr class='parent_rule_disabled' id=\"" + curParentRuleId + "\">");
-                        if (isSubPolicy)
-                        {
-                            file.WriteLine("      <td class='rule_number' colspan='3' onclick='toggleSubRules(this)'>" +
-                                string.Format(HtmlSubPolicyArrowImageTagFormat, curParentRuleId + "_img", HtmlDownArrowImageSourceData) + ruleNumber + HtmlDisabledImageTag + "</td>");
-                        }
-                        else
-                        {
-                            file.WriteLine("      <td class='rule_number' colspan='3' style='padding-left:22px;'>" + ruleNumber + HtmlDisabledImageTag + "</td>");
-                        }
-                    }
-                    file.WriteLine("      <td>" + rule.Name + "</td>");
-                    file.WriteLine("      <td>" + RuleItemsList2Html(rule.Source, rule.SourceNegated, CheckPointObject.Any, ref dummy) + "</td>");
-                    file.WriteLine("      <td>" + RuleItemsList2Html(rule.Destination, rule.DestinationNegated, CheckPointObject.Any, ref dummy) + "</td>");
-                    file.WriteLine("      <td>" + RuleItemsList2Html(rule.Service, false, CheckPointObject.Any, ref dummy) + "</td>");
-                    file.WriteLine("      <td class='" + actionStyle + "'>" + action + "</td>");
-                    file.WriteLine("      <td>" + rule.Track.ToString() + "</td>");
-                    file.WriteLine("      <td>" + rule.Comments + "</td>");
-                    file.WriteLine("      <td>" + rule.ConversionComments + "</td>");
-                    file.WriteLine("  </tr>");
-
-                    if (isSubPolicy)
-                    {
-                        foreach (CheckPoint_Layer subPolicy in package.SubPolicies)
-                        {
-                            int subRuleNumber = 1;
-
-                            foreach (CheckPoint_Rule subRule in subPolicy.Rules)
-                            {
-                                if (subRule.Layer == rule.SubPolicyName)
-                                {
-                                    bool isSubSubPolicy = false;
-                                    string subAction = "";
-                                    string subActionStyle = "";
-
-                                    switch (subRule.Action)
-                                    {
-                                        case CheckPoint_Rule.ActionType.Accept:
-                                        case CheckPoint_Rule.ActionType.Drop:
-                                        case CheckPoint_Rule.ActionType.Reject:
-                                            subAction = subRule.Action.ToString();
-                                            subActionStyle = subRule.Action.ToString().ToLower();
-                                            break;
-
-                                        case CheckPoint_Rule.ActionType.SubPolicy:
-                                            isSubSubPolicy = true;
-                                            subAction = "Sub-policy: " + subRule.SubPolicyName;
-                                            subActionStyle = "";
-                                            break;
-                                    }
-									
-                                    var ruleConversionIncidentType = ConversionIncidentType.None;
-                                    string curRuleNumber = ruleNumber + "." + subRuleNumber;
-                                    string curRuleId = ruleIdPrefix + curRuleNumber;
-
-                                    if (subRule.Enabled)
-                                    {
-                                        file.WriteLine("  <tr id=\"" + curRuleId + "\">");
-                                    }
-                                    else
-                                    {
-                                        file.WriteLine("  <tr class='disabled_rule' id=\"" + curRuleId + "\">");
-                                    }
-
-                                    var sbCurRuleNumberColumnTag = new StringBuilder();
-                                    sbCurRuleNumberColumnTag.Append("      <td class='indent_rule_number'/>");
-                                    if (isSubSubPolicy)
-                                    {
-                                        sbCurRuleNumberColumnTag.Append("      <td class='rule_number' colspan='2' onclick='toggleSubRules(this)'>" + 
-                                            string.Format(HtmlSubPolicyArrowImageTagFormat, curRuleId + "_img", HtmlDownArrowImageSourceData) + curRuleNumber);
-                                    }
-                                    else
-                                    {
-                                        sbCurRuleNumberColumnTag.Append("      <td class='rule_number' colspan='2'>");
-                                        sbCurRuleNumberColumnTag.Append(curRuleNumber);
-                                    }
-                                    if (subRule.ConversionIncidentType != ConversionIncidentType.None)
-                                    {
-                                        sbCurRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(subRule.ConvertedCommandId));
-                                        ruleConversionIncidentType = subRule.ConversionIncidentType;
-                                    }
-                                    if (!subRule.Enabled)
-                                    {
-                                        sbCurRuleNumberColumnTag.Append(HtmlDisabledImageTag);
-                                    }
-                                    sbCurRuleNumberColumnTag.Append("</td>");
-                                    file.WriteLine(sbCurRuleNumberColumnTag.ToString());
-
-                                    file.WriteLine("      <td>" + subRule.Name + "</td>");
-                                    file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Source, subRule.SourceNegated, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
-                                    file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Destination, subRule.DestinationNegated, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
-                                    file.WriteLine("      <td>" + RuleItemsList2Html(subRule.Service, false, CheckPointObject.Any, ref ruleConversionIncidentType) + "</td>");
-                                    file.WriteLine("      <td class='" + subActionStyle + "'>" + subAction + "</td>");
-                                    file.WriteLine("      <td>" + subRule.Track.ToString() + "</td>");
-                                    file.WriteLine("      <td class='comments'>" + subRule.Comments + "</td>");
-                                    file.WriteLine("      <td class='comments'>" + subRule.ConversionComments + "</td>");
-                                    file.WriteLine("  </tr>");
-
-                                    if(isSubSubPolicy)
-                                    {
-                                        foreach (CheckPoint_Layer subSubPolicy in package.SubPolicies)
-                                        {
-                                            int subSubRuleNumber = 1;
-
-                                            foreach (CheckPoint_Rule subSubRule in subSubPolicy.Rules)
-                                            {
-                                                if (subSubRule.Layer == subRule.SubPolicyName)
-                                                {
-                                                    var subRuleConversionIncidentType = ConversionIncidentType.None;
-                                                    string subCurRuleNumber = ruleNumber + "." + subRuleNumber + "." + subSubRuleNumber;
-                                                    string subCurRuleId = ruleIdPrefix + subCurRuleNumber;
-
-                                                    if (subSubRule.Enabled)
-                                                    {
-                                                        file.WriteLine("  <tr id=\"" + subCurRuleId + "\">");
-                                                    }
-                                                    else
-                                                    {
-                                                        file.WriteLine("  <tr class='disabled_rule' id=\"" + subCurRuleId + "\">");
-                                                    }
-
-                                                    var sbSubCurRuleNumberColumnTag = new StringBuilder();
-                                                    sbSubCurRuleNumberColumnTag.Append("      <td class='indent_rule_number'/>");
-                                                    sbSubCurRuleNumberColumnTag.Append("      <td class='indent_rule_number'/>");
-                                                    sbSubCurRuleNumberColumnTag.Append("      <td class='rule_number'>");
-                                                    sbSubCurRuleNumberColumnTag.Append(subCurRuleNumber);
-                                                    if (subSubRule.ConversionIncidentType != ConversionIncidentType.None)
-                                                    {
-                                                        sbSubCurRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(subSubRule.ConvertedCommandId));
-                                                        subRuleConversionIncidentType = subSubRule.ConversionIncidentType;
-                                                    }
-                                                    if (!subSubRule.Enabled)
-                                                    {
-                                                        sbSubCurRuleNumberColumnTag.Append(HtmlDisabledImageTag);
-                                                    }
-                                                    sbSubCurRuleNumberColumnTag.Append("</td>");
-                                                    file.WriteLine(sbSubCurRuleNumberColumnTag.ToString());
-
-                                                    file.WriteLine("      <td>" + subSubRule.Name + "</td>");
-                                                    file.WriteLine("      <td>" + RuleItemsList2Html(subSubRule.Source, subSubRule.SourceNegated, CheckPointObject.Any, ref subRuleConversionIncidentType) + "</td>");
-                                                    file.WriteLine("      <td>" + RuleItemsList2Html(subSubRule.Destination, subSubRule.DestinationNegated, CheckPointObject.Any, ref subRuleConversionIncidentType) + "</td>");
-                                                    file.WriteLine("      <td>" + RuleItemsList2Html(subSubRule.Service, false, CheckPointObject.Any, ref subRuleConversionIncidentType) + "</td>");
-                                                    file.WriteLine("      <td class='" + subSubRule.Action.ToString().ToLower() + "'>" + subSubRule.Action.ToString() + "</td>");
-                                                    file.WriteLine("      <td>" + subSubRule.Track.ToString() + "</td>");
-                                                    file.WriteLine("      <td class='comments'>" + subSubRule.Comments + "</td>");
-                                                    file.WriteLine("      <td class='comments'>" + subSubRule.ConversionComments + "</td>");
-                                                    file.WriteLine("  </tr>");
-
-                                                    subSubRuleNumber++;
-
-                                                    if (package.ConversionIncidentType != ConversionIncidentType.None && subRuleConversionIncidentType != ConversionIncidentType.None)
-                                                    {
-                                                        if (subRuleConversionIncidentType == ConversionIncidentType.ManualActionRequired)
-                                                        {
-                                                            rulesWithConversionErrors.Add(subCurRuleId, subSubRule);
-                                                        }
-                                                        else
-                                                        {
-                                                            rulesWithConversionInfos.Add(subCurRuleId, subSubRule);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-									
-                                    subRuleNumber++;
-
-                                    if (package.ConversionIncidentType != ConversionIncidentType.None && ruleConversionIncidentType != ConversionIncidentType.None)
-                                    {
-                                        if (ruleConversionIncidentType == ConversionIncidentType.ManualActionRequired)
-                                        {
-                                            rulesWithConversionErrors.Add(curRuleId, subRule);
-                                        }
-                                        else
-                                        {
-                                            rulesWithConversionInfos.Add(curRuleId, subRule);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    ruleNumber++;
-                }
-
-                file.WriteLine("</table>");
-
-                if (rulesWithConversionErrors.Count > 0 || rulesWithConversionInfos.Count > 0)
-                {
-                    file.WriteLine("<div id=\"PolicyConversionIncidents\" style='margin-left: 20px;'><h2>Policy Conversion Issues</h2></div>");
-                }
-
-                // Generate the errors report
-                if (rulesWithConversionErrors.Count > 0)
-                {
-                    file.WriteLine("<script>");
-                    file.WriteLine("   errorsCounter = " + rulesWithConversionErrors.Count + ";");
-                    file.WriteLine("</script>");
-
-                    file.WriteLine("<div id=\"PolicyConversionErrors\" style='margin-left: 20px;'><h3>Conversion Errors</h3></div>");
-                    file.WriteLine("<table style='background-color: rgb(255,255,150);'>");
-                    file.WriteLine("   <tr>");
-                    file.WriteLine("      <th class='errors_header'>No.</th> <th class='errors_header'>Name</th> <th class='errors_header'>Source</th> <th class='errors_header'>Destination</th> <th class='errors_header'>Service</th> <th class='errors_header'>Action</th> <th class='errors_header'>Track</th> <th class='errors_header'>Comments</th> <th class='errors_header'>Conversion Comments</th>");
-                    file.WriteLine("   </tr>");
-
-                    foreach (var ruleEntry in rulesWithConversionErrors)
-                    {
-                        var dummy = ConversionIncidentType.None;
-
-                        if (ruleEntry.Value.Enabled)
-                        {
-                            file.WriteLine("  <tr>");
-                        }
-                        else
-                        {
-                            file.WriteLine("  <tr class='disabled_rule'>");
-                        }
-
-                        var sbCurRuleNumberColumnTag = new StringBuilder();
-                        sbCurRuleNumberColumnTag.Append("      <td class='rule_number'>");
-                        sbCurRuleNumberColumnTag.Append("<a href=\"#");
-                        sbCurRuleNumberColumnTag.Append(ruleEntry.Key);
-                        sbCurRuleNumberColumnTag.Append("\">");
-                        sbCurRuleNumberColumnTag.Append(ruleEntry.Key.Replace(ruleIdPrefix, ""));
-                        sbCurRuleNumberColumnTag.Append("</a>");
-                        if (ruleEntry.Value.ConversionIncidentType != ConversionIncidentType.None)
-                        {
-                            sbCurRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(ruleEntry.Value.ConvertedCommandId));
-                        }
-                        if (!ruleEntry.Value.Enabled)
-                        {
-                            sbCurRuleNumberColumnTag.Append(HtmlDisabledImageTag);
-                        }
-                        sbCurRuleNumberColumnTag.Append("</td>");
-                        file.WriteLine(sbCurRuleNumberColumnTag.ToString());
-
-                        file.WriteLine("      <td>" + ruleEntry.Value.Name + "</td>");
-                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Source, ruleEntry.Value.SourceNegated, CheckPointObject.Any, ref dummy) + "</td>");
-                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Destination, ruleEntry.Value.DestinationNegated, CheckPointObject.Any, ref dummy) + "</td>");
-                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Service, false, CheckPointObject.Any, ref dummy) + "</td>");
-                        file.WriteLine("      <td class='" + ruleEntry.Value.Action.ToString().ToLower() + "'>" + ruleEntry.Value.Action.ToString() + "</td>");
-                        file.WriteLine("      <td>" + ruleEntry.Value.Track.ToString() + "</td>");
-                        file.WriteLine("      <td class='comments'>" + ruleEntry.Value.Comments + "</td>");
-                        file.WriteLine("      <td class='comments'>" + ruleEntry.Value.ConversionComments + "</td>");
-                        file.WriteLine("  </tr>");
-                    }
-
-                    file.WriteLine("</table>");
-                }
-
-                if (rulesWithConversionInfos.Count > 0)
-                {
-                    file.WriteLine("<script>");
-                    file.WriteLine("   infosCounter = " + rulesWithConversionInfos.Count + ";");
-                    file.WriteLine("</script>");
-                    file.WriteLine("<div id=\"PolicyConversionInfos\" style='margin-left: 20px;'><h3>Conversion Notifications</h3></div>");
-                }
-
-                // Generate the information report
-                if (rulesWithConversionInfos.Count > 0)
-                {
-                    file.WriteLine("<table style='background-color: rgb(220,240,247);'>");
-                    file.WriteLine("   <tr>");
-                    file.WriteLine("      <th class='errors_header'>No.</th> <th class='errors_header'>Name</th> <th class='errors_header'>Source</th> <th class='errors_header'>Destination</th> <th class='errors_header'>Service</th> <th class='errors_header'>Action</th> <th class='errors_header'>Track</th> <th class='errors_header'>Comments</th> <th class='errors_header'>Conversion Comments</th>");
-                    file.WriteLine("   </tr>");
-
-                    foreach (var ruleEntry in rulesWithConversionInfos)
-                    {
-                        var dummy = ConversionIncidentType.None;
-
-                        if (ruleEntry.Value.Enabled)
-                        {
-                            file.WriteLine("  <tr>");
-                        }
-                        else
-                        {
-                            file.WriteLine("  <tr class='disabled_rule'>");
-                        }
-
-                        var sbCurRuleNumberColumnTag = new StringBuilder();
-                        sbCurRuleNumberColumnTag.Append("      <td class='rule_number'>");
-                        sbCurRuleNumberColumnTag.Append("<a href=\"#");
-                        sbCurRuleNumberColumnTag.Append(ruleEntry.Key);
-                        sbCurRuleNumberColumnTag.Append("\">");
-                        sbCurRuleNumberColumnTag.Append(ruleEntry.Key.Replace(ruleIdPrefix, ""));
-                        sbCurRuleNumberColumnTag.Append("</a>");
-                        if (ruleEntry.Value.ConversionIncidentType != ConversionIncidentType.None)
-                        {
-                            sbCurRuleNumberColumnTag.Append(BuildConversionIncidentLinkTag(ruleEntry.Value.ConvertedCommandId));
-                        }
-                        if (!ruleEntry.Value.Enabled)
-                        {
-                            sbCurRuleNumberColumnTag.Append(HtmlDisabledImageTag);
-                        }
-                        sbCurRuleNumberColumnTag.Append("</td>");
-                        file.WriteLine(sbCurRuleNumberColumnTag.ToString());
-
-                        file.WriteLine("      <td>" + ruleEntry.Value.Name + "</td>");
-                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Source, ruleEntry.Value.SourceNegated, CheckPointObject.Any, ref dummy) + "</td>");
-                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Destination, ruleEntry.Value.DestinationNegated, CheckPointObject.Any, ref dummy) + "</td>");
-                        file.WriteLine("      <td>" + RuleItemsList2Html(ruleEntry.Value.Service, false, CheckPointObject.Any, ref dummy) + "</td>");
-                        file.WriteLine("      <td class='" + ruleEntry.Value.Action.ToString().ToLower() + "'>" + ruleEntry.Value.Action.ToString() + "</td>");
-                        file.WriteLine("      <td>" + ruleEntry.Value.Track.ToString() + "</td>");
-                        file.WriteLine("      <td class='comments'>" + ruleEntry.Value.Comments + "</td>");
-                        file.WriteLine("      <td class='comments'>" + ruleEntry.Value.ConversionComments + "</td>");
-                        file.WriteLine("  </tr>");
-                    }
-
-                    file.WriteLine("</table>");
-                }
-
-                file.WriteLine("</body>");
-                file.WriteLine("</html>");
-            }
+            foreach (CheckPoint_Package package in _cpPackages)
+                ExportPackageAsHtml(package);
         }
 
         #endregion
