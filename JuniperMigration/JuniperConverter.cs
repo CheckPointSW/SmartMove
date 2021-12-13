@@ -216,8 +216,8 @@ namespace JuniperMigration
             CheckPoint_Package regularPackage = _cpPackages[0];
 
             var optimizedPackage = new CheckPoint_Package();
-            _policyPackageOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
-            string pckg_name = _policyPackageOptimizedName.Replace("_opt", "");
+            string checkOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
+            string pckg_name = checkOptimizedName.Replace("_opt", "");
             if (pckg_name.Length > _maxAllowedpackageNameLength)
             {
                 _isOverMaxLengthPackageName = true;
@@ -269,7 +269,7 @@ namespace JuniperMigration
         private void ExportPackageAsHtml(CheckPoint_Package package)
         {
             const string ruleIdPrefix = "rule_";
-            package.Name = package.Name.Contains("_opt") ? package.Name.Replace("_opt", "_policy_opt") : package.Name;
+            package.Name = (package.Name.Contains("_opt") && !package.Name.Contains("_policy_opt")) ? package.Name.Replace("_opt", "_policy_opt") : package.Name;
             string filename = _targetFolder + "\\" + package.Name + ".html";
 
             using (var file = new StreamWriter(filename, false))
@@ -4312,7 +4312,9 @@ namespace JuniperMigration
 
         public override int RulesInConvertedOptimizedPackage()
         {
-            return 0;
+            if (_cpPackages.Count > 1)
+                return _cpPackages[1].TotalRules();
+            else return 0;
         }
 
         public override int RulesInNatLayer()

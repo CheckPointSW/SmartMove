@@ -816,24 +816,35 @@ namespace SmartMove
                     ConvertingErrorsCount = (fgConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", fgConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;
 
+                case Vendor.JuniperJunosOS:
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
+                    JuniperConverter jConverter = (JuniperConverter)vendorConverter;
+                    ConvertedOptimizedPolicyRulesCount = (jConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", jConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
+                    break;
+
                 case Vendor.PaloAlto:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
-                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
                     PaloAltoConverter paConverter = (PaloAltoConverter)vendorConverter;
                     ConvertedPolicyRulesCount = (paConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", paConverter.RulesInConvertedPackage()) : " Check report.";
+                    ConvertedOptimizedPolicyRulesCount = (paConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", paConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
                     ConvertedNATPolicyRulesCount = (paConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", paConverter.RulesInNatLayer()) : " Check report.";
                     ConvertingWarningsCount = (paConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", paConverter.WarningsInConvertedPackage()) : " Check report.";
                     ConvertingErrorsCount = (paConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", paConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;
+
                 case Vendor.PaloAltoPanorama:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
-                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
 
                     PanoramaConverter panoramaConverter = (PanoramaConverter)vendorConverter;
                     ConvertedPolicyRulesCount = (panoramaConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", panoramaConverter.RulesInConvertedPackage()) : " Check report.";
                     ConvertedNATPolicyRulesCount = (panoramaConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", panoramaConverter.RulesInNatLayer()) : " Check report.";
+                    ConvertedOptimizedPolicyRulesCount = (panoramaConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", panoramaConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
                     ConvertingWarningsCount = (panoramaConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", panoramaConverter.WarningsInConvertedPackage()) : " Check report.";
                     ConvertingErrorsCount = (panoramaConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", panoramaConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;

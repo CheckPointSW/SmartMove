@@ -58,8 +58,8 @@ namespace PaloAltoMigration
             CheckPoint_Package regularPackage = _cpPackages[0];
 
             var optimizedPackage = new CheckPoint_Package();
-            _policyPackageOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
-            string pckg_name = _policyPackageOptimizedName.Replace("_opt", "");
+            string checkOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
+            string pckg_name = checkOptimizedName.Replace("_opt", "");
             if (pckg_name.Length > _maxAllowedpackageNameLength)
             {
                 _isOverMaxLengthPackageName = true;
@@ -182,7 +182,7 @@ namespace PaloAltoMigration
         // -1 is VSYSs
         public override int RulesInConvertedPackage()
         {
-            return _rulesInConvertedPackage;
+            return _cpPackages[0].TotalRules();
         }
 
         //count of warnings of conversion
@@ -201,7 +201,9 @@ namespace PaloAltoMigration
 
         public override int RulesInConvertedOptimizedPackage()
         {
-            return 0;
+            if (_cpPackages.Count > 1)
+                return _cpPackages[1].TotalRules();
+            else return 0;
         }
 
         //count of NAT rules

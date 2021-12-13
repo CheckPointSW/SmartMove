@@ -121,7 +121,9 @@ namespace PanoramaPaloAltoMigration
 
         public override int RulesInConvertedOptimizedPackage()
         {
-            return 0;
+            if (_cpPackages.Count > 1)
+                return _cpPackages[1].TotalRules();
+            else return 0;
         }
 
         //count of NAT rules
@@ -657,7 +659,7 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string deviceGroupName in _deviceGroupNames)
                 {
-                    if (File.Exists(this._targetFolder + deviceGroupName + "\\" + deviceGroupName + "_policy.html"))
+                    if (File.Exists(this._targetFolder + "\\" + deviceGroupName + "\\" + deviceGroupName + "_policy.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + deviceGroupName + "\\" + deviceGroupName + "_policy.html" + "\">" + "<h2>" + deviceGroupName + "</h2>" + "</a>" + "</li>");
                     }
@@ -4236,8 +4238,8 @@ namespace PanoramaPaloAltoMigration
             CheckPoint_Package regularPackage = _cpPackages[0];
 
             var optimizedPackage = new CheckPoint_Package();
-            _policyPackageOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
-            string pckg_name = _policyPackageOptimizedName.Replace("_opt", "");
+            string checkOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
+            string pckg_name = checkOptimizedName.Replace("_opt", "");
             if (pckg_name.Length > _maxAllowedpackageNameLength)
             {
                 _isOverMaxLengthPackageName = true;
@@ -4298,9 +4300,9 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("<body>");
                 file.WriteLine("<h1>List of VDOMs Policies for " + _vendorFileName + "</h1>");
                 file.WriteLine("<ul>");
-                foreach (string vDomName in _vsysNames)
+                foreach (string vDomName in _deviceGroupNames)
                 {
-                    if (File.Exists(_targetFolder + vDomName + "\\" + vDomName + "_policy_opt.html"))
+                    if (File.Exists(_targetFolder + "\\" + vDomName + "\\" + vDomName + "_policy_opt.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_policy_opt.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
