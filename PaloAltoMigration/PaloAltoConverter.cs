@@ -21,6 +21,8 @@ namespace PaloAltoMigration
         public bool ConvertUserConf { get; set; } //check if User converion is requested
         public string LDAPAccoutUnit { get; set; } //read LDAP Account Unit Name for gethering users
 
+        public bool ShowOptBashLink = true;
+
         #endregion
 
         #region Private Members
@@ -122,7 +124,7 @@ namespace PaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string vDomName in _vsysNames)
                 {
-                    if (File.Exists(_targetFolder + vDomName + "\\" + vDomName + "_policy_opt.html"))
+                    if (File.Exists(_targetFolder + "\\" + vDomName + "\\" + vDomName + "_policy_opt.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_policy_opt.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
@@ -182,7 +184,7 @@ namespace PaloAltoMigration
         // -1 is VSYSs
         public override int RulesInConvertedPackage()
         {
-            return _cpPackages[0].TotalRules();
+            return _rulesInConvertedPackage;
         }
 
         //count of warnings of conversion
@@ -696,7 +698,7 @@ namespace PaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string vsysName in _vsysNames)
                 {
-                    if (File.Exists(this._targetFolder + vsysName + "\\" + vsysName + "_objects.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vsysName + "\\" + vsysName + "_objects.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vsysName + "\\" + vsysName + "_objects.html" + "\">" + "<h2>" + vsysName + "</h2>" + "</a>" + "</li>");
                     }
@@ -726,7 +728,7 @@ namespace PaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string vsysName in _vsysNames)
                 {
-                    if (File.Exists(this._targetFolder + vsysName + "\\" + vsysName + "_policy.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vsysName + "\\" + vsysName + "_policy.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vsysName + "\\" + vsysName + "_policy.html" + "\">" + "<h2>" + vsysName + "</h2>" + "</a>" + "</li>");
                     }
@@ -756,7 +758,7 @@ namespace PaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string vsysName in _vsysNames)
                 {
-                    if (File.Exists(this._targetFolder + vsysName + "\\" + vsysName + "_NAT.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vsysName + "\\" + vsysName + "_NAT.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vsysName + "\\" + vsysName + "_NAT.html" + "\">" + "<h2>" + vsysName + "</h2>" + "</a>" + "</li>");
                     }
@@ -786,7 +788,7 @@ namespace PaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string vsysName in _vsysNames)
                 {
-                    if (File.Exists(this._targetFolder + vsysName + "\\" + vsysName + "_errors.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vsysName + "\\" + vsysName + "_errors.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vsysName + "\\" + vsysName + "_errors.html" + "\">" + "<h2>" + vsysName + "</h2>" + "</a>" + "</li>");
                     }
@@ -816,7 +818,7 @@ namespace PaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string vsysName in _vsysNames)
                 {
-                    if (File.Exists(this._targetFolder + vsysName + "\\" + vsysName + "_warnings.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vsysName + "\\" + vsysName + "_warnings.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vsysName + "\\" + vsysName + "_warnings.html" + "\">" + "<h2>" + vsysName + "</h2>" + "</a>" + "</li>");
                     }
@@ -834,7 +836,7 @@ namespace PaloAltoMigration
         //report about Errors
         public void CreateErrorsHtml(string vsysName)
         {
-            string filename = _targetFolder + "//" + vsysName + "_errors.html";
+            string filename = _targetFolder + "\\" + vsysName + "_errors.html";
 
             using (var file = new StreamWriter(filename, false))
             {
@@ -864,7 +866,7 @@ namespace PaloAltoMigration
         //report about Warnings
         public void CreateWarningsHtml(string vsysName)
         {
-            string filename = _targetFolder + "//" + vsysName + "_warnings.html";
+            string filename = _targetFolder + "\\" + vsysName + "_warnings.html";
 
             using (var file = new StreamWriter(filename, false))
             {
@@ -1079,6 +1081,10 @@ namespace PaloAltoMigration
                 Progress.SetProgress(100);
                 Progress.Dispose();
             }
+
+            if (_vsysNames.Count > 0)
+                ShowOptBashLink = false;
+
             return new Dictionary<string, int>() { { "errors", ErrorsInConvertedPackage() }, { "warnings", WarningsInConvertedPackage() } };
         }
 
