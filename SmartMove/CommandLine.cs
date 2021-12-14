@@ -98,6 +98,14 @@ namespace SmartMove
             set { formatOutput = value; }
         }
 
+        //-a
+        private bool isAnalyze { get; set; } = false;
+        public bool IsAnalyze
+        {
+            get { return isAnalyze; }
+            set { isAnalyze = value; }
+        }
+
         private bool _successCommands = true;
         private bool _isInteractive = true;
 
@@ -120,9 +128,10 @@ namespace SmartMove
             Console.WriteLine("\t" + "-k | --skip" + "\t\t" + @"(""-k false"" |"" -k true"" [default]) do not import unused objects (for FortiNet, PaloAlto, CiscoASA and Panorama only) [enabled by default]");
             Console.WriteLine("\t" + "-f | --format" + "\t\t" + "format of the output file (JSON[default], TEXT)");
             Console.WriteLine("\t" + "-i | --interactive" + "\t" + @"-i false | -i true [default] Interactive mode provides a better user experience.Disable when automation is required[enabled by default]");
+            Console.WriteLine("\t" + "-a | --analyzer" + "\t\t" + @"mode for analyze package");
             Console.WriteLine();
             Console.WriteLine("Example:");
-            Console.WriteLine("\t" + "SmartMove.exe –s \"D:\\SmartMove\\Content\\config.txt\" –v CiscoASA - t \"D:\\SmartMove\\Content\" –n true -k false -f json");
+            Console.WriteLine("\t" + "SmartMove.exe –s \"D:\\SmartMove\\Content\\config.txt\" –v CiscoASA - t \"D:\\SmartMove\\Content\" –n true -k false -f json -a");
             return 0;
         }
 
@@ -444,10 +453,441 @@ namespace SmartMove
                             }
                             break;
                         }
+                    case "-a":
+                    case "--analyzer": 
+                        {
+                            this.isAnalyze = true;
+                            break; 
+                        }
                 }
             }
             return this;
         }
+
+        public void DoAnalyze(CommandLine commandLine)
+        {
+            if (!_successCommands)
+                return;
+
+            string fileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
+            //Console.WriteLine("File name: " + fileName);
+
+            if (string.IsNullOrEmpty(commandLine.ConfigFileName) || string.IsNullOrEmpty(fileName))
+            {
+                if (FormatOutput == "text")
+                    Console.WriteLine("Configuration file is not selected.", MessageTypes.Error);
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                        msg: "Configuration file is not selected.",
+                        err: "err_cannot_convert_configuration_file");
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
+                return;
+            }
+
+            if (!File.Exists(commandLine.ConfigFileName))
+            {
+                if (FormatOutput == "text")
+                    Console.WriteLine("Cannot find configuration file.", MessageTypes.Error);
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                        msg: "Cannot find configuration file.",
+                        err: "err_cannot_convert_configuration_file");
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
+                return;
+            }
+
+            if (fileName.Length > 20)
+            {
+                if (FormatOutput == "text")
+                    Console.WriteLine("Configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                        msg: "Configuration file name is restricted to 20 characters at most.",
+                        err: "err_cannot_convert_configuration_file");
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
+                return;
+            }
+
+            if (!Directory.Exists(commandLine.TargetFolder))
+            {
+                if (FormatOutput == "text")
+                    Console.WriteLine("Cannot find target folder for conversion output.", MessageTypes.Error);
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                        msg: "Cannot find target folder for conversion output.",
+                        err: "err_cannot_convert_configuration_file");
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
+                return;
+            }
+
+            VendorParser vendorParser;
+
+            switch (commandLine.Vendor)
+            {
+                case "CiscoASA":
+                    CiscoParser.SpreadAclRemarks = _isCiscoSpreadAclRemarks;
+                    vendorParser = new CiscoParser();
+                    break;
+                case "FirePower":
+                    vendorParser = new CiscoParser()
+                    {
+                        isUsingForFirePower = true
+                    };
+                    break;
+                case "JuniperSRX":
+                    vendorParser = new JuniperParser();
+                    break;
+                case "JuniperSSG":
+                    vendorParser = new ScreenOSParser();
+                    break;
+                case "FortiNet":
+                    vendorParser = new FortiGateParser();
+                    break;
+                case "PaloAlto":
+                    vendorParser = new PaloAltoParser();
+                    break;
+                case "Panorama":
+                    vendorParser = new PanoramaParser();
+                    break;
+                default:
+                    throw new InvalidDataException("Unexpected!!!");
+            }
+
+            try
+            {
+                string ciscoFile = commandLine.ConfigFileName;
+                Console.Write("Parsing configuration file...");
+
+                if (commandLine.Vendor.Equals("Panorama"))
+                {
+
+                    PanoramaParser panParser = (PanoramaParser)vendorParser;
+                    panParser.ParseWithTargetFolder(ciscoFile, Path.GetFullPath(TargetFolder));
+                }
+                else
+                {
+                    vendorParser.Parse(ciscoFile);
+                }
+
+                Console.WriteLine("Done.");
+
+            }
+            catch (Exception ex)
+            {
+                if (FormatOutput == "text")
+                {
+                    Console.WriteLine("\nCould not parse configuration file.", MessageTypes.Error);
+                    return;
+                }
+                else
+                {
+                    JsonReport jsonReport = new JsonReport(
+                        msg: "Could not parse configuration file.",
+                        err: "err_cannot_parse_configuration_file");
+                    Console.WriteLine("\n" + jsonReport.PrintJson());
+                    return;
+                }
+            }
+
+            #region check middleware version
+            switch (commandLine.Vendor)
+            {
+                case "CiscoASA":
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified ASA version. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    else if (vendorParser.MajorVersion < 8 || (vendorParser.MajorVersion == 8 && vendorParser.MinorVersion < 3))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported ASA version (" + vendorParser.Version + "). This tool supports ASA 8.3 and above configuration files. The configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported ASA version (" + vendorParser.Version + "). This tool supports ASA 8.3 and above configuration files. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    break;
+
+                case "JuniperSRX":
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified SRX version. Cannot find SRX version for the selected configuration. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    else if (vendorParser.MajorVersion < 12 || (vendorParser.MajorVersion == 12 && vendorParser.MinorVersion < 1))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported SRX version (" + vendorParser.Version + "). This tool supports SRX 12.1 and above configuration files. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    break;
+
+                case "JuniperSSG":
+                    break;
+
+                case "FirePower":
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified NGFW version.\nCannot find version for the selected configuration.\nThe configuration may not parse correctly.");
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified NGFW version.\nCannot find version for the selected configuration.\nThe configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    else if (vendorParser.MajorVersion < 6 || (vendorParser.MajorVersion == 6 && vendorParser.MinorVersion < 4))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported version (" + vendorParser.Version + ").\nThis tool supports NGFW 6.4 and above configuration files.\nThe configuration may not parse correctly.");
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported version(" + vendorParser.Version + ").\nThis tool supports NGFW 6.4 and above configuration files.\nThe configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    break;
+
+                case "FortiNet":
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified FortiGate version. Cannot find FortiGate version for the selected configuration. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    else if (vendorParser.MajorVersion < 5)
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported FortiGate version (" + vendorParser.Version + "). This tool supports FortiGate 5.x and above configuration files. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    break;
+                case "PaloAlto":
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified PaloAlto version. Cannot find PaloAlto PAN-OS version for the selected configuration. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    else if (vendorParser.MajorVersion < 7)
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported PaloAlto version (" + vendorParser.Version + "). This tool supports PaloAlto PAN-OS 7.x and above configuration files. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    break;
+                case "Panorama":
+                    if (string.IsNullOrEmpty(vendorParser.Version))
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unspecified PaloAlto Panorama version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unspecified PaloAlto Panorama version. Cannot find PaloAlto Panorama version for the selected configuration. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    else if (vendorParser.MajorVersion < 7)
+                    {
+                        if (FormatOutput == "text")
+                            Console.WriteLine("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        else
+                        {
+                            JsonReport jsonReport = new JsonReport(
+                                msg: "Unsupported PaloAlto version (" + vendorParser.Version + "). This tool supports PaloAlto Panorama 7.x and above configuration files. The configuration may not parse correctly.", err: "err_unsupported_version_configuration_file");
+                            Console.WriteLine(jsonReport.PrintJson());
+                        }
+                        return;
+                    }
+                    break;
+            }
+            #endregion                       
+
+            string vendorFileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
+
+            string toolVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+
+            string targetFolder = commandLine.TargetFolder + "\\";
+
+            bool convertNat = commandLine.ConvertNat;
+
+            string ldapAccountUnit = commandLine.LdapAccountUnit;
+
+            vendorParser.Export(targetFolder + vendorFileName + ".json");
+
+            VendorConverter vendorConverter;
+
+            switch (commandLine.Vendor)
+            {
+                case "CiscoASA":
+                    CiscoConverter converter = new CiscoConverter();
+                    converter.SkipUnusedObjects = commandLine.DontImportUnusedObjects;
+                    vendorConverter = converter;
+                    break;
+                case "FirePower":
+                    vendorConverter = new CiscoConverter()
+                    {
+                        isUsingForFirePower = true
+                    };
+                    break;
+                case "JuniperSRX":
+                    vendorConverter = new JuniperConverter();
+                    break;
+                case "JuniperSSG":
+                    vendorConverter = new ScreenOSConverter();
+                    break;
+                case "FortiNet":
+                    FortiGateConverter fgConverter = new FortiGateConverter();
+                    fgConverter.OptimizeConf = commandLine.DontImportUnusedObjects;
+                    fgConverter.ConvertUserConf = commandLine.ConvertUserConfiguration;
+                    fgConverter.LDAPAccoutUnit = ldapAccountUnit;
+                    vendorConverter = fgConverter;
+                    break;
+                case "PaloAlto":
+                    PaloAltoConverter paConverter = new PaloAltoConverter();
+                    paConverter.OptimizeConf = commandLine.DontImportUnusedObjects;
+                    paConverter.ConvertUserConf = commandLine.ConvertUserConfiguration;
+                    paConverter.LDAPAccoutUnit = ldapAccountUnit;
+                    vendorConverter = paConverter;
+                    break;
+                case "Panorama":
+                    PanoramaConverter panoramaConverter = new PanoramaConverter();
+                    panoramaConverter.OptimizeConf = commandLine.DontImportUnusedObjects;
+                    panoramaConverter.ConvertUserConf = commandLine.ConvertUserConfiguration;
+                    panoramaConverter.LDAPAccoutUnit = ldapAccountUnit;
+                    vendorConverter = panoramaConverter;
+                    break;
+                default:
+                    throw new InvalidDataException("Unexpected!!!");
+            }
+
+            vendorConverter.Initialize(vendorParser, commandLine.ConfigFileName, toolVersion, targetFolder, commandLine.Domain, commandLine.formatOutput);
+            //if we are in interactive mode
+            vendorConverter.IsConsoleRunning = true && _isInteractive;
+
+            try
+            {
+                Console.WriteLine("Conversion started...");
+                float results = vendorConverter.Analyze();
+
+                if (formatOutput.Equals("text"))
+                {
+                    Console.WriteLine("Analyze finished.");
+                    Console.WriteLine("Total Rules: {0}", vendorConverter.TotalRules);
+                    Console.WriteLine("Optimization Potential: {0}%", vendorConverter.OptimizationPotential.ToString("0.00"));
+                }
+                else
+                {
+                    TotalJsonReportAnalyze jsonReport = new TotalJsonReportAnalyze(
+                        msg: "Analyze finished",
+                        ttrules: vendorConverter.TotalRules,
+                        optPotent: vendorConverter.OptimizationPotential);
+                    Console.WriteLine(jsonReport.PrintJson());
+                }
+
+            }
+            catch (Exception ex)
+            {
+
+                if (ex is InvalidDataException && ex.Message != null && ex.Message.Contains("Policy exceeds the maximum number"))
+                {
+                    if (FormatOutput == "text")
+                    {
+                        Console.WriteLine(String.Format("{1}{0}{2}{0}{3}", Environment.NewLine, "SmartAnalyze is unable to analyze the provided policy.",
+                                                          "Reason: Policy exceeds the maximum number of supported policy layers.",
+                                                          "To assure the smooth conversion of your data, it is recommended to contact Check Point Professional Services by sending an e-mail to ps@checkpoint.com"));
+                    }
+                    else
+                    {
+                        JsonReport jsonReport = new JsonReport(
+                            msg: "SmartAnalyze is unable to analyze the provided policy. Reason: Policy exceeds the maximum number of supported policy layers.",
+                            err: "generic_error");
+                        Console.WriteLine(jsonReport.PrintJson());
+                    }
+                }
+                else
+                {
+                    if (FormatOutput == "text")
+                        Console.WriteLine("Could not analyze configuration file.", MessageTypes.Error);
+                    else
+                    {
+                        JsonReport jsonReport = new JsonReport(
+                            msg: "Could not analyze configuration file.",
+                            err: "err_cannot_analyze_configuration_file");
+                        Console.WriteLine(jsonReport.PrintJson());
+                    }
+                }
+                return;
+            }
+            finally
+            {
+                if (vendorConverter.Progress != null)
+                    vendorConverter.Progress.Dispose();
+            }
+        }
+
 
         /*
          * This is the analog to MainWindow.Go_OnClick() function if application is run as WPF. 

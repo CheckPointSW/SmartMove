@@ -84,4 +84,38 @@ namespace CommonUtils
             return sr.ReadToEnd();
         }
     }
+
+    [DataContract]
+    public class TotalJsonReportAnalyze
+    {
+        [DataMember]
+        public string msg { get; set; }
+        //total count at the finish
+        [DataMember(Name = "Conversion warnings")]
+        public float optPotent { get; set; }
+        [DataMember(Name = "Conversion errors")]
+        public int ttrules { get; set; }
+
+        public TotalJsonReportAnalyze()
+        {
+            ttrules = 0;
+            optPotent = 0;
+        }
+        public TotalJsonReportAnalyze(string msg, int ttrules, float optPotent) : this()
+        {
+            this.msg = msg;
+            this.ttrules = ttrules;
+            this.optPotent = optPotent;
+        }
+
+        public string PrintJson()
+        {
+            var ms = new MemoryStream();
+            var ser = new DataContractJsonSerializer(typeof(TotalJsonReport));
+            ser.WriteObject(ms, this);
+            ms.Position = 0;
+            var sr = new StreamReader(ms);
+            return sr.ReadToEnd();
+        }
+    }
 }
