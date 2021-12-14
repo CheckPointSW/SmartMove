@@ -178,6 +178,9 @@ namespace MigrationBase
             _domainName = domainName;
             _outputFormat = outputFormat;
 
+            if (_targetFolder.EndsWith("\\"))
+                _targetFolder = _targetFolder.Substring(0, _targetFolder.Length - 1);
+
             _vendorFileName = Path.GetFileNameWithoutExtension(vendorFilePath);
             _vendorFileName = !string.IsNullOrEmpty(_vendorFileName) ? Regex.Replace(_vendorFileName, @"\s+", "_") : "";
 
@@ -1417,7 +1420,12 @@ namespace MigrationBase
                 validatePackage(package);
                 ++packageNumber;
 
-                string filename = _targetFolder + "\\" + package.Name + ".sh";
+                string pckgFilename = package.Name;
+
+                if (packageNumber == 2 && !pckgFilename.Contains("_policy_opt"))
+                    pckgFilename = pckgFilename.Replace("_opt", "_policy_opt");
+
+                string filename = _targetFolder + "\\" + pckgFilename + ".sh";
                 string errorsReportFile = (packageNumber == 1) ? "failed_package.txt" : "failed_package_opt.txt";
                 string diagnosticsTarget = (packageNumber == 1) ? "SmartMove_Create_Policy" : "SmartMove_Create_Optimized_Policy";
 
