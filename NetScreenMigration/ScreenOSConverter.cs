@@ -525,6 +525,10 @@ namespace NetScreenMigration
         private List<CheckPoint_Rule> _convertedNatPolicy2Rules = new List<CheckPoint_Rule>();
         private Dictionary<string, CheckPoint_NetworkGroup> _zonesNetworkGroups = new Dictionary<string, CheckPoint_NetworkGroup>();
 
+        //if total package name over max count of chars (20) do not create *.sh, *.tar.gz, *.zip files
+        private bool _isOverMaxLengthPackageName = false;
+        private int _maxAllowedpackageNameLength = 20;
+
         private IEnumerable<ScreenOSCommand> _screenOSAllCommands;
         private IEnumerable<ScreenOSCommand> ScreenOSAllCommands
         {
@@ -691,6 +695,62 @@ namespace NetScreenMigration
         #endregion
 
         #region Private Methods
+
+        private void Add_Optimized_Package()
+        {
+            CheckPoint_Package regularPackage = _cpPackages[0];
+
+            var optimizedPackage = new CheckPoint_Package();
+            string checkOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
+            string pckg_name = checkOptimizedName.Replace("_opt", "");
+            if (pckg_name.Length > _maxAllowedpackageNameLength)
+            {
+                _isOverMaxLengthPackageName = true;
+                _conversionIncidents.Add(new ConversionIncident(0, "max length exceeded", "Package " + pckg_name + " has name length more then " + _maxAllowedpackageNameLength + " chars", ConversionIncidentType.ManualActionRequired));
+            }
+            optimizedPackage.Name = _policyPackageOptimizedName;
+            optimizedPackage.ParentLayer.Name = optimizedPackage.NameOfAccessLayer;
+            optimizedPackage.ConversionIncidentType = regularPackage.ConversionIncidentType;
+
+            var regular2OptimizedLayers = new Dictionary<string, string>();
+
+            foreach (CheckPoint_Layer layer in regularPackage.SubPolicies)
+            {
+                string optimizedSubPolicyName = layer.Name + "_opt";
+
+                CheckPoint_Layer optimizedLayer = RuleBaseOptimizer.Optimize(layer, optimizedSubPolicyName);
+                foreach (CheckPoint_Rule subSubRule in optimizedLayer.Rules)
+                {
+                    if (subSubRule.SubPolicyName.Equals(GlobalRulesSubpolicyName))
+                    {
+                        //The Global sub-sub rule subpolicy name should also be renamed for consistency
+                        subSubRule.SubPolicyName += "_opt";
+                    }
+                }
+                if (!regular2OptimizedLayers.ContainsKey(layer.Name))
+                {
+                    regular2OptimizedLayers.Add(layer.Name, optimizedSubPolicyName);
+                    optimizedPackage.SubPolicies.Add(optimizedLayer);
+                    validatePackage(optimizedPackage);
+                }
+            }
+
+            foreach (CheckPoint_Rule rule in regularPackage.ParentLayer.Rules)
+            {
+                CheckPoint_Rule newRule = rule.Clone();
+                if (newRule.Action == CheckPoint_Rule.ActionType.SubPolicy)
+                {
+                    newRule.SubPolicyName = regular2OptimizedLayers[rule.SubPolicyName];
+                }
+                newRule.Layer = optimizedPackage.ParentLayer.Name;
+                newRule.ConversionComments = rule.ConversionComments;
+
+                optimizedPackage.ParentLayer.Rules.Add(newRule);
+            }
+
+            AddCheckPointObject(optimizedPackage);
+        }
+
 
         protected override bool AddCheckPointObject(CheckPointObject cpObject)
         {
@@ -3551,11 +3611,11 @@ namespace NetScreenMigration
 
             if (IsConsoleRunning)
             {
-                Console.WriteLine("Converting obects ...");
+                Console.WriteLine("Converting objects ...");
                 Progress.SetProgress(20);
                 Thread.Sleep(1000);
             }
-            RaiseConversionProgress(20, "Converting obects ...");
+            RaiseConversionProgress(20, "Converting objects ...");
             _cpObjects.Initialize();   // must be first!!!
             
             foreach (CheckPointObject cpObject in _cpObjects.GetPredefinedObjects())
@@ -3582,6 +3642,11 @@ namespace NetScreenMigration
             }
             RaiseConversionProgress(30, "Converting rules ...");
             Convert_policies();
+
+            if (_cpPackages.Count > 0)
+            {
+                Add_Optimized_Package();
+            }
 
             if (!convertNat)
             {
@@ -3630,8 +3695,11 @@ namespace NetScreenMigration
             }
             RaiseConversionProgress(80, "Generating CLI scripts ...");
             CreateObjectsHtml();
-            CreateObjectsScript();
-            CreatePackagesScript();
+            if (!_isOverMaxLengthPackageName)
+            {
+                CreateObjectsScript();
+                CreatePackagesScript();
+            }
 
             // This data container is important, and is used during rulebases html reports generation for incidents lookup!!!
             IEnumerable<IGrouping<int, ConversionIncident>> incidentsGroupedByLineNumber = _conversionIncidents.GroupBy(error => error.LineNumber);
@@ -3640,8 +3708,12 @@ namespace NetScreenMigration
             // Resolve the conversion categories/lines count to report to the user.
             ConversionIncidentCategoriesCount = _conversionIncidents.GroupBy(error => error.Title).Count();
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
-			
-            CreateSmartConnector();
+
+            if (!_isOverMaxLengthPackageName)
+            {
+                CreateSmartConnector(true, false);
+                CreateSmartConnector(true, true);
+            }
 
             if (IsConsoleRunning)
             {
@@ -3658,7 +3730,10 @@ namespace NetScreenMigration
 
         public override int RulesInConvertedOptimizedPackage()
         {
-            return 0;
+            if (_cpPackages.Count > 1)
+                return _cpPackages[1].TotalRules();
+            else
+                return 0;
         }
 
         public override int RulesInNatLayer()
