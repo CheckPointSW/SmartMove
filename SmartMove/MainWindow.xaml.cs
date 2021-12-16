@@ -826,6 +826,14 @@ namespace SmartMove
                     ConvertedOptimizedPolicyRulesCount = (jConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", jConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
                     break;
 
+                case Vendor.JuniperScreenOS:
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
+                    ScreenOSConverter soConverter = (ScreenOSConverter)vendorConverter;
+                    ConvertedOptimizedPolicyRulesCount = (soConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", soConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
+                    break;
+
                 case Vendor.PaloAlto:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
                     ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
