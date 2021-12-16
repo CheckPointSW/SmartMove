@@ -806,9 +806,11 @@ namespace SmartMove
                 case Vendor.FortiGate:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
                     ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
 
                     FortiGateConverter fgConverter = (FortiGateConverter)vendorConverter;
+
+                    RulebaseOptimizedScriptLink.Visibility = fgConverter.ShowBashOptLink ? Visibility.Visible : Visibility.Collapsed;
+
                     ConvertedPolicyRulesCount = (fgConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInConvertedPackage()) : " Check report.";
                     ConvertedOptimizedPolicyRulesCount = (fgConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
                     ConvertedNATPolicyRulesCount = (fgConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", fgConverter.RulesInNatLayer()) : " Check report.";
@@ -816,24 +818,47 @@ namespace SmartMove
                     ConvertingErrorsCount = (fgConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", fgConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;
 
+                case Vendor.JuniperJunosOS:
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
+                    JuniperConverter jConverter = (JuniperConverter)vendorConverter;
+                    ConvertedOptimizedPolicyRulesCount = (jConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", jConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
+                    break;
+
+                case Vendor.JuniperScreenOS:
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
+                    ScreenOSConverter soConverter = (ScreenOSConverter)vendorConverter;
+                    ConvertedOptimizedPolicyRulesCount = (soConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", soConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
+                    break;
+
                 case Vendor.PaloAlto:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
-                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
+
                     PaloAltoConverter paConverter = (PaloAltoConverter)vendorConverter;
+                    RulebaseOptimizedScriptLink.Visibility = paConverter.ShowOptBashLink ? Visibility.Visible : Visibility.Collapsed;
+
                     ConvertedPolicyRulesCount = (paConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", paConverter.RulesInConvertedPackage()) : " Check report.";
+                    ConvertedOptimizedPolicyRulesCount = (paConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", paConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
                     ConvertedNATPolicyRulesCount = (paConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", paConverter.RulesInNatLayer()) : " Check report.";
                     ConvertingWarningsCount = (paConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", paConverter.WarningsInConvertedPackage()) : " Check report.";
                     ConvertingErrorsCount = (paConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", paConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;
+
                 case Vendor.PaloAltoPanorama:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
-                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Collapsed;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Collapsed;
+                    ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
 
                     PanoramaConverter panoramaConverter = (PanoramaConverter)vendorConverter;
+
+                    RulebaseOptimizedScriptLink.Visibility = panoramaConverter.ShowOptBashLink ? Visibility.Visible : Visibility.Collapsed;
+
                     ConvertedPolicyRulesCount = (panoramaConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", panoramaConverter.RulesInConvertedPackage()) : " Check report.";
                     ConvertedNATPolicyRulesCount = (panoramaConverter.RulesInNatLayer() != -1) ? string.Format(" ({0} rules)", panoramaConverter.RulesInNatLayer()) : " Check report.";
+                    ConvertedOptimizedPolicyRulesCount = (panoramaConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", panoramaConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
                     ConvertingWarningsCount = (panoramaConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", panoramaConverter.WarningsInConvertedPackage()) : " Check report.";
                     ConvertingErrorsCount = (panoramaConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", panoramaConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;

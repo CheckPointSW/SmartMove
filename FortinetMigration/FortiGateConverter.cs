@@ -24,6 +24,7 @@ namespace FortiGateMigration
         public string LDAPAccoutUnit { get; set; } //read LDAP Account Unit Name for gethering users
         public string OutputFormat { get; set; } //json or text format for output file
         public bool CreateManagnetReport { get; set; }
+        public bool ShowBashOptLink { get; set; } = true;
 
         #endregion
 
@@ -610,7 +611,7 @@ namespace FortiGateMigration
                 file.WriteLine("<ul>");
                 foreach (string vDomName in _vDomNames)
                 {
-                    if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_objects.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vDomName + "\\" + vDomName + "_objects.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_objects.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
@@ -640,7 +641,7 @@ namespace FortiGateMigration
                 file.WriteLine("<ul>");
                 foreach (string vDomName in _vDomNames)
                 {
-                    if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_policy.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vDomName + "\\" + vDomName + "_policy.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_policy.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
@@ -670,7 +671,7 @@ namespace FortiGateMigration
                 file.WriteLine("<ul>");
                 foreach (string vDomName in _vDomNames)
                 {
-                    if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_policy_opt.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vDomName + "\\" + vDomName + "_policy_opt.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_policy_opt.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
@@ -700,7 +701,7 @@ namespace FortiGateMigration
                 file.WriteLine("<ul>");
                 foreach (string vDomName in _vDomNames)
                 {
-                    if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_NAT.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vDomName + "\\" + vDomName + "_NAT.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_NAT.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
@@ -730,7 +731,7 @@ namespace FortiGateMigration
                 file.WriteLine("<ul>");
                 foreach (string vDomName in _vDomNames)
                 {
-                    if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_errors.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vDomName + "\\" + vDomName + "_errors.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_errors.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
@@ -760,7 +761,7 @@ namespace FortiGateMigration
                 file.WriteLine("<ul>");
                 foreach (string vDomName in _vDomNames)
                 {
-                    if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_warnings.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vDomName + "\\" + vDomName + "_warnings.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_warnings.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
@@ -789,7 +790,7 @@ namespace FortiGateMigration
                 file.WriteLine("<ul>");
                 foreach (string vDomName in _vDomNames)
                 {
-                    if (File.Exists(this._targetFolder + vDomName + "\\" + vDomName + "_managment_report.html"))
+                    if (File.Exists(this._targetFolder + "\\" + vDomName + "\\" + vDomName + "_managment_report.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_managment_report.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
@@ -810,7 +811,7 @@ namespace FortiGateMigration
             if (_errorsList.Count > 0)
             {
                 // if (OutputFormat == "text") {
-                string filename = _targetFolder + "//" + vDomName + "_errors.html";
+                string filename = _targetFolder + "\\" + vDomName + "_errors.html";
 
                 using (var file = new StreamWriter(filename, false))
                 {
@@ -837,7 +838,7 @@ namespace FortiGateMigration
                 }
                 /*}else
                 {
-                    string filename = _targetFolder + "//" + vDomName + "_errors.json";
+                    string filename = _targetFolder + "\\" + vDomName + "_errors.json";
 
                     using (var file = new StreamWriter(filename, false))
                     {
@@ -859,7 +860,7 @@ namespace FortiGateMigration
         {
             if (_errorsList.Count > 0)
             {
-                string filename = _targetFolder + "//" + vDomName + "_warnings.html";
+                string filename = _targetFolder + "\\" + vDomName + "_warnings.html";
 
                 using (var file = new StreamWriter(filename, false))
                 {
@@ -959,6 +960,10 @@ namespace FortiGateMigration
                 Progress.SetProgress(100);
                 Progress.Dispose();
             }
+
+            if (_vDomNames.Count > 0)
+                ShowBashOptLink = false;
+
             return new Dictionary<string, int>() { { "errors", ErrorsInConvertedPackage() }, { "warnings", WarningsInConvertedPackage() } };
         }
 

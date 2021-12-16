@@ -23,6 +23,8 @@ namespace PanoramaPaloAltoMigration
         public bool ConvertUserConf { get; set; } //check if User converion is requested
         public string LDAPAccoutUnit { get; set; } //read LDAP Account Unit Name for gethering users
 
+        public bool ShowOptBashLink = true;
+
         #endregion
 
         #region Private Members
@@ -30,7 +32,6 @@ namespace PanoramaPaloAltoMigration
         private PanoramaParser _paParser;
         private bool _isNatConverted;
 
-        private HashSet<string> _vsysNames = new HashSet<string>();
         private HashSet<string> _deviceGroupNames = new HashSet<string>();//Panorama
         //private Dictionary<string, string> _devicesUIDDict = new Dictionary<string, string>();
 
@@ -121,7 +122,9 @@ namespace PanoramaPaloAltoMigration
 
         public override int RulesInConvertedOptimizedPackage()
         {
-            return 0;
+            if (_cpPackages.Count > 1)
+                return _cpPackages[1].TotalRules();
+            else return 0;
         }
 
         //count of NAT rules
@@ -627,7 +630,7 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string deviceGroupName in _deviceGroupNames)
                 {
-                    if (File.Exists(this._targetFolder + deviceGroupName + "\\" + deviceGroupName + "_objects.html"))
+                    if (File.Exists(this._targetFolder + "\\" + deviceGroupName + "\\" + deviceGroupName + "_objects.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + deviceGroupName + "\\" + deviceGroupName + "_objects.html" + "\">" + "<h2>" + deviceGroupName + "</h2>" + "</a>" + "</li>");
                     }
@@ -657,7 +660,7 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string deviceGroupName in _deviceGroupNames)
                 {
-                    if (File.Exists(this._targetFolder + deviceGroupName + "\\" + deviceGroupName + "_policy.html"))
+                    if (File.Exists(this._targetFolder + "\\" + deviceGroupName + "\\" + deviceGroupName + "_policy.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + deviceGroupName + "\\" + deviceGroupName + "_policy.html" + "\">" + "<h2>" + deviceGroupName + "</h2>" + "</a>" + "</li>");
                     }
@@ -687,7 +690,7 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string deviceGroupName in _deviceGroupNames)
                 {
-                    if (File.Exists(this._targetFolder + deviceGroupName + "\\" + deviceGroupName + "_NAT.html"))
+                    if (File.Exists(this._targetFolder + "\\" + deviceGroupName + "\\" + deviceGroupName + "_NAT.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + deviceGroupName + "\\" + deviceGroupName + "_NAT.html" + "\">" + "<h2>" + deviceGroupName + "</h2>" + "</a>" + "</li>");
                     }
@@ -717,7 +720,7 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string deviceGroupName in _deviceGroupNames)
                 {
-                    if (File.Exists(this._targetFolder + deviceGroupName + "\\" + deviceGroupName + "_errors.html"))
+                    if (File.Exists(this._targetFolder + "\\" + deviceGroupName + "\\" + deviceGroupName + "_errors.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + deviceGroupName + "\\" + deviceGroupName + "_errors.html" + "\">" + "<h2>" + deviceGroupName + "</h2>" + "</a>" + "</li>");
                     }
@@ -747,7 +750,7 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string deviceGroupName in _deviceGroupNames)
                 {
-                    if (File.Exists(this._targetFolder + deviceGroupName + "\\" + deviceGroupName + "_warnings.html"))
+                    if (File.Exists(this._targetFolder + "\\" + deviceGroupName + "\\" + deviceGroupName + "_warnings.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + deviceGroupName + "\\" + deviceGroupName + "_warnings.html" + "\">" + "<h2>" + deviceGroupName + "</h2>" + "</a>" + "</li>");
                     }
@@ -776,7 +779,7 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("<ul>");
                 foreach (string deviceGroupName in _deviceGroupNames)
                 {
-                    if (File.Exists(this._targetFolder + deviceGroupName + "\\" + deviceGroupName + "_managment_report.html"))
+                    if (File.Exists(this._targetFolder + "\\" + deviceGroupName + "\\" + deviceGroupName + "_managment_report.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + deviceGroupName + "\\" + deviceGroupName + "_managment_report.html" + "\">" + "<h2>" + deviceGroupName + "</h2>" + "</a>" + "</li>");
                     }
@@ -794,7 +797,7 @@ namespace PanoramaPaloAltoMigration
         //report about Errors
         public void CreateErrorsHtml(string deviceGroupName)
         {
-            string filename = _targetFolder + "//" + deviceGroupName + "_errors.html";
+            string filename = _targetFolder + "\\" + deviceGroupName + "_errors.html";
 
             using (var file = new StreamWriter(filename, false))
             {
@@ -824,7 +827,7 @@ namespace PanoramaPaloAltoMigration
         //report about Warnings
         public void CreateWarningsHtml(string deviceGroupName)
         {
-            string filename = _targetFolder + "//" + deviceGroupName + "_warnings.html";
+            string filename = _targetFolder + "\\" + deviceGroupName + "_warnings.html";
 
             using (var file = new StreamWriter(filename, false))
             {
@@ -1176,6 +1179,9 @@ namespace PanoramaPaloAltoMigration
                 Progress.SetProgress(100);
                 Progress.Dispose();
             }
+
+            if (_deviceGroupNames.Count > 0)
+                ShowOptBashLink = false;
             return new Dictionary<string, int>() { { "errors", ErrorsInConvertedPackage() }, { "warnings", WarningsInConvertedPackage() } };
         }
 
@@ -4236,8 +4242,8 @@ namespace PanoramaPaloAltoMigration
             CheckPoint_Package regularPackage = _cpPackages[0];
 
             var optimizedPackage = new CheckPoint_Package();
-            _policyPackageOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
-            string pckg_name = _policyPackageOptimizedName.Replace("_opt", "");
+            string checkOptimizedName = _policyPackageOptimizedName.Replace("_policy_opt", "_opt");
+            string pckg_name = checkOptimizedName.Replace("_opt", "");
             if (pckg_name.Length > _maxAllowedpackageNameLength)
             {
                 _isOverMaxLengthPackageName = true;
@@ -4298,9 +4304,9 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("<body>");
                 file.WriteLine("<h1>List of VDOMs Policies for " + _vendorFileName + "</h1>");
                 file.WriteLine("<ul>");
-                foreach (string vDomName in _vsysNames)
+                foreach (string vDomName in _deviceGroupNames)
                 {
-                    if (File.Exists(_targetFolder + vDomName + "\\" + vDomName + "_policy_opt.html"))
+                    if (File.Exists(_targetFolder + "\\" + vDomName + "\\" + vDomName + "_policy_opt.html"))
                     {
                         file.WriteLine("<li>" + "<a href=\" " + vDomName + "\\" + vDomName + "_policy_opt.html" + "\">" + "<h2>" + vDomName + "</h2>" + "</a>" + "</li>");
                     }
