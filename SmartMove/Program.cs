@@ -45,9 +45,17 @@ namespace SmartMove
                 {
                     return 0;
                 } else 
-                {                 
-                commandLine.DoMigration(commandLine);                
-                return 0;
+                {   
+                    if(commandLine.IsAnalyze)
+                    {
+                        Console.WriteLine($"IS ANALYZE {commandLine.IsAnalyze}");
+                        commandLine.DoAnalyze(commandLine); 
+                    }
+                    else
+                    {
+                        commandLine.DoMigration(commandLine);
+                    }               
+                    return 0;
                 }
             }
             else
