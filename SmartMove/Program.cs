@@ -48,7 +48,8 @@ namespace SmartMove
                 {   
                     if(commandLine.IsAnalyze)
                     {
-                        commandLine.DoAnalyze(); 
+                        Console.WriteLine($"IS ANALYZE {commandLine.IsAnalyze}");
+                        commandLine.DoAnalyze(commandLine); 
                     }
                     else
                     {

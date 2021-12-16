@@ -829,7 +829,7 @@ namespace SmartMove
 
             try
             {
-                Console.WriteLine("Conversion started...");
+                Console.WriteLine("Analyze started...");
                 float results = vendorConverter.Analyze();
 
                 if (formatOutput.Equals("text"))
@@ -874,7 +874,7 @@ namespace SmartMove
                     else
                     {
                         JsonReport jsonReport = new JsonReport(
-                            msg: "Could not analyze configuration file.",
+                            msg: ex.Message,
                             err: "err_cannot_analyze_configuration_file");
                         Console.WriteLine(jsonReport.PrintJson());
                     }

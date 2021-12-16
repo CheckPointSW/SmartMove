@@ -91,9 +91,9 @@ namespace CommonUtils
         [DataMember]
         public string msg { get; set; }
         //total count at the finish
-        [DataMember(Name = "Conversion warnings")]
+        [DataMember(Name = "Optimization potential")]
         public float optPotent { get; set; }
-        [DataMember(Name = "Conversion errors")]
+        [DataMember(Name = "Total Rules")]
         public int ttrules { get; set; }
 
         public TotalJsonReportAnalyze()
@@ -111,7 +111,7 @@ namespace CommonUtils
         public string PrintJson()
         {
             var ms = new MemoryStream();
-            var ser = new DataContractJsonSerializer(typeof(TotalJsonReport));
+            var ser = new DataContractJsonSerializer(typeof(TotalJsonReportAnalyze));
             ser.WriteObject(ms, this);
             ms.Position = 0;
             var sr = new StreamReader(ms);
