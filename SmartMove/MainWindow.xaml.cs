@@ -304,6 +304,7 @@ namespace SmartMove
                     break;
                 case Vendor.JuniperJunosOS:
                     ConfigurationFileLabel = SupportedVendors.JuniperConfigurationFileLabel;
+                    SkipUnusedObjects.Visibility = Visibility.Visible;
                     break;
                 case Vendor.JuniperScreenOS:
                     ConfigurationFileLabel = SupportedVendors.NetScreenConfigurationFileLabel;
@@ -634,7 +635,9 @@ namespace SmartMove
                     };
                     break;
                 case Vendor.JuniperJunosOS:
-                    vendorConverter = new JuniperConverter();
+                    JuniperConverter juniperConverter = new JuniperConverter();
+                    juniperConverter.SkipUnusedObjects = SkipUnusedObjectsConversion;
+                    vendorConverter = juniperConverter;
                     break;
                 case Vendor.JuniperScreenOS:
                     vendorConverter = new ScreenOSConverter();
