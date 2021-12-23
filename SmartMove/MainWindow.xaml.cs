@@ -308,6 +308,7 @@ namespace SmartMove
                     break;
                 case Vendor.JuniperScreenOS:
                     ConfigurationFileLabel = SupportedVendors.NetScreenConfigurationFileLabel;
+                    SkipUnusedObjects.Visibility = Visibility.Visible;
                     break;
                 case Vendor.FortiGate:
                     ConfigurationFileLabel = SupportedVendors.FortiGateConfigurationFileLabel;
@@ -640,7 +641,9 @@ namespace SmartMove
                     vendorConverter = juniperConverter;
                     break;
                 case Vendor.JuniperScreenOS:
-                    vendorConverter = new ScreenOSConverter();
+                    ScreenOSConverter screenosConverter = new ScreenOSConverter();
+                    screenosConverter.SkipUnusedObjects = SkipUnusedObjectsConversion;
+                    vendorConverter = screenosConverter;
                     break;
                 case Vendor.FortiGate:
                     FortiGateConverter fgConverter = new FortiGateConverter();
