@@ -25,6 +25,7 @@ namespace MigrationBase
         #region Constants
 
         public const string CiscoConfigurationFileLabel = "Cisco configuration file:";
+        public const string FirepowerConfigurationFileLabel = "FirePower configuration file:";
         public const string CiscoProduct = "Cisco to Check Point Migration Tool";
         public const string CiscoProductDescription = "This tool supports migration of Cisco ASA 8.3\nand above configuration files.";
         public const string JuniperConfigurationFileLabel = "JunosOS XML configuration file:";
