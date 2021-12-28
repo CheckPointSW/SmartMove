@@ -302,6 +302,10 @@ namespace SmartMove
                     ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     break;
+                case Vendor.FirePower:
+                    ConfigurationFileLabel = SupportedVendors.FirepowerConfigurationFileLabel;
+                    SkipUnusedObjects.Visibility = Visibility.Visible;
+                    break;
                 case Vendor.JuniperJunosOS:
                     ConfigurationFileLabel = SupportedVendors.JuniperConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
@@ -632,7 +636,8 @@ namespace SmartMove
                     break;
                 case Vendor.FirePower:
                     vendorConverter = new CiscoConverter() {
-                        isUsingForFirePower = true
+                        isUsingForFirePower = true,
+                        SkipUnusedObjects = SkipUnusedObjectsConversion
                     };
                     break;
                 case Vendor.JuniperJunosOS:
