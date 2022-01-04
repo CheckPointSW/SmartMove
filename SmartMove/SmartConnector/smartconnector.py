@@ -1347,9 +1347,9 @@ else:
     printStatus(None, "reading and parsing processes are completed for JSON file: " + args.file)
     client_args = None
     if args.port is not None:
-        client_args = APIClientArgs(server=args.management, port=args.port, context=args.context)
+        client_args = APIClientArgs(server=args.management, port=args.port, context=args.context, user_agent="mgmt_cli_smartmove")
     else:
-        client_args = APIClientArgs(server=args.management, context=args.context)
+        client_args = APIClientArgs(server=args.management, context=args.context, user_agent="mgmt_cli_smartmove")
     with APIClient(client_args) as client:
         client.debug_file = "api_calls.json"
         printStatus(None, "checking fingerprint")
