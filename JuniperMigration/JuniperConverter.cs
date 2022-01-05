@@ -230,8 +230,6 @@ namespace JuniperMigration
             {
                 BuildUsedNetObjectsRecoursive(_usedNetObjects[key].Name);
             }
-
-
         }
 
         private void PopulateUsedNetObjectsFromNatRules()
@@ -2026,6 +2024,20 @@ namespace JuniperMigration
                 foreach (var juniperRule in zonePolicy.Rules)
                 {
                     var cpRule = Juniper_To_CPRule(juniperRule, cpLayer.Name, zonePolicy.SourceZone, zonePolicy.DestinationZone);
+
+                    foreach (var chpObj in cpRule.Service)
+                    {
+                        if (chpObj.GetType() == typeof(CheckPoint_PredifinedObject))
+                        {
+                            if (chpObj.Name == "Any")
+                            {
+                                cpRule.Service.Clear();
+                                cpRule.Service.Add(chpObj);
+                                break;
+                            }
+                        }
+                    }
+
                     cpLayer.Rules.Add(cpRule);
 
                     if (cpRule.ConversionIncidentType != ConversionIncidentType.None || juniperRule.ConversionIncidentType != ConversionIncidentType.None)
@@ -4714,11 +4726,11 @@ namespace JuniperMigration
 
             if (IsConsoleRunning)
             {
-                Console.WriteLine("Converting obects ...");
+                Console.WriteLine("Converting objects ...");
                 Progress.SetProgress(20);
                 Thread.Sleep(1000);
             }
-            RaiseConversionProgress(20, "Converting obects ...");
+            RaiseConversionProgress(20, "Converting objects ...");
             _cpObjects.Initialize();   // must be first!!!
 
             foreach (var cpObject in _cpObjects.GetPredefinedObjects())
