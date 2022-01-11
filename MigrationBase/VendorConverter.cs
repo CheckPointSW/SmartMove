@@ -198,12 +198,22 @@ namespace MigrationBase
             // HTML files
             VendorHtmlFile = _targetFolder + "\\" + _vendorFileName + ".html";
             VendorManagmentReportHtmlFile = $"{_targetFolder}\\{_vendorFileName}_managment_report.html";
-            WarningsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_warnings.html";
-            ErrorsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_errors.html";
             ObjectsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_objects.html";
             PolicyHtmlFile = _targetFolder + "\\" + _policyPackageName + ".html";
             PolicyOptimizedHtmlFile = _targetFolder + "\\" + _policyPackageOptimizedName + ".html";
             NatHtmlFile = _targetFolder + "\\" + _vendorFileName + "_NAT.html";
+
+            //check on exist warn and err reports
+            string warn = _targetFolder + "\\" + _vendorFileName + "_warnings.html";
+            if (File.Exists(warn))
+            {
+                WarningsHtmlFile = warn;
+            }
+            string err = _targetFolder + "\\" + _vendorFileName + "_errors.html";
+            if (File.Exists(warn))
+            {
+                ErrorsHtmlFile = err;
+            }
         }
 
         public void ChangeTargetFolder(string targetFolderNew, string targetFileNameNew)
