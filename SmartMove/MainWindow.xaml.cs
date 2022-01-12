@@ -360,6 +360,7 @@ namespace SmartMove
             switch (_supportedVendors.SelectedVendor)
             {
                 case Vendor.CiscoASA:
+                case Vendor.FirePower:
                     filter = "conf files (*.conf, *.txt, *.cfg)|*.conf; *.txt; *.cfg|All files (*.*)|*.*";
                     break;
                 case Vendor.JuniperJunosOS:
@@ -369,7 +370,7 @@ namespace SmartMove
                     filter = "conf files (*.txt)|*.txt|All files (*.*)|*.*";
                     break;
                 case Vendor.FortiGate:
-                    filter = "conf files (*.conf)|*.conf";
+                    filter = "All files (*.*)|*.*";
                     break;
                 case Vendor.PaloAlto:
                     filter = "xml files (*.xml)|*.xml|All files (*.*)|*.*";
