@@ -881,14 +881,20 @@ namespace SmartMove
             }
 
             OriginalFileLink.Tag = vendorConverter.VendorHtmlFile;
-            ConvertingWarningsLink.Tag = vendorConverter.WarningsHtmlFile;
-            ConvertingErrorsLink.Tag = vendorConverter.ErrorsHtmlFile;
             ConvertedPolicyLink.Tag = vendorConverter.PolicyHtmlFile;
             ConvertedOptimizedPolicyLink.Tag = vendorConverter.PolicyOptimizedHtmlFile;
             ConvertedNatPolicyLink.Tag = vendorConverter.NatHtmlFile;
             ObjectsScriptLink.Tag = vendorConverter.ObjectsScriptFile;
             RulebaseScriptLink.Tag = vendorConverter.PolicyScriptFile;
             RulebaseOptimizedScriptLink.Tag = vendorConverter.PolicyOptimizedScriptFile;
+
+
+            ConvertingWarningsLink.Tag = vendorConverter.WarningsHtmlFile;
+            ConvertingErrorsLink.Tag = vendorConverter.ErrorsHtmlFile;
+
+            CoversionIssuesPreviewPanel.Visibility = (!string.IsNullOrEmpty(vendorConverter.WarningsHtmlFile) || !string.IsNullOrEmpty(vendorConverter.ErrorsHtmlFile)) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertingWarningsLink.Visibility = !string.IsNullOrEmpty(vendorConverter.WarningsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertingErrorsLink.Visibility = !string.IsNullOrEmpty(vendorConverter.ErrorsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         
