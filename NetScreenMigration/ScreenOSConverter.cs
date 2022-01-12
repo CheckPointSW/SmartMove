@@ -3934,7 +3934,12 @@ namespace NetScreenMigration
                     }
                 }
 
-                if (interfaceWithHostObject > 1)
+                if (interfaceWithHostObject == 0)
+                {
+                    if (isEnabled.Count == 0)
+                        comments = "ScreenOS NAT policy object does not contain any intefaces with hosts.";
+                }
+                else if (interfaceWithHostObject > 1)
                 {           
                     string errorTitle = string.Format("ScreenOS NAT policy object does not contain dip-id. NAT rules will be created as much as the number of attached interfaces to destination zone with host IP. NAT rules will be in a disabled mode");
                     string errorDescription = string.Format("Policy DIP object details: {0}.", natPolicy.Text);
@@ -3944,7 +3949,8 @@ namespace NetScreenMigration
                 else
                 {   /* If only one rule was created, set the enabled value by the policy configuration*/
                     comments = "ScreenOS NAT policy object does not contain dip-id. One NAT rule will be created according to attached interface to destination zone with host IP.";
-                    isEnabled[isEnabled.IndexOf(isEnabled.Last())] = simplePolicy.IsEnabled;
+                    if (isEnabled.Count > 0)
+                        isEnabled[isEnabled.IndexOf(isEnabled.Last())] = simplePolicy.IsEnabled;
                 }      
             }
             /* Create Objects for Dip*/
