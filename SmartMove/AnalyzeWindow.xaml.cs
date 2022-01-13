@@ -573,7 +573,7 @@ namespace SmartMove
                     filter = "conf files (*.txt)|*.txt|All files (*.*)|*.*";
                     break;
                 case Vendor.FortiGate:
-                    filter = "All files (*.*)|*.*";
+                    filter = "conf files (*.conf)|*.conf | All files (*.*)|*.*";
                     break;
                 case Vendor.PaloAlto:
                     filter = "xml files (*.xml)|*.xml|All files (*.*)|*.*";
