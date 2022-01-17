@@ -57,6 +57,8 @@ namespace SmartMove
         #region Private Members
 
         private readonly SupportedVendors _supportedVendors = new SupportedVendors();
+
+        private static bool canCloseWindow = true;
         
         #endregion
 
@@ -263,7 +265,8 @@ namespace SmartMove
 
         private void CloseButton_OnClick(object sender, RoutedEventArgs e)
         {
-            Close();
+            if (canCloseWindow)
+                Close();
         }
 
         private void MinimizeButton_OnClick(object sender, RoutedEventArgs e)
@@ -428,6 +431,7 @@ namespace SmartMove
 
         private async void Go_OnClick(object sender, RoutedEventArgs e)
         {
+            canCloseWindow = false;
             string fileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
 
             if (string.IsNullOrEmpty(ConfigFilePath.Text) || string.IsNullOrEmpty(fileName))
@@ -738,6 +742,7 @@ namespace SmartMove
             ResultsPanel.Visibility = Visibility.Visible;
 
             ShowResults(vendorConverter, vendorParser.ParsedLines);
+            canCloseWindow = true;
         }
 
         private void ConvertUserConf_Checked(object sender, RoutedEventArgs e)
@@ -975,7 +980,9 @@ namespace SmartMove
                 MessageLinkValue = messageLinkValue
             };
 
+            Mouse.OverrideCursor = null;
             messageWindow.ShowDialog();
+            canCloseWindow = true;
         }
 
         #endregion
