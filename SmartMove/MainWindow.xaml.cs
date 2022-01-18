@@ -57,6 +57,8 @@ namespace SmartMove
         #region Private Members
 
         private readonly SupportedVendors _supportedVendors = new SupportedVendors();
+
+        private static bool canCloseWindow = true;
         
         #endregion
 
@@ -263,7 +265,8 @@ namespace SmartMove
 
         private void CloseButton_OnClick(object sender, RoutedEventArgs e)
         {
-            Close();
+            if (canCloseWindow)
+                Close();
         }
 
         private void MinimizeButton_OnClick(object sender, RoutedEventArgs e)
@@ -428,6 +431,7 @@ namespace SmartMove
 
         private async void Go_OnClick(object sender, RoutedEventArgs e)
         {
+            canCloseWindow = false;
             string fileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
 
             if (string.IsNullOrEmpty(ConfigFilePath.Text) || string.IsNullOrEmpty(fileName))
@@ -547,11 +551,13 @@ namespace SmartMove
                 case Vendor.CiscoASA:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        EnableWindow();
                         ShowMessage("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 8 || (vendorParser.MajorVersion == 8 && vendorParser.MinorVersion < 3))
                     {
+                        EnableWindow();
                         ShowMessage("Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -560,11 +566,13 @@ namespace SmartMove
                 case Vendor.FirePower:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        EnableWindow();
                         ShowMessage("Unspecified NGFW version.\nCannot find version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 6 || (vendorParser.MajorVersion == 6 && vendorParser.MinorVersion < 4))
                     {
+                        EnableWindow();
                         ShowMessage("Unsupported version (" + vendorParser.Version + ").\nThis tool supports NGFW 6.4 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -573,11 +581,13 @@ namespace SmartMove
                 case Vendor.JuniperJunosOS:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        EnableWindow();
                         ShowMessage("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 12 || (vendorParser.MajorVersion == 12 && vendorParser.MinorVersion < 1))
                     {
+                        EnableWindow();
                         ShowMessage("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -589,11 +599,13 @@ namespace SmartMove
                 case Vendor.FortiGate:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        EnableWindow();
                         ShowMessage("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if(vendorParser.MajorVersion < 5)
                     {
+                        EnableWindow();
                         ShowMessage("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -601,11 +613,13 @@ namespace SmartMove
                 case Vendor.PaloAlto:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        EnableWindow();
                         ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
+                        EnableWindow();
                         ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -613,11 +627,13 @@ namespace SmartMove
                 case Vendor.PaloAltoPanorama:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        EnableWindow();
                         ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
+                        EnableWindow();
                         ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -738,6 +754,14 @@ namespace SmartMove
             ResultsPanel.Visibility = Visibility.Visible;
 
             ShowResults(vendorConverter, vendorParser.ParsedLines);
+            canCloseWindow = true;
+        }
+
+        private void EnableWindow()
+        {
+            Mouse.OverrideCursor = null;
+            EnableDisableControls(true);
+            OutputPanel.Visibility = Visibility.Collapsed;
         }
 
         private void ConvertUserConf_Checked(object sender, RoutedEventArgs e)
@@ -975,7 +999,9 @@ namespace SmartMove
                 MessageLinkValue = messageLinkValue
             };
 
+            Mouse.OverrideCursor = null;
             messageWindow.ShowDialog();
+            canCloseWindow = true;
         }
 
         #endregion
