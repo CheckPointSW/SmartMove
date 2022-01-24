@@ -319,22 +319,22 @@ namespace SmartMove
                     break;
                 case Vendor.FortiGate:
                     ConfigurationFileLabel = SupportedVendors.FortiGateConfigurationFileLabel;
-                    DomainNameTB.Visibility = Visibility.Collapsed;
-                    DomainName.Visibility = Visibility.Collapsed;
+                    DomainNameTB.Visibility = Visibility.Visible;
+                    DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.PaloAlto:
                     ConfigurationFileLabel = SupportedVendors.PaloAltoConfigurationFileLabel;
-                    DomainNameTB.Visibility = Visibility.Collapsed;
-                    DomainName.Visibility = Visibility.Collapsed;
+                    DomainNameTB.Visibility = Visibility.Visible;
+                    DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.PaloAltoPanorama:
                     ConfigurationFileLabel = SupportedVendors.PaloAltoPanoramaConfigurationFileLabel;
-                    DomainNameTB.Visibility = Visibility.Collapsed;
-                    DomainName.Visibility = Visibility.Collapsed;
+                    DomainNameTB.Visibility = Visibility.Visible;
+                    DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
@@ -498,8 +498,9 @@ namespace SmartMove
                     string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
                     if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
                     {
-                        ShowMessage(String.Format("{1}{0}{2}", Environment.NewLine, "The system cannot find the required files. ",
-                        "Please follow"), MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions");
+                        ShowMessage(null, MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions", null, null, 
+                            string.Format("{1}{0}{2}", Environment.NewLine, "The system cannot find the required files. ",
+                        "Please follow"));
                         return;
                     }
                     vendorParser = new PanoramaParser();
@@ -542,7 +543,7 @@ namespace SmartMove
                 Mouse.OverrideCursor = null;
                 EnableDisableControls(true);
                 OutputPanel.Visibility = Visibility.Collapsed;
-                ShowMessage(string.Format("Could not parse configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                ShowMessage("Could not convert configuration file.", "Message:\nModule:\nClass:\nMethod:", string.Format("{0}\n{1}\n{2}\n{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error); 
                 return;
             }
 
@@ -709,14 +710,14 @@ namespace SmartMove
                 OutputPanel.Visibility = Visibility.Collapsed;
                 if (ex is InvalidDataException && ex.Message != null && ex.Message.Contains("Policy exceeds the maximum number"))
                 {
-                    ShowMessage(String.Format("{1}{0}{2}{0}{3}", Environment.NewLine, "SmartMove is unable to convert the provided policy.",
+                    ShowMessage(null, MessageTypes.Error, "ps@checkpoint.com", "mailto:ps@checkpoint.com", null, null,
+                        String.Format("{1}{0}{2}{0}{3}", Environment.NewLine, "SmartMove is unable to convert the provided policy.",
                                                 "Reason: Policy exceeds the maximum number of supported policy layers.",
-                                                "To assure the smooth conversion of your data, it is recommended to contact Check Point Professional Services by sending an e-mail to"),
-                    MessageTypes.Error, "ps@checkpoint.com", "mailto:ps@checkpoint.com");
+                                                "To assure the smooth conversion of your data, it is recommended to contact Check Point Professional Services by sending an e-mail to"));
                 }
                 else
                 {
-                    ShowMessage(string.Format("Could not convert configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                    ShowMessage("Could not convert configuration file.", "Message:\nModule:\nClass:\nMethod:", string.Format("{0}\n{1}\n{2}\n{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
                 }
                 return;
             }
@@ -984,19 +985,41 @@ namespace SmartMove
             {
             }
         }
-
+        
+        public static void ShowMessage(string header, string columns, string message, MessageTypes messageType)
+        {
+            ShowMessage(message, messageType, null, null, header, columns);
+        }
+        
         public static void ShowMessage(string message, MessageTypes messageType)
         {
-            ShowMessage(message, messageType, null, null);
+            ShowMessage(null, messageType, null, null, null, null, message);
         }
-        public static void ShowMessage(string message, MessageTypes messageType, string messageLinkText, string messageLinkValue)
+
+        /// <summary>
+        /// Build a message for displaying. If need to show technical columns like "method", "Class" then need to pass to message 
+        /// message after columns, list of columns to colums and to header pass main message. If need just display a text 
+        /// then pass to message, columns, header null values and fill only messageWoColumns
+        /// </summary>
+        /// <param name="message">message for displaying with columns. If need display without columns set to null</param>
+        /// <param name="messageType">message window type (uses always)</param>
+        /// <param name="messageLinkText">text for link (uses if need display link)</param>
+        /// <param name="messageLinkValue">link(uses if need display link)</param>
+        /// <param name="header">header for messages with columns, otherwise set null</param>
+        /// <param name="columns">list of columns separated by '\n' symbol. set to null if don't need</param>
+        /// <param name="messageWoColumns">message for displaying without columns. if need to display with columns set to null (by default)</param>
+        public static void ShowMessage(string message, MessageTypes messageType, string messageLinkText, string messageLinkValue, string header, string columns, string messageWoColumns = null)
         {
             var messageWindow = new MessageWindow
             {
+                Header = header,
                 Message = message,
                 MessageType = messageType,
-                MessageLinkText = messageLinkText,
-                MessageLinkValue = messageLinkValue
+                MessageLinkText = columns != null ? messageLinkText : null,
+                MessageLinkTextClean = columns != null ? null : messageLinkText,
+                MessageLinkValue = messageLinkValue,
+                Columns = columns,
+                MessageWoColumns = messageWoColumns
             };
 
             Mouse.OverrideCursor = null;
