@@ -861,6 +861,7 @@ namespace SmartMove
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Collapsed;
                     ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
                     RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
+
                     break;
 
                 case Vendor.FortiGate:
@@ -944,6 +945,8 @@ namespace SmartMove
             CoversionIssuesPreviewPanel.Visibility = (!string.IsNullOrEmpty(vendorConverter.WarningsHtmlFile) || !string.IsNullOrEmpty(vendorConverter.ErrorsHtmlFile)) ? Visibility.Visible : Visibility.Collapsed;
             ConvertingWarningsLink.Visibility = !string.IsNullOrEmpty(vendorConverter.WarningsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
             ConvertingErrorsLink.Visibility = !string.IsNullOrEmpty(vendorConverter.ErrorsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertedNatPolicyLink.Visibility = !string.IsNullOrEmpty(vendorConverter.NatHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertedPolicyLink.Visibility = !string.IsNullOrEmpty(vendorConverter.PolicyHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         
