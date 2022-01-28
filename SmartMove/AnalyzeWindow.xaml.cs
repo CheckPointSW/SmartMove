@@ -1,4 +1,5 @@
 ﻿using CiscoMigration;
+using CommonUtils;
 using FortiGateMigration;
 using JuniperMigration;
 using MigrationBase;
@@ -94,24 +95,28 @@ namespace SmartMove
 
             if (string.IsNullOrEmpty(ConfigFilePath.Text) || string.IsNullOrEmpty(fileName))
             {
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Configuration file is not selected.");
                 MainWindow.ShowMessage("Configuration file is not selected.", MessageTypes.Error);
                 return;
             }
 
             if (!File.Exists(ConfigFilePath.Text))
             {
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Cannot find configuration file.");
                 MainWindow.ShowMessage("Cannot find configuration file.", MessageTypes.Error);
                 return;
             }
 
             if (fileName.Length > 20)
             {
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Configuration file name is restricted to 20 characters at most.");
                 MainWindow.ShowMessage("Configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
                 return;
             }
 
             if (!Directory.Exists(TargetFolderPath.Text))
             {
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Cannot find target folder for conversion output.");
                 MainWindow.ShowMessage("Cannot find target folder for conversion output.", MessageTypes.Error);
                 return;
             }
@@ -142,6 +147,7 @@ namespace SmartMove
                     string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
                     if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "The system cannot find the required files. ");
                         MainWindow.ShowMessage(null, MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions", 
                             null, null, String.Format("{1}{0}{2}", Environment.NewLine, "The system cannot find the required files. ", "Please follow"));
                         return;
@@ -181,6 +187,7 @@ namespace SmartMove
             }
             catch (Exception ex)
             {
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", ex.Message + "\n" + ex.StackTrace);
                 Mouse.OverrideCursor = null;
                 EnableDisableControls(true);
                 OutputPanel.Visibility = Visibility.Collapsed;
@@ -193,11 +200,13 @@ namespace SmartMove
                 case Vendor.CiscoASA:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.");
                         MainWindow.ShowMessage("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 8 || (vendorParser.MajorVersion == 8 && vendorParser.MinorVersion < 3))
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.");
                         MainWindow.ShowMessage("Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -206,11 +215,13 @@ namespace SmartMove
                 case Vendor.JuniperJunosOS:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.");
                         MainWindow.ShowMessage("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 12 || (vendorParser.MajorVersion == 12 && vendorParser.MinorVersion < 1))
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.");
                         MainWindow.ShowMessage("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -222,11 +233,13 @@ namespace SmartMove
                 case Vendor.FortiGate:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.");
                         MainWindow.ShowMessage("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 5)
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.");
                         MainWindow.ShowMessage("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -234,11 +247,13 @@ namespace SmartMove
                 case Vendor.PaloAlto:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.");
                         MainWindow.ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.");
                         MainWindow.ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -246,11 +261,13 @@ namespace SmartMove
                 case Vendor.PaloAltoPanorama:
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified PaloAlto version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.");
                         MainWindow.ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.");
                         MainWindow.ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
                         return;
                     }
@@ -295,6 +312,7 @@ namespace SmartMove
             }
             catch (Exception ex)
             {
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", ex.Message + "\n" + ex.StackTrace);
                 Mouse.OverrideCursor = null;
                 EnableDisableControls(true);
                 OutputPanel.Visibility = Visibility.Collapsed;
