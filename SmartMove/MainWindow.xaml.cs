@@ -934,9 +934,9 @@ namespace SmartMove
             ConvertedPolicyLink.Tag = vendorConverter.PolicyHtmlFile;
             ConvertedOptimizedPolicyLink.Tag = vendorConverter.PolicyOptimizedHtmlFile;
             ConvertedNatPolicyLink.Tag = vendorConverter.NatHtmlFile;
+            RulebaseOptimizedScriptLink.Tag = vendorConverter.PolicyOptimizedScriptFile;
             ObjectsScriptLink.Tag = vendorConverter.ObjectsScriptFile;
             RulebaseScriptLink.Tag = vendorConverter.PolicyScriptFile;
-            RulebaseOptimizedScriptLink.Tag = vendorConverter.PolicyOptimizedScriptFile;
 
 
             ConvertingWarningsLink.Tag = vendorConverter.WarningsHtmlFile;
@@ -945,8 +945,18 @@ namespace SmartMove
             CoversionIssuesPreviewPanel.Visibility = (!string.IsNullOrEmpty(vendorConverter.WarningsHtmlFile) || !string.IsNullOrEmpty(vendorConverter.ErrorsHtmlFile)) ? Visibility.Visible : Visibility.Collapsed;
             ConvertingWarningsLink.Visibility = !string.IsNullOrEmpty(vendorConverter.WarningsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
             ConvertingErrorsLink.Visibility = !string.IsNullOrEmpty(vendorConverter.ErrorsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
-            ConvertedNatPolicyLink.Visibility = !string.IsNullOrEmpty(vendorConverter.NatHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
-            ConvertedPolicyLink.Visibility = !string.IsNullOrEmpty(vendorConverter.PolicyHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertedNatPolicyPanel.Visibility = File.Exists(vendorConverter.NatHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertedPolicyLink.Visibility = File.Exists(vendorConverter.PolicyHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ObjectsScriptLink.Visibility = File.Exists(vendorConverter.ObjectsScriptFile) ? Visibility.Visible : Visibility.Collapsed;
+            RulebaseScriptLink.Visibility = File.Exists(vendorConverter.PolicyScriptFile) ? Visibility.Visible : Visibility.Collapsed;
+            RulebaseOptimizedScriptLink.Visibility = File.Exists(vendorConverter.PolicyOptimizedScriptFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertedOptimizedPolicyPanel.Visibility = File.Exists(vendorConverter.PolicyOptimizedScriptFile) ? Visibility.Visible : Visibility.Collapsed;
+
+            PolicyRulesCountBlock.Visibility = ConvertedPolicyLink.Visibility;
+            ConvertedNatPolicyPanel.Visibility = ConvertedNatPolicyLink.Visibility;
+
+            BashScriptsPanel.Visibility = (RulebaseOptimizedScriptLink.Visibility == Visibility.Visible || RulebaseScriptLink.Visibility == Visibility.Visible || ObjectsScriptLink.Visibility == Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertedPolicyPreviewPanel.Visibility = (ConvertedPolicyLink.Visibility == Visibility.Visible || ConvertedNatPolicyPanel.Visibility == Visibility.Visible || ConvertedOptimizedPolicyPanel.Visibility == Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         
