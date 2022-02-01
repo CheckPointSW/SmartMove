@@ -844,7 +844,7 @@ namespace SmartMove
 
         private void ShowResults(VendorConverter vendorConverter, int convertedLinesCount)
         {
-            ConversionIssuesPanel.Visibility = (vendorConverter.ConversionIncidentCategoriesCount > 0) ? Visibility.Visible : Visibility.Collapsed;
+            ConversionIssuesPanel.Visibility = Visibility.Collapsed;
             ConvertedNatPolicyPanel.Visibility = ConvertNATConfiguration ? Visibility.Visible : Visibility.Collapsed;
 
             ConfigurationFileLinesCount = string.Format(" ({0} lines)", convertedLinesCount);
@@ -858,9 +858,15 @@ namespace SmartMove
             switch (_supportedVendors.SelectedVendor)
             {
                 case Vendor.CiscoASA:
-                    CoversionIssuesPreviewPanel.Visibility = Visibility.Collapsed;
                     ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible; 
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
+
+                    CiscoConverter ciscoConverter = (CiscoConverter)vendorConverter;
+
+
+                    ConvertingWarningsCount = (ciscoConverter.WarningsInConvertedPackage() != 0) ? string.Format(" ({0} warnings)", ciscoConverter.WarningsInConvertedPackage()) : " Check report.";
+                    ConvertingErrorsCount = (ciscoConverter.ErrorsInConvertedPackage() != 0) ? string.Format(" ({0} errors)", ciscoConverter.ErrorsInConvertedPackage()) : " Check report.";
 
                     break;
 
@@ -885,6 +891,8 @@ namespace SmartMove
                     RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
                     JuniperConverter jConverter = (JuniperConverter)vendorConverter;
                     ConvertedOptimizedPolicyRulesCount = (jConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", jConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
+                    ConvertingWarningsCount = (jConverter.WarningsInConvertedPackage() != 0) ? string.Format(" ({0} warnings)", jConverter.WarningsInConvertedPackage()) : " Check report.";
+                    ConvertingErrorsCount = (jConverter.ErrorsInConvertedPackage() != 0) ? string.Format(" ({0} errors)", jConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;
 
                 case Vendor.JuniperScreenOS:
@@ -893,6 +901,8 @@ namespace SmartMove
                     RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
                     ScreenOSConverter soConverter = (ScreenOSConverter)vendorConverter;
                     ConvertedOptimizedPolicyRulesCount = (soConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", soConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
+                    ConvertingWarningsCount = (soConverter.WarningsInConvertedPackage() != 0) ? string.Format(" ({0} warnings)", soConverter.WarningsInConvertedPackage()) : " Check report.";
+                    ConvertingErrorsCount = (soConverter.ErrorsInConvertedPackage() != 0) ? string.Format(" ({0} errors)", soConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;
 
                 case Vendor.PaloAlto:
@@ -942,9 +952,9 @@ namespace SmartMove
             ConvertingWarningsLink.Tag = vendorConverter.WarningsHtmlFile;
             ConvertingErrorsLink.Tag = vendorConverter.ErrorsHtmlFile;
 
-            CoversionIssuesPreviewPanel.Visibility = (!string.IsNullOrEmpty(vendorConverter.WarningsHtmlFile) || !string.IsNullOrEmpty(vendorConverter.ErrorsHtmlFile)) ? Visibility.Visible : Visibility.Collapsed;
-            ConvertingWarningsLink.Visibility = !string.IsNullOrEmpty(vendorConverter.WarningsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
-            ConvertingErrorsLink.Visibility = !string.IsNullOrEmpty(vendorConverter.ErrorsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            CoversionIssuesPreviewPanel.Visibility = (File.Exists(vendorConverter.WarningsHtmlFile) || File.Exists(vendorConverter.ErrorsHtmlFile)) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertingWarningsPanel.Visibility = File.Exists(vendorConverter.WarningsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertingErrorsPanel.Visibility = File.Exists(vendorConverter.ErrorsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
             ConvertedNatPolicyPanel.Visibility = File.Exists(vendorConverter.NatHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
             ConvertedPolicyLink.Visibility = File.Exists(vendorConverter.PolicyHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
             ObjectsScriptLink.Visibility = File.Exists(vendorConverter.ObjectsScriptFile) ? Visibility.Visible : Visibility.Collapsed;

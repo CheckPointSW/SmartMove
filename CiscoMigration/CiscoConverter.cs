@@ -40,6 +40,9 @@ namespace CiscoMigration
         //if we are using cisco code for fire power vendor we need set this flag to true value
         public bool isUsingForFirePower { get; set; } = false;
 
+        private List<string> _errorsList = new List<string>(); //storing conversion errors for config
+        private List<string> _warningsList = new List<string>(); //storing conversion warnings for config
+
         #region GUI params
 
         public bool SkipUnusedObjects { get; set; } //check if Optimized configuration is requested
@@ -5210,6 +5213,13 @@ namespace CiscoMigration
             CreatePackagesScript();
             CreateObjectsHtml();
 
+
+            WarningsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_warnings.html";
+            ErrorsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_errors.html";
+
+            CreateErrorsReport(_vendorFileName);
+            CreateWarningsReport(_vendorFileName);
+
             // This data container is important, and is used during rulebases html reports generation for incidents lookup!!!
             var incidentsGroupedByLineNumber = _conversionIncidents.GroupBy(error => error.LineNumber);
             _conversionIncidentsByLineNumber = incidentsGroupedByLineNumber.ToDictionary(error => error.Key, error => error.Distinct().ToList());
@@ -5243,6 +5253,76 @@ namespace CiscoMigration
         public override int RulesInNatLayer()
         {
             return _cpNatRules.Count;
+        }
+
+        public void CreateErrorsReport(string vDomName)
+        {
+            _errorsList.AddRange(_conversionIncidents.Where(i => i.IncidentType == ConversionIncidentType.ManualActionRequired).Select(i => i.ToString()));
+
+            if (_errorsList.Count > 0)
+            {
+                // if (OutputFormat == "text") {
+                string filename = _targetFolder + "\\" + vDomName + "_errors.html";
+
+                using (var file = new StreamWriter(filename, false))
+                {
+                    file.WriteLine("<html>");
+                    file.WriteLine("<head>");
+                    file.WriteLine("</head>");
+                    file.WriteLine("<body>");
+                    file.WriteLine("<h1>List of " + vDomName + " Errors</h1>");
+                    file.WriteLine("<table border='1' style='border-collapse: collapse;'>");
+                    for (int i = 0; i < _errorsList.Count; i++)
+                    {
+                        file.WriteLine("<tr>");
+                        file.WriteLine("<td>");
+                        file.WriteLine(i);
+                        file.WriteLine("</td>");
+                        file.WriteLine("<td>");
+                        file.WriteLine(_errorsList[i]);
+                        file.WriteLine("</td>");
+                        file.WriteLine("</tr>");
+                    }
+                    file.WriteLine("</table>");
+                    file.WriteLine("</body>");
+                    file.WriteLine("</html>");
+                }
+            }
+        }
+
+        //report about Warnings
+        public void CreateWarningsReport(string vDomName)
+        {
+            _warningsList.AddRange(_conversionIncidents.Where(i => i.IncidentType == ConversionIncidentType.None || i.IncidentType == ConversionIncidentType.Informative).Select(i => i.ToString()));
+
+            if (_warningsList.Count > 0)
+            {
+                string filename = _targetFolder + "\\" + vDomName + "_warnings.html";
+
+                using (var file = new StreamWriter(filename, false))
+                {
+                    file.WriteLine("<html>");
+                    file.WriteLine("<head>");
+                    file.WriteLine("</head>");
+                    file.WriteLine("<body>");
+                    file.WriteLine("<h1>List of " + vDomName + " Warnings</h1>");
+                    file.WriteLine("<table border='1' style='border-collapse: collapse;'>");
+                    for (int i = 0; i < _warningsList.Count; i++)
+                    {
+                        file.WriteLine("<tr>");
+                        file.WriteLine("<td>");
+                        file.WriteLine(i);
+                        file.WriteLine("</td>");
+                        file.WriteLine("<td>");
+                        file.WriteLine(_warningsList[i]);
+                        file.WriteLine("</td>");
+                        file.WriteLine("</tr>");
+                    }
+                    file.WriteLine("</table>");
+                    file.WriteLine("</body>");
+                    file.WriteLine("</html>");
+                }
+            }
         }
 
         public override void ExportManagmentReport()
@@ -5938,6 +6018,16 @@ namespace CiscoMigration
                     }
                 }
             }
+        }
+
+        public int WarningsInConvertedPackage()
+        {
+            return _warningsList.Count;
+        }
+        
+        public int ErrorsInConvertedPackage()
+        {
+            return _errorsList.Count;
         }
 
         protected override string GetVendorName()

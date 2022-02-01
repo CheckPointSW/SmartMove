@@ -311,14 +311,14 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
-                                    <StackPanel Grid.Row="0" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                    <StackPanel Name="ConvertingWarningsPanel" Grid.Row="0" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
                                         <TextBlock x:Name="ConvertingWarningsLink" Text="Conversion Warnings" Style="{StaticResource HyperLinkStyle}"
                                                    MouseUp="Link_OnClick"/>
                                         <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertingWarningsCount}"
                                                    Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
                                                    Foreground="#A7A9AC" FontSize="12"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Row="1" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                    <StackPanel Name="ConvertingErrorsPanel" Grid.Row="1" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
                                         <TextBlock x:Name="ConvertingErrorsLink" Text="Conversion Errors" Style="{StaticResource HyperLinkStyle}"
                                                    MouseUp="Link_OnClick"/>
                                         <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertingErrorsCount}"
