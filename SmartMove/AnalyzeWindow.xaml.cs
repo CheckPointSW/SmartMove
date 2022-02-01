@@ -201,13 +201,13 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.");
-                        MainWindow.ShowMessage("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        MainWindow.ShowMessage("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 8 || (vendorParser.MajorVersion == 8 && vendorParser.MinorVersion < 3))
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.");
-                        MainWindow.ShowMessage("Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        MainWindow.ShowMessage("Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
@@ -216,13 +216,13 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.");
-                        MainWindow.ShowMessage("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        MainWindow.ShowMessage("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 12 || (vendorParser.MajorVersion == 12 && vendorParser.MinorVersion < 1))
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.");
-                        MainWindow.ShowMessage("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        MainWindow.ShowMessage("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
@@ -234,13 +234,13 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.");
-                        MainWindow.ShowMessage("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        MainWindow.ShowMessage("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 5)
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.");
-                        MainWindow.ShowMessage("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        MainWindow.ShowMessage("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
@@ -248,13 +248,13 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.");
-                        MainWindow.ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        MainWindow.ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.");
-                        MainWindow.ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        MainWindow.ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
@@ -262,13 +262,13 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified PaloAlto version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.");
-                        MainWindow.ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        MainWindow.ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.");
-                        MainWindow.ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        MainWindow.ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
