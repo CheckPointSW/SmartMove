@@ -5261,7 +5261,8 @@ namespace CiscoMigration
 
             if (_errorsList.Count > 0)
             {
-                // if (OutputFormat == "text") {
+                _errorsList = Helper.RemoveDuplicates(_errorsList);
+
                 string filename = _targetFolder + "\\" + vDomName + "_errors.html";
 
                 using (var file = new StreamWriter(filename, false))
@@ -5297,6 +5298,8 @@ namespace CiscoMigration
 
             if (_warningsList.Count > 0)
             {
+                _warningsList = Helper.RemoveDuplicates(_warningsList);
+
                 string filename = _targetFolder + "\\" + vDomName + "_warnings.html";
 
                 using (var file = new StreamWriter(filename, false))

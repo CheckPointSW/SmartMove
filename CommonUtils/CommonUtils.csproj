@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="ConversionIncident.cs" />
+    <Compile Include="Helper.cs" />
     <Compile Include="SMDebugger.cs" />
     <Compile Include="IPRange.cs" />
     <Compile Include="JsonReport.cs" />
