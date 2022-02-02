@@ -5224,7 +5224,7 @@ namespace CiscoMigration
             var incidentsGroupedByLineNumber = _conversionIncidents.GroupBy(error => error.LineNumber);
             _conversionIncidentsByLineNumber = incidentsGroupedByLineNumber.ToDictionary(error => error.Key, error => error.Distinct().ToList());
 
-            // Resolve the conversion categories/lines count to report to the user.
+            // Resolve the conversion categories/lines count to report to the user. 
             ConversionIncidentCategoriesCount = _conversionIncidents.GroupBy(error => error.Title).Count();
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
 
