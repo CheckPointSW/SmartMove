@@ -156,7 +156,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="Select the vendor for conversion:" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <TextBlock Grid.Row="0" Text="Select the vendor for conversion:" Style="{StaticResource NormalTextBloclStyle}" FontSize="12" Foreground="#FF7C7C7C"/>
                             <ComboBox x:Name="VendorSelector" Grid.Row="1" Margin="0,6,0,0"
                                       Style="{StaticResource ComboBoxFlatStyle}"
                                       Width="300" HorizontalAlignment="Left"
@@ -164,7 +164,7 @@
                                       SelectedItem="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=SelectedVendor}"
                                       SelectionChanged="VendorSelector_OnSelectionChanged"/>
                             <TextBlock Grid.Row="2" Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConfigurationFileLabel}"  Margin="0,15,0,0"
-                                       Style="{StaticResource NormalTextBloclStyle}"/>
+                                       Style="{StaticResource NormalTextBloclStyle}" Foreground="#FF7C7C7C" FontSize="12"/>
                             <Grid Grid.Row="3" Margin="0,6,0,0" Background="Transparent" Focusable="False">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -178,7 +178,7 @@
                                 <Button x:Name="BrowseConfigFile" Grid.Column="1" Style="{StaticResource BrowseButtonControlStyle}" Margin="10,0,0,0"
                                         Click="BrowseConfigFile_OnClick"/>
                             </Grid>
-                            <TextBlock Grid.Row="4" Text="Target folder:" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <TextBlock Grid.Row="4" Text="Target folder:" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}" FontSize="12" Foreground="#FF7C7C7C"/>
                             <Grid Grid.Row="5" Margin="0,6,0,0" Background="Transparent" Focusable="False">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -192,7 +192,7 @@
                                 <Button x:Name="BrowseTargetFolder" Grid.Column="1" Style="{StaticResource BrowseButtonControlStyle}" Margin="10,0,0,0"
                                         Click="BrowseTargetFolder_OnClick"/>
                             </Grid>
-                            <TextBlock x:Name="DomainNameTB" Grid.Row="6" Text="Import to a domain (optional):" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}"/>
+                            <TextBlock x:Name="DomainNameTB" Grid.Row="6" Text="Import to a domain (optional):" Margin="0,15,0,0" Style="{StaticResource NormalTextBloclStyle}" FontSize="12" Foreground="#FF7C7C7C"/>
                             <TextBox x:Name="DomainName" Grid.Row="7" Margin="0,6,0,0" Style="{StaticResource TextBoxWithWatermarkControlStyle}"
                                      Tag="domain name"
                                      Width="300" HorizontalAlignment="Left">
@@ -311,14 +311,14 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
-                                    <StackPanel Grid.Row="0" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                    <StackPanel Name="ConvertingWarningsPanel" Grid.Row="0" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
                                         <TextBlock x:Name="ConvertingWarningsLink" Text="Conversion Warnings" Style="{StaticResource HyperLinkStyle}"
                                                    MouseUp="Link_OnClick"/>
                                         <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertingWarningsCount}"
                                                    Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
                                                    Foreground="#A7A9AC" FontSize="12"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Row="1" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                    <StackPanel Name="ConvertingErrorsPanel" Grid.Row="1" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
                                         <TextBlock x:Name="ConvertingErrorsLink" Text="Conversion Errors" Style="{StaticResource HyperLinkStyle}"
                                                    MouseUp="Link_OnClick"/>
                                         <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertingErrorsCount}"
@@ -340,12 +340,12 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
-                                    <StackPanel Grid.Row="0" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
+                                    <StackPanel Name="PolicyRulesCountBlock" Grid.Row="0" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
                                         <TextBlock x:Name="ConvertedPolicyLink" Text="Converted Policy" Style="{StaticResource HyperLinkStyle}"
                                                    MouseUp="Link_OnClick"/>
                                         <TextBlock Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=ConvertedPolicyRulesCount}"
                                                    Margin="5,1,0,0" Style="{StaticResource NormalTextBloclStyle}"
-                                                   Foreground="#A7A9AC" FontSize="12"/>
+                                                   Foreground="#A7A9AC" FontSize="12" />
                                     </StackPanel>
                                     <StackPanel x:Name="ConvertedOptimizedPolicyPanel" Grid.Row="1" Margin="0,6,0,0" Orientation="Horizontal" Background="Transparent" Focusable="False">
                                         <TextBlock x:Name="ConvertedOptimizedPolicyLink" Text="Converted optimized Policy" Style="{StaticResource HyperLinkStyle}"
