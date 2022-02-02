@@ -179,6 +179,9 @@ namespace JuniperMigration
         private Dictionary<string, HashSet<string>> _usedObjects = new Dictionary<string, HashSet<string>>(); //<type, [names of objects]>
         private string _outputFormat;
 
+        private List<string> _errorsList = new List<string>(); //storing conversion errors for config
+        private List<string> _warningsList = new List<string>(); //storing conversion warnings for config
+
         //if total package name over max count of chars (20) do not create *.sh, *.tar.gz, *.zip files
         private bool _isOverMaxLengthPackageName = false;
         private int _maxAllowedpackageNameLength = 20;
@@ -4699,6 +4702,89 @@ namespace JuniperMigration
             return cpDummyObject;
         }
 
+        public void CreateErrorsReport(string vDomName)
+        {
+            _errorsList.AddRange(_conversionIncidents.Where(i => i.IncidentType == ConversionIncidentType.ManualActionRequired).Select(i => i.ToString()));
+
+            if (_errorsList.Count > 0)
+            {
+                _errorsList = Helper.RemoveDuplicates(_errorsList);
+
+                string filename = _targetFolder + "\\" + vDomName + "_errors.html";
+
+                using (var file = new StreamWriter(filename, false))
+                {
+                    file.WriteLine("<html>");
+                    file.WriteLine("<head>");
+                    file.WriteLine("</head>");
+                    file.WriteLine("<body>");
+                    file.WriteLine("<h1>List of " + vDomName + " Errors</h1>");
+                    file.WriteLine("<table border='1' style='border-collapse: collapse;'>");
+                    for (int i = 0; i < _errorsList.Count; i++)
+                    {
+                        file.WriteLine("<tr>");
+                        file.WriteLine("<td>");
+                        file.WriteLine(i);
+                        file.WriteLine("</td>");
+                        file.WriteLine("<td>");
+                        file.WriteLine(_errorsList[i]);
+                        file.WriteLine("</td>");
+                        file.WriteLine("</tr>");
+                    }
+                    file.WriteLine("</table>");
+                    file.WriteLine("</body>");
+                    file.WriteLine("</html>");
+                }
+            }
+        }
+
+        //report about Warnings
+        public void CreateWarningsReport(string vDomName)
+        {
+            _warningsList.AddRange(_conversionIncidents.Where(i => i.IncidentType == ConversionIncidentType.None || i.IncidentType == ConversionIncidentType.Informative).Select(i => i.ToString()));
+
+            if (_warningsList.Count > 0)
+            {
+                _warningsList = Helper.RemoveDuplicates(_warningsList);
+
+                string filename = _targetFolder + "\\" + vDomName + "_warnings.html";
+
+                using (var file = new StreamWriter(filename, false))
+                {
+                    file.WriteLine("<html>");
+                    file.WriteLine("<head>");
+                    file.WriteLine("</head>");
+                    file.WriteLine("<body>");
+                    file.WriteLine("<h1>List of " + vDomName + " Warnings</h1>");
+                    file.WriteLine("<table border='1' style='border-collapse: collapse;'>");
+                    for (int i = 0; i < _warningsList.Count; i++)
+                    {
+                        file.WriteLine("<tr>");
+                        file.WriteLine("<td>");
+                        file.WriteLine(i);
+                        file.WriteLine("</td>");
+                        file.WriteLine("<td>");
+                        file.WriteLine(_warningsList[i]);
+                        file.WriteLine("</td>");
+                        file.WriteLine("</tr>");
+                    }
+                    file.WriteLine("</table>");
+                    file.WriteLine("</body>");
+                    file.WriteLine("</html>");
+                }
+            }
+        }
+
+        public int WarningsInConvertedPackage()
+        {
+            return _warningsList.Count;
+        }
+
+        public int ErrorsInConvertedPackage()
+        {
+            return _errorsList.Count;
+        }
+
         protected override string GetVendorName()
         {
             return Vendor.JuniperJunosOS.ToString();
@@ -4839,6 +4925,13 @@ namespace JuniperMigration
                 CreatePackagesScript();
             }
             CreateObjectsHtml();
+
+
+            WarningsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_warnings.html";
+            ErrorsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_errors.html";
+
+            CreateErrorsReport(_vendorFileName);
+            CreateWarningsReport(_vendorFileName);
 
             // This data container is important, and is used during html reports generation for incidents lookup!!!
             var incidentsGroupedByLineNumber = _conversionIncidents.GroupBy(error => error.LineNumber);

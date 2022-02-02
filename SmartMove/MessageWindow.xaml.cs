@@ -38,6 +38,19 @@ namespace SmartMove
 
         #region Properties
 
+        #region Header
+
+        public string Header
+        {
+            get { return (string)GetValue(HeaderProperty); }
+            set { SetValue(HeaderProperty, value); }
+        }
+
+        public static readonly DependencyProperty HeaderProperty =
+            DependencyProperty.Register("Header", typeof(string), typeof(MessageWindow), new PropertyMetadata(null));
+
+        #endregion
+        
         #region Message
 
         public string Message
@@ -50,6 +63,32 @@ namespace SmartMove
             DependencyProperty.Register("Message", typeof(string), typeof(MessageWindow), new PropertyMetadata(null));
 
         #endregion
+
+        #region Columns
+
+        public string Columns
+        {
+            get { return (string)GetValue(ColumnsProperty); }
+            set { SetValue(ColumnsProperty, value); }
+        }
+
+        public static readonly DependencyProperty ColumnsProperty =
+            DependencyProperty.Register("Columns", typeof(string), typeof(MessageWindow), new PropertyMetadata(null));
+
+        #endregion
+
+        #region MessageWoColumns
+
+        public string MessageWoColumns
+        {
+            get { return (string)GetValue(MessageWoColumnsProperty); }
+            set { SetValue(MessageWoColumnsProperty, value); }
+        }
+
+        public static readonly DependencyProperty MessageWoColumnsProperty =
+            DependencyProperty.Register("MessageWoColumns", typeof(string), typeof(MessageWindow), new PropertyMetadata(null));
+
+        #endregion
 		
         #region MessageLink
         public string MessageLinkText
@@ -57,9 +96,16 @@ namespace SmartMove
             get { return (string)GetValue(MessageLinkTextProperty); }
             set { SetValue(MessageLinkTextProperty, value); }
         }
+        public string MessageLinkTextClean
+        {
+            get { return (string)GetValue(MessageLinkTextCleanProperty); }
+            set { SetValue(MessageLinkTextCleanProperty, value); }
+        }
 
         public static readonly DependencyProperty MessageLinkTextProperty =
             DependencyProperty.Register("MessageLinkText", typeof(string), typeof(MessageWindow), new PropertyMetadata(null));
+        public static readonly DependencyProperty MessageLinkTextCleanProperty =
+            DependencyProperty.Register("MessageLinkTextClean", typeof(string), typeof(MessageWindow), new PropertyMetadata(null));
 
         public string MessageLinkValue
         {
