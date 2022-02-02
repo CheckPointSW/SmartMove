@@ -33,6 +33,7 @@ using FortiGateMigration;
 using PaloAltoMigration;
 using PanoramaPaloAltoMigration;
 using System.ComponentModel;
+using CommonUtils;
 
 namespace SmartMove
 {
@@ -319,22 +320,22 @@ namespace SmartMove
                     break;
                 case Vendor.FortiGate:
                     ConfigurationFileLabel = SupportedVendors.FortiGateConfigurationFileLabel;
-                    DomainNameTB.Visibility = Visibility.Collapsed;
-                    DomainName.Visibility = Visibility.Collapsed;
+                    DomainNameTB.Visibility = Visibility.Visible;
+                    DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.PaloAlto:
                     ConfigurationFileLabel = SupportedVendors.PaloAltoConfigurationFileLabel;
-                    DomainNameTB.Visibility = Visibility.Collapsed;
-                    DomainName.Visibility = Visibility.Collapsed;
+                    DomainNameTB.Visibility = Visibility.Visible;
+                    DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.PaloAltoPanorama:
                     ConfigurationFileLabel = SupportedVendors.PaloAltoPanoramaConfigurationFileLabel;
-                    DomainNameTB.Visibility = Visibility.Collapsed;
-                    DomainName.Visibility = Visibility.Collapsed;
+                    DomainNameTB.Visibility = Visibility.Visible;
+                    DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
@@ -397,6 +398,7 @@ namespace SmartMove
                 }
                 catch (Exception ex)
                 {
+                    SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", ex.Message + "\n" + ex.StackTrace);
                     ShowMessage("Could not read file from disk.\nOriginal error: " + ex.Message, MessageTypes.Error);
                 }
             }
@@ -424,6 +426,7 @@ namespace SmartMove
                 }
                 catch (Exception ex)
                 {
+                    SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", ex.Message + "\n" + ex.StackTrace);
                     ShowMessage("Could not read file from disk.\nOriginal error: " + ex.Message, MessageTypes.Error);
                 }
             }
@@ -436,24 +439,28 @@ namespace SmartMove
 
             if (string.IsNullOrEmpty(ConfigFilePath.Text) || string.IsNullOrEmpty(fileName))
             {
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Configuration file is not selected.");
                 ShowMessage("Configuration file is not selected.", MessageTypes.Error);
                 return;
             }
 
             if (!File.Exists(ConfigFilePath.Text))
             {
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Cannot find configuration file.");
                 ShowMessage("Cannot find configuration file.", MessageTypes.Error);
                 return;
             }
 
             if (fileName.Length > 20)
             {
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Configuration file name is restricted to 20 characters at most.");
                 ShowMessage("Configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
                 return;
             }
 
             if (!Directory.Exists(TargetFolderPath.Text))
             {
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Cannot find target folder for conversion output.");
                 ShowMessage("Cannot find target folder for conversion output.", MessageTypes.Error);
                 return;
             }
@@ -462,6 +469,7 @@ namespace SmartMove
             {
                 if (LDAPAccountUnit.Text.Trim().Equals("") || LDAPAccountUnit.Text.Trim().Contains(" "))
                 {
+                    SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "LDAP Account Unit field cannot be empty or containt space(s).");
                     ShowMessage("LDAP Account Unit field cannot be empty or containt space(s).", MessageTypes.Error);
                     return;
                 }
@@ -498,8 +506,10 @@ namespace SmartMove
                     string compressorGzip = Path.Combine(compressorsDirPath, "gzip.exe");
                     if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
                     {
-                        ShowMessage(String.Format("{1}{0}{2}", Environment.NewLine, "The system cannot find the required files. ",
-                        "Please follow"), MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions");
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "The system cannot find the required files. ");
+                        ShowMessage(null, MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions", null, null, 
+                            string.Format("{1}{0}{2}", Environment.NewLine, "The system cannot find the required files. ",
+                        "Please follow"));
                         return;
                     }
                     vendorParser = new PanoramaParser();
@@ -542,7 +552,8 @@ namespace SmartMove
                 Mouse.OverrideCursor = null;
                 EnableDisableControls(true);
                 OutputPanel.Visibility = Visibility.Collapsed;
-                ShowMessage(string.Format("Could not parse configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", ex.Message + "\n" + ex.StackTrace);
+                ShowMessage("Could not convert configuration file.", "Message:\nModule:\nClass:\nMethod:", string.Format("{0}\n{1}\n{2}\n{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error); 
                 return;
             }
 
@@ -552,13 +563,15 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         EnableWindow();
-                        ShowMessage("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unspecified ASA version.\nCannot find ASA version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 8 || (vendorParser.MajorVersion == 8 && vendorParser.MinorVersion < 3))
                     {
                         EnableWindow();
-                        ShowMessage("Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unsupported ASA version (" + vendorParser.Version + ").\nThis tool supports ASA 8.3 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
@@ -567,13 +580,15 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         EnableWindow();
-                        ShowMessage("Unspecified NGFW version.\nCannot find version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified NGFW version.\nCannot find version for the selected configuration.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unspecified NGFW version.\nCannot find version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 6 || (vendorParser.MajorVersion == 6 && vendorParser.MinorVersion < 4))
                     {
                         EnableWindow();
-                        ShowMessage("Unsupported version (" + vendorParser.Version + ").\nThis tool supports NGFW 6.4 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported version (" + vendorParser.Version + ").\nThis tool supports NGFW 6.4 and above configuration files.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unsupported version (" + vendorParser.Version + ").\nThis tool supports NGFW 6.4 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
@@ -582,13 +597,15 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         EnableWindow();
-                        ShowMessage("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unspecified SRX version.\nCannot find SRX version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 12 || (vendorParser.MajorVersion == 12 && vendorParser.MinorVersion < 1))
                     {
                         EnableWindow();
-                        ShowMessage("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unsupported SRX version (" + vendorParser.Version + ").\nThis tool supports SRX 12.1 and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
@@ -600,13 +617,15 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         EnableWindow();
-                        ShowMessage("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if(vendorParser.MajorVersion < 5)
                     {
                         EnableWindow();
-                        ShowMessage("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
@@ -614,13 +633,15 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         EnableWindow();
-                        ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto PAN-OS version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
                         EnableWindow();
-                        ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto PAN-OS 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
@@ -628,13 +649,15 @@ namespace SmartMove
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
                         EnableWindow();
-                        ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unspecified PaloAlto version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unspecified PaloAlto version.\nCannot find PaloAlto Panorama version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     else if (vendorParser.MajorVersion < 7)
                     {
                         EnableWindow();
-                        ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Warning);
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.");
+                        ShowMessage("Unsupported PaloAlto version (" + vendorParser.Version + ").\nThis tool supports PaloAlto Panorama 7.x and above configuration files.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
                     break;
@@ -705,18 +728,19 @@ namespace SmartMove
             catch (Exception ex)
             {
                 Mouse.OverrideCursor = null;
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", ex.Message + "\n" + ex.StackTrace);
                 EnableDisableControls(true);
                 OutputPanel.Visibility = Visibility.Collapsed;
                 if (ex is InvalidDataException && ex.Message != null && ex.Message.Contains("Policy exceeds the maximum number"))
                 {
-                    ShowMessage(String.Format("{1}{0}{2}{0}{3}", Environment.NewLine, "SmartMove is unable to convert the provided policy.",
+                    ShowMessage(null, MessageTypes.Error, "ps@checkpoint.com", "mailto:ps@checkpoint.com", null, null,
+                        String.Format("{1}{0}{2}{0}{3}", Environment.NewLine, "SmartMove is unable to convert the provided policy.",
                                                 "Reason: Policy exceeds the maximum number of supported policy layers.",
-                                                "To assure the smooth conversion of your data, it is recommended to contact Check Point Professional Services by sending an e-mail to"),
-                    MessageTypes.Error, "ps@checkpoint.com", "mailto:ps@checkpoint.com");
+                                                "To assure the smooth conversion of your data, it is recommended to contact Check Point Professional Services by sending an e-mail to"));
                 }
                 else
                 {
-                    ShowMessage(string.Format("Could not convert configuration file.\n\nMessage: {0}\nModule:\t{1}\nClass:\t{2}\nMethod:\t{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                    ShowMessage("Could not convert configuration file.", "Message:\nModule:\nClass:\nMethod:", string.Format("{0}\n{1}\n{2}\n{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
                 }
                 return;
             }
@@ -820,7 +844,7 @@ namespace SmartMove
 
         private void ShowResults(VendorConverter vendorConverter, int convertedLinesCount)
         {
-            ConversionIssuesPanel.Visibility = (vendorConverter.ConversionIncidentCategoriesCount > 0) ? Visibility.Visible : Visibility.Collapsed;
+            ConversionIssuesPanel.Visibility = Visibility.Collapsed;
             ConvertedNatPolicyPanel.Visibility = ConvertNATConfiguration ? Visibility.Visible : Visibility.Collapsed;
 
             ConfigurationFileLinesCount = string.Format(" ({0} lines)", convertedLinesCount);
@@ -834,9 +858,16 @@ namespace SmartMove
             switch (_supportedVendors.SelectedVendor)
             {
                 case Vendor.CiscoASA:
-                    CoversionIssuesPreviewPanel.Visibility = Visibility.Collapsed;
                     ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible; 
+                    CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
+
+                    CiscoConverter ciscoConverter = (CiscoConverter)vendorConverter;
+
+
+                    ConvertingWarningsCount = (ciscoConverter.WarningsInConvertedPackage() != 0) ? string.Format(" ({0} warnings)", ciscoConverter.WarningsInConvertedPackage()) : " Check report.";
+                    ConvertingErrorsCount = (ciscoConverter.ErrorsInConvertedPackage() != 0) ? string.Format(" ({0} errors)", ciscoConverter.ErrorsInConvertedPackage()) : " Check report.";
+
                     break;
 
                 case Vendor.FortiGate:
@@ -860,6 +891,8 @@ namespace SmartMove
                     RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
                     JuniperConverter jConverter = (JuniperConverter)vendorConverter;
                     ConvertedOptimizedPolicyRulesCount = (jConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", jConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
+                    ConvertingWarningsCount = (jConverter.WarningsInConvertedPackage() != 0) ? string.Format(" ({0} warnings)", jConverter.WarningsInConvertedPackage()) : " Check report.";
+                    ConvertingErrorsCount = (jConverter.ErrorsInConvertedPackage() != 0) ? string.Format(" ({0} errors)", jConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;
 
                 case Vendor.JuniperScreenOS:
@@ -868,6 +901,8 @@ namespace SmartMove
                     RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
                     ScreenOSConverter soConverter = (ScreenOSConverter)vendorConverter;
                     ConvertedOptimizedPolicyRulesCount = (soConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", soConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
+                    ConvertingWarningsCount = (soConverter.WarningsInConvertedPackage() != 0) ? string.Format(" ({0} warnings)", soConverter.WarningsInConvertedPackage()) : " Check report.";
+                    ConvertingErrorsCount = (soConverter.ErrorsInConvertedPackage() != 0) ? string.Format(" ({0} errors)", soConverter.ErrorsInConvertedPackage()) : " Check report.";
                     break;
 
                 case Vendor.PaloAlto:
@@ -909,17 +944,29 @@ namespace SmartMove
             ConvertedPolicyLink.Tag = vendorConverter.PolicyHtmlFile;
             ConvertedOptimizedPolicyLink.Tag = vendorConverter.PolicyOptimizedHtmlFile;
             ConvertedNatPolicyLink.Tag = vendorConverter.NatHtmlFile;
+            RulebaseOptimizedScriptLink.Tag = vendorConverter.PolicyOptimizedScriptFile;
             ObjectsScriptLink.Tag = vendorConverter.ObjectsScriptFile;
             RulebaseScriptLink.Tag = vendorConverter.PolicyScriptFile;
-            RulebaseOptimizedScriptLink.Tag = vendorConverter.PolicyOptimizedScriptFile;
 
 
             ConvertingWarningsLink.Tag = vendorConverter.WarningsHtmlFile;
             ConvertingErrorsLink.Tag = vendorConverter.ErrorsHtmlFile;
 
-            CoversionIssuesPreviewPanel.Visibility = (!string.IsNullOrEmpty(vendorConverter.WarningsHtmlFile) || !string.IsNullOrEmpty(vendorConverter.ErrorsHtmlFile)) ? Visibility.Visible : Visibility.Collapsed;
-            ConvertingWarningsLink.Visibility = !string.IsNullOrEmpty(vendorConverter.WarningsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
-            ConvertingErrorsLink.Visibility = !string.IsNullOrEmpty(vendorConverter.ErrorsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            CoversionIssuesPreviewPanel.Visibility = (File.Exists(vendorConverter.WarningsHtmlFile) || File.Exists(vendorConverter.ErrorsHtmlFile)) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertingWarningsPanel.Visibility = File.Exists(vendorConverter.WarningsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertingErrorsPanel.Visibility = File.Exists(vendorConverter.ErrorsHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertedNatPolicyPanel.Visibility = File.Exists(vendorConverter.NatHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertedPolicyLink.Visibility = File.Exists(vendorConverter.PolicyHtmlFile) ? Visibility.Visible : Visibility.Collapsed;
+            ObjectsScriptLink.Visibility = File.Exists(vendorConverter.ObjectsScriptFile) ? Visibility.Visible : Visibility.Collapsed;
+            RulebaseScriptLink.Visibility = File.Exists(vendorConverter.PolicyScriptFile) ? Visibility.Visible : Visibility.Collapsed;
+            RulebaseOptimizedScriptLink.Visibility = File.Exists(vendorConverter.PolicyOptimizedScriptFile) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertedOptimizedPolicyPanel.Visibility = File.Exists(vendorConverter.PolicyOptimizedScriptFile) ? Visibility.Visible : Visibility.Collapsed;
+
+            PolicyRulesCountBlock.Visibility = ConvertedPolicyLink.Visibility;
+            ConvertedNatPolicyPanel.Visibility = ConvertedNatPolicyLink.Visibility;
+
+            BashScriptsPanel.Visibility = (RulebaseOptimizedScriptLink.Visibility == Visibility.Visible || RulebaseScriptLink.Visibility == Visibility.Visible || ObjectsScriptLink.Visibility == Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed;
+            ConvertedPolicyPreviewPanel.Visibility = (ConvertedPolicyLink.Visibility == Visibility.Visible || ConvertedNatPolicyPanel.Visibility == Visibility.Visible || ConvertedOptimizedPolicyPanel.Visibility == Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         
@@ -977,6 +1024,7 @@ namespace SmartMove
 
                 if (hasArgs && !CiscoParser.SpreadAclRemarks)
                 {
+                    SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", string.Format("Unrecognized command line argument: {0}", args[1]));
                     ShowMessage(string.Format("Unrecognized command line argument: {0}", args[1]), MessageTypes.Warning);
                 }
             }
@@ -984,19 +1032,41 @@ namespace SmartMove
             {
             }
         }
-
+        
+        public static void ShowMessage(string header, string columns, string message, MessageTypes messageType)
+        {
+            ShowMessage(message, messageType, null, null, header, columns);
+        }
+        
         public static void ShowMessage(string message, MessageTypes messageType)
         {
-            ShowMessage(message, messageType, null, null);
+            ShowMessage(null, messageType, null, null, null, null, message);
         }
-        public static void ShowMessage(string message, MessageTypes messageType, string messageLinkText, string messageLinkValue)
+
+        /// <summary>
+        /// Build a message for displaying. If need to show technical columns like "method", "Class" then need to pass to message 
+        /// message after columns, list of columns to colums and to header pass main message. If need just display a text 
+        /// then pass to message, columns, header null values and fill only messageWoColumns
+        /// </summary>
+        /// <param name="message">message for displaying with columns. If need display without columns set to null</param>
+        /// <param name="messageType">message window type (uses always)</param>
+        /// <param name="messageLinkText">text for link (uses if need display link)</param>
+        /// <param name="messageLinkValue">link(uses if need display link)</param>
+        /// <param name="header">header for messages with columns, otherwise set null</param>
+        /// <param name="columns">list of columns separated by '\n' symbol. set to null if don't need</param>
+        /// <param name="messageWoColumns">message for displaying without columns. if need to display with columns set to null (by default)</param>
+        public static void ShowMessage(string message, MessageTypes messageType, string messageLinkText, string messageLinkValue, string header, string columns, string messageWoColumns = null)
         {
             var messageWindow = new MessageWindow
             {
+                Header = header,
                 Message = message,
                 MessageType = messageType,
-                MessageLinkText = messageLinkText,
-                MessageLinkValue = messageLinkValue
+                MessageLinkText = columns != null ? messageLinkText : null,
+                MessageLinkTextClean = columns != null ? null : messageLinkText,
+                MessageLinkValue = messageLinkValue,
+                Columns = columns,
+                MessageWoColumns = messageWoColumns
             };
 
             Mouse.OverrideCursor = null;

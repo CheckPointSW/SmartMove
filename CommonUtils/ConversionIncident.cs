@@ -40,6 +40,11 @@ namespace CommonUtils
             IncidentType = incidentType;
         }
 
+        public override string ToString()
+        {
+            return Title + ": " + Description + ";";
+        }
+
         public override int GetHashCode()
         {
             return Title.GetHashCode();
