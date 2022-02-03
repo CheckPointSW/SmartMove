@@ -40,8 +40,8 @@ namespace CiscoMigration
         //if we are using cisco code for fire power vendor we need set this flag to true value
         public bool isUsingForFirePower { get; set; } = false;
 
-        private List<string> _errorsList = new List<string>(); //storing conversion errors for config
-        private List<string> _warningsList = new List<string>(); //storing conversion warnings for config
+        private List<string> _errorsList = new List<string>(); //conversion errors for config
+        private List<string> _warningsList = new List<string>(); //conversion warnings for config
 
         #region GUI params
 
