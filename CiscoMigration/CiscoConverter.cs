@@ -23,8 +23,6 @@ using System.Text;
 using CommonUtils;
 using CheckPointObjects;
 using MigrationBase;
-using Newtonsoft.Json;
-using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using CiscoMigration.CiscoMigration;
@@ -1013,6 +1011,12 @@ namespace CiscoMigration
                 CiscoNetwork source;
                 CiscoNetwork dest;
 
+                if (ciscoAcl.Source.Subnet == "user" && ciscoAcl.Protocol == ProtocolType.Tcp)
+                {
+                    _conversionIncidents.Add(new ConversionIncident(ciscoAcl.Id, "Ignoring user, Using access-list without user", RemoveUserParameter(ciscoAcl.Text), ConversionIncidentType.Informative));
+                }
+
+
                 if (ciscoAcl.Source.Type == Cisco_AccessList.SourceDest.SourceDestType.Host)
                 {
                     source = new CiscoNetwork(ciscoAcl.Id, ciscoAcl.Source.HostIp);
@@ -1037,6 +1041,24 @@ namespace CiscoMigration
                     _ciscoNetworkObjects.Add(dest);
                 }
             }
+        }
+
+        private string RemoveUserParameter(string originalString)
+        {
+            string[] words = originalString.Split(' ');
+            StringBuilder outString = new StringBuilder();
+
+            outString.Append(words[0]);
+
+            for (int i = 1; i < words.Length; i++)
+            {
+                if (words[i] != "user" && words[i - 1] != "user")
+                {
+                    outString.Append(" " + words[i]);
+                }
+            }
+
+            return outString.ToString();
         }
 
         private void CheckIcmp6Service(Cisco_AccessList accesslist)
