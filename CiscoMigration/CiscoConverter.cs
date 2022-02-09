@@ -28,6 +28,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using CiscoMigration.CiscoMigration;
+using static CheckPointObjects.CheckPoint_Rule;
 
 namespace CiscoMigration
 {
@@ -39,6 +40,8 @@ namespace CiscoMigration
     {
         //if we are using cisco code for fire power vendor we need set this flag to true value
         public bool isUsingForFirePower { get; set; } = false;
+
+        public NewAnalizStatistic NewCiscoAnalizStatistic = new NewAnalizStatistic(0, 0);
 
         #region GUI params
 
@@ -2579,7 +2582,15 @@ namespace CiscoMigration
                 cpRule.Destination.Add(cpSimpleGw);
                 cpRule.Service.Add(_cpObjects.GetObject("https"));
                 cpRule.Action = CheckPoint_Rule.ActionType.Accept;
+                ////////////////////////////////////////////////////////////
+                ///
+                if (!cpRule.Track.Equals(TrackTypes.Log))
+                {
+                    NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
+                }
+                NewCiscoAnalizStatistic._disabledServicesRulesCount++;
                 cpRule.Enabled = false;   // !!!
+                /////////////////////////////////////////////////////////////
                 cpRule.Layer = package.NameOfAccessLayer;
                 cpRule.ConversionComments = "Firewall control and management";
 
@@ -2592,7 +2603,7 @@ namespace CiscoMigration
                 cpRule.Action = CheckPoint_Rule.ActionType.Drop;
                 cpRule.Layer = package.NameOfAccessLayer;
                 cpRule.ConversionComments = "Firewall control and management";
-
+                NewCiscoAnalizStatistic._stealthServicesRuleCount++;
                 package.ParentLayer.Rules.Add(cpRule);
             }
 
@@ -2630,6 +2641,15 @@ namespace CiscoMigration
 
                     var cpRule = new CheckPoint_Rule();
                     cpRule.Source.Add(cpObject);
+                    if (cpObject.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                    }
+                    if (!cpRule.Track.Equals(TrackTypes.Log))
+                    {
+                        NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
+                    }
                     cpRule.Action = CheckPoint_Rule.ActionType.SubPolicy;
                     cpRule.SubPolicyName = ciscoAccessGroup.AccessListName;
                     cpRule.Layer = package.NameOfAccessLayer;
@@ -2684,7 +2704,17 @@ namespace CiscoMigration
                 if (addParentRule)
                 {
                     var cpRule = new CheckPoint_Rule();
+                    
                     cpRule.Source.Add(cpZone);
+                    if (cpZone.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                    }
+                    if (!cpRule.Track.Equals(TrackTypes.Log))
+                    {
+                        NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
+                    }
                     cpRule.Action = CheckPoint_Rule.ActionType.SubPolicy;
                     cpRule.SubPolicyName = cpZone.Name + "_sub_policy";
                     cpRule.Layer = package.NameOfAccessLayer;
@@ -2783,11 +2813,19 @@ namespace CiscoMigration
                     {
                         var cpRule = new CheckPoint_Rule();
                         cpRule.Enabled = true;
+                        if (!cpRule.Track.Equals(TrackTypes.Log))
+                        {
+                            NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
+                        }
                         cpRule.Layer = ciscoAccessGroup.AccessListName;
                         cpRule.Source.Add(_cpObjects.GetObject(CheckPointObject.Any));
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
                         cpRule.Destination.Add(_cpObjects.GetObject(CiscoHostnameCommand.HostName));
                         cpRule.DestinationNegated = true;
                         cpRule.Service.Add(_cpObjects.GetObject(CheckPointObject.Any));
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+
                         cpRule.Action = CheckPoint_Rule.ActionType.Drop;
                         cpRule.ConversionComments = "Automatic rule for management-only interface";
 
@@ -2803,7 +2841,12 @@ namespace CiscoMigration
 
                             if (ciscoInterface.Shutdown)
                             {
+                                NewCiscoAnalizStatistic._disabledServicesRulesCount++;
                                 cpRule.Enabled = false;
+                            }
+                            if(!cpRule.Track.Equals(TrackTypes.Log))
+                            {
+                                NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
                             }
 
                             cpLayer.Rules.Add(cpRule);
@@ -2850,7 +2893,9 @@ namespace CiscoMigration
                     {
                         var lastRule = subpolicy.Rules[subpolicy.Rules.Count - 1];
                         if (lastRule.IsCleanupRule())
+                        {
                             subpolicy.Rules.Remove(lastRule);
+                        }
                     }
                 }
 
@@ -2859,7 +2904,9 @@ namespace CiscoMigration
                 {
                     var lastRule = package.ParentLayer.Rules[package.ParentLayer.Rules.Count - 1];
                     if (lastRule.IsCleanupRule())
+                    {
                         package.ParentLayer.Rules.Remove(lastRule);
+                    }
                 }
 
                 CheckPoint_Rule cpRule4GlobalLayer = new CheckPoint_Rule();
@@ -2871,6 +2918,13 @@ namespace CiscoMigration
                 cpRule4GlobalLayer.Track = CheckPoint_Rule.TrackTypes.None;
                 cpRule4GlobalLayer.Time.Add(_cpObjects.GetObject(CheckPointObject.Any));
                 cpRule4GlobalLayer.Service.Add(_cpObjects.GetObject(CheckPointObject.Any));
+
+                NewCiscoAnalizStatistic._timesServicesRulesCount++;
+                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+
                 cpRule4GlobalLayer.SubPolicyName = GlobalRulesSubpolicyName;
 
                 package.ParentLayer.Rules.Add(cpRule4GlobalLayer);
@@ -2906,6 +2960,7 @@ namespace CiscoMigration
                     cpCleanupRule.Action = CheckPoint_Rule.ActionType.Drop;
                     cpCleanupRule.Layer = cpSubLayer4GlobalRules.Name;
                     cpSubLayer4GlobalRules.Rules.Add(cpCleanupRule);
+                    NewCiscoAnalizStatistic._cleanupServicesRuleCount++;
                 }
 
                 // Fill in the shared layer with global policy rules INSIDE the existing sub-policies.
@@ -2917,6 +2972,15 @@ namespace CiscoMigration
                     }
 
                     CheckPoint_Rule cpSubRule4GlobalLayer = cpRule4GlobalLayer.Clone();
+
+                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                    if(cpSubRule4GlobalLayer.Time.Count > 0 && cpSubRule4GlobalLayer.Time.First().Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._timesServicesRulesCount++;
+                    }
                     cpSubRule4GlobalLayer.Name = "Global Layer";
                     cpSubRule4GlobalLayer.Layer = subPolicy.Name;
                     subPolicy.Rules.Add(cpSubRule4GlobalLayer);
@@ -2927,6 +2991,7 @@ namespace CiscoMigration
                 var cpRuleCleanUp = new CheckPoint_Rule();
                 cpRuleCleanUp.Name = "Cleanup rule";
                 package.ParentLayer.Rules.Add(cpRuleCleanUp);
+                NewCiscoAnalizStatistic._cleanupServicesRuleCount++;
             }
             else
             {
@@ -2952,7 +3017,13 @@ namespace CiscoMigration
 
                                     if (!string.IsNullOrEmpty(subPolicy.Tag) && subPolicy.Tag == "InterfaceDisabled")
                                     {
+                                        NewCiscoAnalizStatistic._disabledServicesRulesCount++;
                                         cpRule.Enabled = false;
+                                    }
+
+                                    if (!cpRule.Track.Equals(TrackTypes.Log))
+                                    {
+                                        NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
                                     }
 
                                     // If the global ACL didn't have an incident previously, 
@@ -2983,6 +3054,15 @@ namespace CiscoMigration
             var cpRule = new CheckPoint_Rule();
             cpRule.Name = ciscoAcl.Description;
             cpRule.Enabled = !ciscoAcl.Inactive;
+            if (!cpRule.Enabled)
+            {
+                NewCiscoAnalizStatistic._disabledServicesRulesCount++;
+            }
+
+            if (!cpRule.Track.Equals(TrackTypes.Log))
+            {
+                NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
+            }
             if (layerName != null)
                 cpRule.Layer = layerName;
             else
@@ -3003,6 +3083,7 @@ namespace CiscoMigration
                 _ciscoTimeNamesToCpTimeNamesDict.TryGetValue(ciscoAcl.TimeRangeName, out cpTimeNamesList);
                 if (cpTimeNamesList != null)
                 {
+                    bool calc = true;
                     foreach (string cpTimeName in cpTimeNamesList)
                     {
                         cpObject = GetCheckPointObjectOrCreateDummy(cpTimeName,
@@ -3011,6 +3092,11 @@ namespace CiscoMigration
                                                                 "Not applying time-range objects to ACLs",
                                                                 "Appropriate time object should be added manually.");
                         cpRule.Time.Add(cpObject);
+                        if (!cpObject.Name.Equals("Any") && calc)
+                        {
+                            NewCiscoAnalizStatistic._timesServicesRulesCount++;
+                            calc = false;
+                        }
                     }
                 }
                 else
@@ -3021,13 +3107,23 @@ namespace CiscoMigration
                                                                 "Not applying time-range objects to ACLs",
                                                                 "Appropriate time object should be added manually.");
                     cpRule.Time.Add(cpObject);
+                    if (!cpObject.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._timesServicesRulesCount++;
+                    }
                 }
             }
-
+            bool any_fl = true;
             switch (ciscoAcl.Source.Type)
             {
                 case Cisco_AccessList.SourceDest.SourceDestType.Any:
                     cpRule.Source.Add(_cpObjects.GetObject(CheckPointObject.Any));
+                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                    if (any_fl)
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        any_fl = false;
+                    }
                     break;
 
                 case Cisco_AccessList.SourceDest.SourceDestType.Any6:
@@ -3037,6 +3133,15 @@ namespace CiscoMigration
                                                                 "Error creating a rule, IPv6 objects are not supported",
                                                                 "Source details: Any6.");
                     cpRule.Source.Add(cpObject);
+                    if (cpObject.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                        if (any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
+                    }
                     break;
 
                 case Cisco_AccessList.SourceDest.SourceDestType.Host:
@@ -3047,6 +3152,15 @@ namespace CiscoMigration
                                                                 "Error creating a rule, missing information for source Cisco host",
                                                                 "Host details: " + ciscoAcl.Source.HostIp + ".");
                     cpRule.Source.Add(cpObject);
+                    if (cpObject.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                        if (any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
+                    }
                     break;
 
                 case Cisco_AccessList.SourceDest.SourceDestType.SubnetAndMask:
@@ -3057,6 +3171,15 @@ namespace CiscoMigration
                                                                 "Error creating a rule, missing information for source Cisco network",
                                                                 "Network details: " + ciscoAcl.Source.Subnet + " " + ciscoAcl.Source.Netmask + ".");
                     cpRule.Source.Add(cpObject);
+                    if (cpObject.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                        if (any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
+                    }
                     break;
 
                 case Cisco_AccessList.SourceDest.SourceDestType.ReferenceObject:
@@ -3067,6 +3190,15 @@ namespace CiscoMigration
                                                                 "Error creating a rule, missing information for source Cisco object",
                                                                 "Object details: " + srcObjectName + ".");
                     cpRule.Source.Add(cpObject);
+                    if (cpObject.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                        if (any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
+                    }
                     break;
             }
 
@@ -3074,6 +3206,12 @@ namespace CiscoMigration
             {
                 case Cisco_AccessList.SourceDest.SourceDestType.Any:
                     cpRule.Destination.Add(_cpObjects.GetObject(CheckPointObject.Any));
+                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                    if (any_fl)
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        any_fl = false;
+                    }
                     break;
 
                 case Cisco_AccessList.SourceDest.SourceDestType.Any6:
@@ -3083,6 +3221,15 @@ namespace CiscoMigration
                                                                 "Error creating a rule, IPv6 objects are not supported",
                                                                 "Destination details: Any6.");
                     cpRule.Destination.Add(cpObject);
+                    if (cpObject.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                        if (any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
+                    }
                     break;
 
                 case Cisco_AccessList.SourceDest.SourceDestType.Host:
@@ -3093,6 +3240,15 @@ namespace CiscoMigration
                                                                 "Error creating a rule, missing information for destination Cisco host",
                                                                 "Host details: " + ciscoAcl.Destination.HostIp + ".");
                     cpRule.Destination.Add(cpObject);
+                    if (cpObject.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                        if (any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
+                    }
                     break;
 
                 case Cisco_AccessList.SourceDest.SourceDestType.SubnetAndMask:
@@ -3103,6 +3259,15 @@ namespace CiscoMigration
                                                                 "Error creating a rule, missing information for destination Cisco network",
                                                                 "Network details: " + ciscoAcl.Destination.Subnet + " " + ciscoAcl.Destination.Netmask + ".");
                     cpRule.Destination.Add(cpObject);
+                    if (cpObject.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                        if (any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
+                    }
                     break;
 
                 case Cisco_AccessList.SourceDest.SourceDestType.ReferenceObject:
@@ -3113,6 +3278,15 @@ namespace CiscoMigration
                                                                 "Error creating a rule, missing information for destination Cisco object",
                                                                 "Object details: " + destObjectName + ".");
                     cpRule.Destination.Add(cpObject);
+                    if (cpObject.Name.Equals("Any"))
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                        if (any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
+                    }
                     break;
             }
 
@@ -3135,6 +3309,15 @@ namespace CiscoMigration
                                                             "Error creating a rule, unrecognized Cisco ACL protocol",
                                                             "Protocol details: " + ciscoAcl.ProtocolReference + ".");
                 cpRule.Service.Add(cpObject);
+                if (cpObject.Name.Equals("Any"))
+                {
+                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                    if (any_fl)
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        any_fl = false;
+                    }
+                }
                 return cpRule;
             }
 
@@ -3159,6 +3342,15 @@ namespace CiscoMigration
                                                                     "Error creating a rule, missing information for Cisco destination service",
                                                                     "Service details: " + ciscoAcl.DestinationProperties.Protocol + " " + ciscoAcl.DestinationProperties.TcpUdpPortOperator + " " + ciscoAcl.DestinationProperties.TcpUdpPortValue + ".");
                         cpRule.Service.Add(cpObject);
+                        if(cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            if (any_fl)
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                any_fl = false;
+                            }
+                        }
                     }
                     else   // specific protocol with a service group of ports or icmp protocol with service group of icmp types
                     {
@@ -3219,6 +3411,15 @@ namespace CiscoMigration
                                                                     "Cannot convert ACL with only source service",
                                                                     errDescription);
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            if (any_fl)
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                any_fl = false;
+                            }
+                        }
                     }
                 }
             }
@@ -3257,6 +3458,15 @@ namespace CiscoMigration
                                                                     "Error creating a rule, missing information for Cisco destination service",
                                                                     "Service details: icmp " + ciscoReferenceObject.ServicePort + ".");
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            if (any_fl)
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                any_fl = false;
+                            }
+                        }
                     }
                     else if (ciscoReferenceObject.ObjectType == Cisco_Object.ObjectTypes.Icmp6Service)   // using a predefined icmp6 object
                     {
@@ -3272,6 +3482,15 @@ namespace CiscoMigration
                                                                     "Error creating a rule, missing information for Cisco destination service",
                                                                     "Service details: icmp6 " + ciscoReferenceObject.ServicePort + ".");
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            if (any_fl)
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                any_fl = false;
+                            }
+                        }
                     }
                     else if (_cpObjects.HasObject(ciscoReferenceObject.CiscoId))
                     {
@@ -3283,6 +3502,15 @@ namespace CiscoMigration
                                                                         "Error creating a rule, missing information for Cisco service object",
                                                                         "Object details: " + ciscoReferenceObject.CiscoId + ".");
                             cpRule.Service.Add(cpObject);
+                            if (cpObject.Name.Equals("Any"))
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                                if (any_fl)
+                                {
+                                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                    any_fl = false;
+                                }
+                            }
 
                             // This may happen if both source and destination protocols are defined on the Cisco service!!!
                             if (ciscoReferenceObject.ConversionIncidentType != ConversionIncidentType.None)
@@ -3309,6 +3537,15 @@ namespace CiscoMigration
                                                                     "Error creating a rule, missing information for Cisco service object",
                                                                     "Object details: " + ciscoReferenceObject.CiscoId + ".");
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            if (any_fl)
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                any_fl = false;
+                            }
+                        }
                     }
                 }
                 else
@@ -3345,6 +3582,12 @@ namespace CiscoMigration
 
             if (cpRule.Service.Count == 0)
             {
+                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                if (any_fl)
+                {
+                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                    any_fl = false;
+                }
                 // No service detected, or generic IP service protocol was skipped.
                 // "any" service object will be used automatically...
             }
@@ -3375,6 +3618,11 @@ namespace CiscoMigration
                                                                         "Error creating a rule, missing information for Cisco service object",
                                                                         "Object details: " + ciscoReferencedService.CiscoId + ".");
                             cpRule.Service.Add(cpObject);
+                            if (cpObject.Name.Equals("Any"))
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            }
 
                             // This may happen, for example, if: 
                             // 1. both source and destination protocols are defined on the Cisco service
@@ -3415,6 +3663,11 @@ namespace CiscoMigration
                                                                     "Error creating a rule, missing information for Cisco destination service",
                                                                     "Service details: " + ciscoService.Protocol + " " + ciscoService.Operator + " " + ciscoService.Port + ".");
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        }
 
                         string udpServiceName = CheckPointServiceObjectsFactory.AutoGeneratedName(_cpObjects,
                                                                                                   "udp",
@@ -3428,6 +3681,11 @@ namespace CiscoMigration
                                                                     "Error creating a rule, missing information for Cisco destination service",
                                                                     "Service details: " + ciscoService.Protocol + " " + ciscoService.Operator + " " + ciscoService.Port + ".");
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        }
                     }
                     else if (ciscoService.Protocol == "ip")
                     {
@@ -3470,6 +3728,11 @@ namespace CiscoMigration
                                                                     "Error creating a rule, missing information for Cisco destination service",
                                                                     "Service details: " + ciscoService.Protocol + " " + ciscoService.Operator + " " + ciscoService.Port + ".");
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        }
                     }
 
                     // This may happen if both source and destination protocols are defined on the Cisco service!!!
@@ -3507,6 +3770,11 @@ namespace CiscoMigration
                                                                 "Error creating a rule, missing information for Cisco destination service",
                                                                 "Service details: icmp " + icmpType + ".");
                 cpRule.Service.Add(cpObject);
+                if (cpObject.Name.Equals("Any"))
+                {
+                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                }
             }
         }
 
@@ -3546,6 +3814,11 @@ namespace CiscoMigration
                         ApplyConversionIncidentOnCheckPointObject(cpObject, ciscoAcl);
                         AddCheckPointObject(cpObject);
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        }
                     }
                 }
                 else
@@ -3588,6 +3861,11 @@ namespace CiscoMigration
                                                                     "Error creating a rule, missing information for Cisco service object",
                                                                     "Object details: " + aclPorts.CiscoId + ".");
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        }
 
                         serviceName = CheckPointServiceObjectsFactory.AutoGeneratedName(_cpObjects,
                                                                                         ProtocolType.Udp,
@@ -3601,6 +3879,11 @@ namespace CiscoMigration
                                                                     "Error creating a rule, missing information for Cisco service object",
                                                                     "Object details: " + aclPorts.CiscoId + ".");
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        }
                         break;
 
                     case "tcp":
@@ -3617,6 +3900,11 @@ namespace CiscoMigration
                                                                     "Error creating a rule, missing information for Cisco service object",
                                                                     "Object details: " + aclPorts.CiscoId + ".");
                         cpRule.Service.Add(cpObject);
+                        if (cpObject.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount++;
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        }
                         break;
                 }
             }
@@ -3700,12 +3988,22 @@ namespace CiscoMigration
                         cpRule.ConversionComments = "Traffic allowed due to Cisco intra-interface configuration";
                         cpRule.Layer = cpLayer.Name;
                         cpRule.Action = CheckPoint_Rule.ActionType.Accept;
-                        cpRule.Source.Add(cpZone);
                         cpRule.Destination.Add(cpZone);
+                        if (cpZone.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        }
 
                         if (ciscoInterface.Shutdown)
                         {
+                            NewCiscoAnalizStatistic._disabledServicesRulesCount++;
                             cpRule.Enabled = false;
+                        }
+
+                        if (!cpRule.Track.Equals(TrackTypes.Log))
+                        {
+                            NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
                         }
 
                         cpLayer.Rules.Add(cpRule);
@@ -3735,10 +4033,19 @@ namespace CiscoMigration
                             cpRule.Layer = cpLayer.Name;
                             cpRule.Action = CheckPoint_Rule.ActionType.Accept;
                             cpRule.Destination.Add(_cpObjects.GetObject(otherCiscoInterface.CiscoId));
-
+                            if (_cpObjects.GetObject(otherCiscoInterface.CiscoId).Name.Equals("Any"))
+                            {
+                                int count = 0;
+                            }
                             if (ciscoInterface.Shutdown || otherCiscoInterface.Shutdown)
                             {
+                                NewCiscoAnalizStatistic._disabledServicesRulesCount++;
                                 cpRule.Enabled = false;
+                            }
+
+                            if (!cpRule.Track.Equals(TrackTypes.Log))
+                            {
+                                NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
                             }
 
                             ApplyConversionIncidentOnCheckPointObject(cpRule, otherCiscoInterface);
@@ -4151,6 +4458,7 @@ namespace CiscoMigration
 
             foreach (CiscoCommand command in natCommands)
             {
+                bool any_fl = true;
                 var ciscoNat = (Cisco_Nat)command;
 
                 Add_IP_as_Host(ciscoNat.Id, ciscoNat.SourceId);
@@ -4206,12 +4514,27 @@ namespace CiscoMigration
                             ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule = true;
                         }
                     }
+                    else
+                    {
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                        if (any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
+                    }
                 }
                 else   // Identity NAT ???
                 {
                     if (ciscoNat.RealInterface == CiscoCommand.Any)
                     {
                         cpNatRule.Source = _cpObjects.GetObject(CheckPointObject.Any);
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                        if(any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
                     }
                     else
                     {
@@ -4219,6 +4542,12 @@ namespace CiscoMigration
                         if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                         {
                             cpNatRule.Source = _cpObjects.GetObject(CheckPointObject.Any);
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                            if (any_fl)
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                any_fl = false;
+                            }
                             ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule = true;
                         }
                         else
@@ -4238,6 +4567,12 @@ namespace CiscoMigration
                     if (ciscoNat.MappedInterface == CiscoCommand.Any)
                     {
                         cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
+                        NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                        if (any_fl)
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                            any_fl = false;
+                        }
                     }
                     else
                     {
@@ -4245,6 +4580,12 @@ namespace CiscoMigration
                         if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                         {
                             cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                            if (any_fl)
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                any_fl = false;
+                            }
                             ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule = true;
                         }
                         else
@@ -4291,6 +4632,12 @@ namespace CiscoMigration
                         if (ciscoNat.MappedInterface == CiscoCommand.Any)
                         {
                             cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                            if (any_fl)
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                any_fl = false;
+                            }
                         }
                         else
                         {
@@ -4298,6 +4645,12 @@ namespace CiscoMigration
                             if (ciscoInterface != null && ciscoInterface.LeadsToInternet)
                             {
                                 cpNatRule.Destination = _cpObjects.GetObject(CheckPointObject.Any);
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount++;
+                                if (any_fl)
+                                {
+                                    NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                    any_fl = false;
+                                }
                                 ((CiscoNatCustomData)cpNatRule.VendorCustomData).IsNonNatSectionRule = true;
                             }
                             else
@@ -4427,6 +4780,16 @@ namespace CiscoMigration
                     else
                     {
                         cpNatMirrorRule.Source = cpNatRule.TranslatedDestination ?? cpNatRule.Destination;
+                        if(cpNatMirrorRule.Source.Name.Equals("Any") && !cpNatRule.Source.Name.Equals("Any"))
+                        {
+                            NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount++;
+                            if (any_fl)
+                            {
+                                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                                any_fl = false;
+                            }
+                        }
+
                         cpNatMirrorRule.Destination = cpNatRule.TranslatedSource ?? cpNatRule.Source;
                         if (!string.IsNullOrEmpty(ciscoNat.DestinationId))
                         {
@@ -4720,6 +5083,15 @@ namespace CiscoMigration
                                 var newRule = new CheckPoint_Rule();
 
                                 newRule.Enabled = cpRule.Enabled;
+                                //if (!cpRule.Enabled)
+                                //{
+                                //    NewCiscoAnalizStatistic._disabledServicesRulesCount++;
+                                //}
+
+                                if (!cpRule.Track.Equals(TrackTypes.Log))
+                                {
+                                    NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
+                                }
                                 newRule.Source.AddRange(cpRule.Source);
                                 newRule.Destination.Add(newRuleDest);
                                 if (serviceMatchedToo)
@@ -4731,6 +5103,10 @@ namespace CiscoMigration
                                     newRule.Service.AddRange(cpRule.Service);
                                 }
                                 newRule.Time.AddRange(cpRule.Time);
+                                if(cpRule.Time.Count > 0 && !cpRule.Time.First().Name.Equals("Any"))
+                                {
+                                    NewCiscoAnalizStatistic._timesServicesRulesCount++;
+                                }
                                 newRule.Action = cpRule.Action;
                                 newRule.Layer = subPolicy.Name;
                                 newRule.ConvertedCommandId = cpNatRule.ConvertedCommandId;
@@ -5072,7 +5448,115 @@ namespace CiscoMigration
 
         public override float Analyze()
         {
-            throw new NotImplementedException();
+            if (IsConsoleRunning)
+                Progress = new ProgressBar();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Analyzing objects ...");
+                Progress.SetProgress(20);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(20, "Analyzing objects ...");
+            _cpObjects.Initialize();   // must be first!!!
+
+            foreach (var cpObject in _cpObjects.GetPredefinedObjects())
+            {
+                _duplicateNamesLookup.Add(cpObject.Name, new DuplicateNameInfo(true));
+            }
+
+            PopulateCiscoNetworkObjects();
+            CheckCiscoInterfacesTraffic();
+            CheckCiscoInterfacesAntiSpoofing();
+            Add_Networks();
+            Add_Objects();
+            Add_NetworkGroups();
+            Add_InterfacesAndRoutes();
+            Add_Zones();
+            Add_or_Modify_InterfaceNetworkGroups();
+            Add_ServicesAndServiceGroups();
+            Add_TimeRanges();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Analyzing rules ...");
+                Progress.SetProgress(30);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(30, "Analyzing rules ...");
+            NewCiscoAnalizStatistic._Package = Add_Package();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Analyzing NAT rules ...");
+                Progress.SetProgress(40);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(40, "Analyzing NAT rules ...");
+            Add_object_NAT();
+            Add_NAT_Rules();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Creating NAT rulebase ...");
+                Progress.SetProgress(50);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(50, "Creating NAT rulebase ...");
+            CreateNATRulebase();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Creating Firewall rulebase ...");
+                Progress.SetProgress(60);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(60, "Creating Firewall rulebase ...");
+            MatchNATRulesIntoFirewallPolicy();
+
+            // This should be done here, after all objects are converted!!!
+            EnforceObjectNameValidity();
+
+            ExportManagmentReport(false);
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Analyzing using of objects ...");
+                Progress.SetProgress(65);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(65, "Analyzing using of objects ...");
+            BuildListOfUsedObjects(true);
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Analyzing Firewall rulebase ...");
+                Progress.SetProgress(70);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(70, "Analyzing Firewall rulebase ...");
+            Add_Optimized_Package();
+
+            //Unused objects
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Analyzing objects ...");
+                Progress.SetProgress(90);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(90, "Analyzing objects ...");
+            CollectOnlyUsedObjects();
+
+
+            ExportManagmentReport(true);
+
+
+            if (IsConsoleRunning)
+            {
+                Progress.SetProgress(100);
+                Progress.Dispose();
+            }
+            return 0;
         }
 
         public override Dictionary<string, int> Convert(bool convertNat)
@@ -5231,15 +5715,163 @@ namespace CiscoMigration
             return _cpNatRules.Count;
         }
 
+        public void ExportManagmentReport(bool optimazed)
+        {
+            NewCiscoAnalizStatistic._unusedNetworkObjectsCount += _cpNetworks.Count * (optimazed ? -1 : 1);
+            NewCiscoAnalizStatistic._unusedNetworkObjectsCount += _cpNetworkGroups.Count * (optimazed ? -1 : 1);
+            NewCiscoAnalizStatistic._unusedNetworkObjectsCount += _cpRanges.Count * (optimazed ? -1 : 1);
+            NewCiscoAnalizStatistic._unusedNetworkObjectsCount += _cpHosts.Count * (optimazed ? -1 : 1);
+
+            NewCiscoAnalizStatistic._unusedServicesObjectsCount += _cpTcpServices.Count * (optimazed ? -1 : 1);
+            NewCiscoAnalizStatistic._unusedServicesObjectsCount += _cpUdpServices.Count * (optimazed ? -1 : 1);
+            NewCiscoAnalizStatistic._unusedServicesObjectsCount += _cpSctpServices.Count * (optimazed ? -1 : 1);
+            NewCiscoAnalizStatistic._unusedServicesObjectsCount += _cpIcmpServices.Count * (optimazed ? -1 : 1);
+            NewCiscoAnalizStatistic._unusedServicesObjectsCount += _cpDceRpcServices.Count * (optimazed ? -1 : 1);
+            NewCiscoAnalizStatistic._unusedServicesObjectsCount += _cpOtherServices.Count * (optimazed ? -1 : 1);
+            NewCiscoAnalizStatistic._unusedServicesObjectsCount += _cpServiceGroups.Count * (optimazed ? -1 : 1);
+
+            optimazed = !optimazed;
+            if (optimazed)
+            {
+                int all = 0;
+                int so_count = 0;
+                int se_count = 0;
+                int de_count = 0;
+                foreach(var layer in NewCiscoAnalizStatistic._Package.SubPolicies)
+                {
+                    foreach(var policy in layer.Rules)
+                    {
+                        bool any_fl = true;
+                        if(policy.Destination.Count > 0 && policy.Destination.First().Name.Equals("Any"))
+                        {
+                            de_count++;
+                            if(any_fl)
+                            {
+                                all++;
+                                any_fl = false;
+                            }
+
+                        }
+                        if (policy.Source.Count > 0 && policy.Source.First().Name.Equals("Any"))
+                        {
+                            so_count++;
+                            if (any_fl)
+                            {
+                                all++;
+                                any_fl = false;
+                            }
+
+                        }
+                        if (policy.Service.Count > 0 && policy.Service.First().Name.Equals("Any"))
+                        {
+                            se_count++;
+                            if (any_fl)
+                            {
+                                all++;
+                                any_fl = false;
+                            }
+
+                        }
+                    }
+                }
+                foreach(var policy in NewCiscoAnalizStatistic._Package.ParentLayer.Rules)
+                {
+                    bool any_fl = true;
+                    if (policy.Destination.Count > 0 && policy.Destination.First().Name.Equals("Any"))
+                    {
+                        de_count++;
+                        if (any_fl)
+                        {
+                            all++;
+                            any_fl = false;
+                        }
+
+                    }
+                    if (policy.Source.Count > 0 && policy.Source.First().Name.Equals("Any"))
+                    {
+                        so_count++;
+                        if (any_fl)
+                        {
+                            all++;
+                            any_fl = false;
+                        }
+
+                    }
+                    if (policy.Service.Count > 0 && policy.Service.First().Name.Equals("Any"))
+                    {
+                        se_count++;
+                        if (any_fl)
+                        {
+                            all++;
+                            any_fl = false;
+                        }
+
+                    }
+                }
+                foreach(var policy in _cpPreorderedNatRules)
+                {
+                    bool any_fl = true;
+                    if (policy.Destination != null && policy.Destination.Name.Equals("Any"))
+                    {
+                        de_count++;
+                        if (any_fl)
+                        {
+                            all++;
+                            any_fl = false;
+                        }
+
+                    }
+                    if (policy.Source != null && policy.Source.Name.Equals("Any"))
+                    {
+                        so_count++;
+                        if (any_fl)
+                        {
+                            all++;
+                            any_fl = false;
+                        }
+
+                    }
+                    if (policy.Service != null && policy.Service.Name.Equals("Any"))
+                    {
+                        se_count++;
+                        if (any_fl)
+                        {
+                            all++;
+                            any_fl = false;
+                        }
+
+                    }
+                }
+                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount = de_count;
+                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount = se_count;
+                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount = so_count;
+                NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount = all;
+                NewCiscoAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
+            }
+            else
+            {
+                if (_cpPackages.Count > 0)
+                {
+                    this.OptimizationPotential = RulesInConvertedPackage() > 0 ? ((RulesInConvertedPackage() - RulesInConvertedOptimizedPackage()) * 100 / (float)RulesInConvertedPackage()) : 0;
+                    
+                    ExportManagmentReport();
+                }
+
+            }
+        }
+
         public override void ExportManagmentReport()
         {
-            CiscoAnalizStatistic ciscoAnalizStatistic = new CiscoAnalizStatistic();
-            ciscoAnalizStatistic.CalculateRules(new List<CheckPoint_Package> { _cpPackages[0]}, new List<CheckPoint_NAT_Rule>());
-            ciscoAnalizStatistic.CalculateNetworks(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges);
-            ciscoAnalizStatistic.CalculateServices(_cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
+            TotalRules = RulesInConvertedPackage();
+            NewCiscoAnalizStatistic._totalServicesRulesCount = RulesInConvertedPackage();
+            NewCiscoAnalizStatistic._totalServicesRulesOptCount = RulesInConvertedOptimizedPackage();
 
-            var potentialCount = this.RulesInConvertedPackage() - this.RulesInConvertedOptimizedPackage();
-
+            NewCiscoAnalizStatistic._totalFileRules += NewCiscoAnalizStatistic._totalServicesRulesCount;
+            NewCiscoAnalizStatistic._totalFileRulesOpt += NewCiscoAnalizStatistic._totalServicesRulesOptCount;
+            var potentialCount = NewCiscoAnalizStatistic._totalServicesRulesCount - NewCiscoAnalizStatistic._totalServicesRulesOptCount;
+            var potentialPersent = NewCiscoAnalizStatistic._totalServicesRulesCount > 0 ? (potentialCount * 100 / (float)NewCiscoAnalizStatistic._totalServicesRulesCount) : 0;
+            NewCiscoAnalizStatistic._fullrullPackageCount += NewCiscoAnalizStatistic._fullrullPackcount;
+            NewCiscoAnalizStatistic._totalrullPackageCount += NewCiscoAnalizStatistic._totalServicesRulesCount;
             using (var file = new StreamWriter(VendorManagmentReportHtmlFile))
             {
                 file.WriteLine("<html>");
@@ -5264,43 +5896,39 @@ namespace CiscoMigration
 
                 file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
                 file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.TotalNetworkObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._totalNetworkObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.TotalNetworkObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.UnusedNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._unusedNetworkObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.UnusedNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._unusedNetworkObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.DuplicateNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._duplicateNetworkObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.DuplicateNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Network Groups</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.NestedNetworkGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._nestedNetworkGroupsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.NestedNetworkGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.TotalNetworkObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._totalNetworkObjectsCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.TotalNetworkObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.UnusedNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._unusedNetworkObjectsCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.UnusedNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewCiscoAnalizStatistic._unusedNetworkObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.DuplicateNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._duplicateNetworkObjectsCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.DuplicateNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Network Groups</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.NestedNetworkGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._nestedNetworkGroupsCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.NestedNetworkGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
                 file.WriteLine("</table>");
 
                 file.WriteLine("<h3>SERVICES DATABASE</h3>");
                 file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
                 file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.TotalServicesObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._totalServicesObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.TotalServicesObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.UnusedServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._unusedServicesObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.UnusedServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._unusedServicesObjectsCount > 0 ? "Consider deleting these objects." : "" )}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.DuplicateServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._duplicateServicesObjectsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.DuplicateServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Services Groups</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.NestedServicesGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._nestedServicesGroupsCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.NestedServicesGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.TotalServicesObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._totalServicesObjectsCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.TotalServicesObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.UnusedServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._unusedServicesObjectsCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.UnusedServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewCiscoAnalizStatistic._unusedServicesObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.DuplicateServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._duplicateServicesObjectsCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.DuplicateServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Services Groups</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.NestedServicesGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._nestedServicesGroupsCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.NestedServicesGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
                 file.WriteLine("</table>");
 
                 file.WriteLine("<h3>POLICY ANALYSIS</h3>");
                 file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
                 file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.TotalServicesRulesPercent, 100, 100)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._totalServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.TotalServicesRulesPercent}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Rules utilizing \"Any\"</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.RulesServicesutilizingServicesAnyPercent, 5, 15)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._rulesServicesutilizingServicesAnyCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.RulesServicesutilizingServicesAnyPercent.ToString("F")}%</td> <td style='font-size: 14px;'>- ANY in Source: {ciscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Destination: {ciscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount} </td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Service: {ciscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Disabled Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.DisabledServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._disabledServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.DisabledServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(ciscoAnalizStatistic._disabledServicesRulesCount > 0 ? "Check if rules are required." : "")}</tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unnamed Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.UnnamedServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._unnamedServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.UnnamedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(ciscoAnalizStatistic._unnamedServicesRulesCount > 0 ? "Naming rules helps log analysis." : "")}</tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Times Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.TimesServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._timesServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.TimesServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Non Logging Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.NonServicesLoggingServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._nonServicesLoggingServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.NonServicesLoggingServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'> {(ciscoAnalizStatistic._nonServicesLoggingServicesRulesCount > 0 ? "Enable logging for these rules for better tracking and change management." : "")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Stealth Rule</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._stealthServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._stealthServicesRuleCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.StealthServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._stealthServicesRuleCount > 0 ? "Found" : "Consider adding stealth rule near the top of the policy after necessary administrative rules denies all traffic to the <a href=\'https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewsolutiondetails=&solutionid=sk102812\'>firewall</a>")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Cleanup Rule</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._cleanupServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._cleanupServicesRuleCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.CleanupServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._cleanupServicesRuleCount > 0 ? "Found" : "")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Uncommented Rules</td> <td style='font-size: 14px;'>{ChoosePict(ciscoAnalizStatistic.UncommentedServicesRulesPercent, 25, 100)}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic._uncommentedServicesRulesCount}</td> <td style='font-size: 14px;'>{ciscoAnalizStatistic.UncommentedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(ciscoAnalizStatistic._uncommentedServicesRulesCount > 0 ? "Comment rules for better tracking and change management compliance." : "")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Optimization Potential</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? HtmlGoodImageTagManagerReport : HtmlAttentionImageTagManagerReport)}</td> <td style='font-size: 14px;'>{potentialCount}</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? 100 * potentialCount / this.RulesInConvertedPackage() : 0).ToString("F")}%</td> <td style='font-size: 14px;'>{GetOptPhraze(potentialCount > 0 ? 100 * potentialCount / this.RulesInConvertedPackage() : 0)}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.TotalServicesRulesPercent, 100, 100)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._totalServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.TotalServicesRulesPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Rules utilizing \"Any\"</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.RulesServicesutilizingServicesAnyPercent, 5, 15)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._unrulesServicesutilizingServicesAnyCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.RulesServicesutilizingServicesAnyPercent.ToString("F")}%</td> <td style='font-size: 14px;'>- ANY in Source: {NewCiscoAnalizStatistic._unrulesServicesutilizingServicesAnySourceCount}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Destination: {NewCiscoAnalizStatistic._unrulesServicesutilizingServicesAnyDestinationCount} </td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Service: {NewCiscoAnalizStatistic._unrulesServicesutilizingServicesAnyServiceCount}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Disabled Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.DisabledServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._undisabledServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.DisabledServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(NewCiscoAnalizStatistic._disabledServicesRulesCount > 0 ? "Check if rules are required." : "")}</tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Times Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.TimesServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._untimesServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.TimesServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Non Logging Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.NonServicesLoggingServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.NonServicesLoggingServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'> {(NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount > 0 ? "Enable logging for these rules for better tracking and change management." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Cleanup Rule</td> <td style='font-size: 14px;'>{(NewCiscoAnalizStatistic._cleanupServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._cleanupServicesRuleCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.CleanupServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewCiscoAnalizStatistic._cleanupServicesRuleCount > 0 ? "Found" : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Uncommented Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.UncommentedServicesRulesPercent, 25, 100)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._uncommentedServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.UncommentedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewCiscoAnalizStatistic._uncommentedServicesRulesCount > 0 ? "Comment rules for better tracking and change management compliance." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Optimization Potential</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? HtmlGoodImageTagManagerReport : HtmlAttentionImageTagManagerReport)}</td> <td style='font-size: 14px;'>{potentialCount}</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? potentialPersent : 0).ToString("F")}%</td> <td style='font-size: 14px;'>{GetOptPhraze(potentialCount > 0 ? (int)potentialPersent : 0)}</td></tr>");
                 file.WriteLine("</table>");
                 file.WriteLine("</body>");
                 file.WriteLine("</html>");
             }
         }
-
-        
 
         public override void ExportConfigurationAsHtml()
         {
@@ -5925,5 +6553,146 @@ namespace CiscoMigration
             return Vendor.CiscoASA.ToString();
         }
         #endregion
+    }
+}
+
+public class NewAnalizStatistic
+{
+    public CheckPoint_Package _Package;
+    public int _optPackageCount = 0;
+    public int _fullrullPackcount = 0;
+    public int _fullrullPackageCount = 0;
+    public int _totalrullPackageCount = 0;
+    public int _totalNetworkObjectsCount = 0;
+    public int _unusedNetworkObjectsCount = 0;
+    public int _duplicateNetworkObjectsCount = 0;
+    public int _nestedNetworkGroupsCount = 0;
+    public int _nestedNetworkGroupsCountAll = 0;
+
+    public int _totalServicesObjectsCount = 0;
+    public int _unusedServicesObjectsCount = 0;
+    public int _duplicateServicesObjectsCount = 0;
+    public int _nestedServicesGroupsCount = 0;
+    public int _nestedServicesGroupsCountAll = 0;
+
+    public int _totalServicesRulesCount = 0;
+    public int _totalServicesRulesOptCount = 0;
+    public int _rulesServicesutilizingServicesAnyCount = 0;
+    public int _rulesServicesutilizingServicesAnySourceCount = 0;
+    public int _rulesServicesutilizingServicesAnyDestinationCount = 0;
+    public int _rulesServicesutilizingServicesAnyServiceCount = 0;
+    public int _unrulesServicesutilizingServicesAnyCount = 0;
+    public int _unrulesServicesutilizingServicesAnySourceCount = 0;
+    public int _unrulesServicesutilizingServicesAnyDestinationCount = 0;
+    public int _unrulesServicesutilizingServicesAnyServiceCount = 0;
+    public int _disabledServicesRulesCount = 0;
+    public int _undisabledServicesRulesCount = 0;
+    public int _unnamedServicesRulesCount = 0;
+    public int _timesServicesRulesCount = 0;
+    public int _untimesServicesRulesCount = 0;
+    public int _nonServicesLoggingServicesRulesCount = 0;
+    public int _stealthServicesRuleCount = 0;
+    public int _cleanupServicesRuleCount = 0;
+    public int _uncommentedServicesRulesCount = 0;
+
+    public int _totalFileRules = 0;
+    public int _totalFileRulesOpt = 0;
+
+
+    public int TotalNetworkObjectsPercent { get { return 100; } }
+    public float UnusedNetworkObjectsPercent { get { return _totalNetworkObjectsCount > 0 ? ((float)_unusedNetworkObjectsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }
+    public float DuplicateNetworkObjectsPercent { get { return _totalNetworkObjectsCount > 0 ? ((float)_duplicateNetworkObjectsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }
+    public float NestedNetworkGroupsPercent { get { return _nestedNetworkGroupsCountAll > 0 ? ((float)_nestedNetworkGroupsCount / (float)_nestedNetworkGroupsCountAll) * 100 : 0; } }
+
+    public float TotalServicesObjectsPercent { get { return 100; } }
+    public float UnusedServicesObjectsPercent { get { return _totalServicesObjectsCount > 0 ? ((float)_unusedServicesObjectsCount / (float)_totalServicesObjectsCount) * 100 : 0; } }
+    public float DuplicateServicesObjectsPercent { get { return _totalServicesObjectsCount > 0 ? ((float)_duplicateServicesObjectsCount / (float)_totalServicesObjectsCount) * 100 : 0; } }
+    public float NestedServicesGroupsPercent { get { return _nestedServicesGroupsCountAll > 0 ? ((float)_nestedServicesGroupsCount / (float)_nestedServicesGroupsCountAll) * 100 : 0; } }
+
+    public float TotalServicesRulesPercent { get { return 100; } }
+    public float RulesServicesutilizingServicesAnyPercent { get { return _totalServicesRulesCount > 0 ? ((float)_unrulesServicesutilizingServicesAnyCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float DisabledServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_undisabledServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float UnnamedServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_unnamedServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float TimesServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_untimesServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float NonServicesLoggingServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_nonServicesLoggingServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float StealthServicesRulePercent { get { return _totalServicesRulesCount > 0 ? ((float)_stealthServicesRuleCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float CleanupServicesRulePercent { get { return _totalServicesRulesCount > 0 ? ((float)_cleanupServicesRuleCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+    public float UncommentedServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_uncommentedServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+
+    public NewAnalizStatistic(int fullpackcount, int totalpack)
+    {
+        _fullrullPackageCount = fullpackcount;
+        _totalrullPackageCount = totalpack;
+    }
+
+    public void Flush()
+    {
+        _fullrullPackcount = 0;
+        _totalServicesRulesCount = 0;
+        _rulesServicesutilizingServicesAnyCount = 0;
+        _rulesServicesutilizingServicesAnySourceCount = 0;
+        _rulesServicesutilizingServicesAnyDestinationCount = 0;
+        _rulesServicesutilizingServicesAnyServiceCount = 0;
+        _disabledServicesRulesCount = 0;
+        _unnamedServicesRulesCount = 0;
+        _timesServicesRulesCount = 0;
+        _nonServicesLoggingServicesRulesCount = 0;
+        _stealthServicesRuleCount = 0;
+        _cleanupServicesRuleCount = 0;
+        _uncommentedServicesRulesCount = 0;
+    }
+
+    public void CalculateCorrectAll(List<CheckPoint_Network> _cpNetworks,
+                                               List<CheckPoint_NetworkGroup> _cpNetworkGroups,
+                                               List<CheckPoint_Host> _cpHosts,
+                                               List<CheckPoint_Range> _cpRanges,
+                                               List<CheckPoint_TcpService> _cpTcpServices,
+                                               List<CheckPoint_UdpService> _cpUdpServices,
+                                               List<CheckPoint_SctpService> _cpSctpServices,
+                                               List<CheckPoint_IcmpService> _cpIcmpServices,
+                                               List<CheckPoint_DceRpcService> _cpDceRpcServices,
+                                               List<CheckPoint_OtherService> _cpOtherServices,
+                                               List<CheckPoint_ServiceGroup> _cpServiceGroups)
+    {
+        _unusedNetworkObjectsCount = _unusedNetworkObjectsCount >= 0 ? _unusedNetworkObjectsCount : 0;
+        _unusedServicesObjectsCount = _unusedServicesObjectsCount >= 0 ? _unusedServicesObjectsCount : 0;
+        _uncommentedServicesRulesCount = _totalServicesRulesCount - _uncommentedServicesRulesCount;
+        _undisabledServicesRulesCount = _disabledServicesRulesCount;
+        _unrulesServicesutilizingServicesAnyCount = _rulesServicesutilizingServicesAnyCount;
+        _unrulesServicesutilizingServicesAnySourceCount = _rulesServicesutilizingServicesAnySourceCount;
+        _unrulesServicesutilizingServicesAnyDestinationCount = _rulesServicesutilizingServicesAnyDestinationCount;
+        _unrulesServicesutilizingServicesAnyServiceCount = _rulesServicesutilizingServicesAnyServiceCount;
+        _untimesServicesRulesCount = _timesServicesRulesCount;
+    _totalNetworkObjectsCount = _cpNetworks.Count + _cpHosts.Count + _cpNetworkGroups.Count + _cpRanges.Count;
+
+        //DUPLICATE CALCULATION
+        foreach (var item in _cpNetworks)
+        {
+            if (_cpNetworks.Where(nt => nt.Netmask == item.Netmask & nt.Subnet == nt.Subnet).Count() > 1) { _duplicateNetworkObjectsCount++; }
+        }
+        foreach (var item in _cpHosts)
+        {
+            if (_cpHosts.Where(nt => nt.IpAddress == item.IpAddress).Count() > 1) { _duplicateNetworkObjectsCount++; }
+        }
+        foreach (var item in _cpRanges)
+        {
+            if (_cpRanges.Where(nt => nt.RangeFrom == item.RangeFrom & nt.RangeTo == nt.RangeTo).Count() > 1) { _duplicateNetworkObjectsCount++; }
+        }
+        //
+        List<string> vs = new List<string>();
+        foreach (var item in _cpNetworkGroups) { vs.AddRange(item.Members); }
+        var count = _nestedNetworkGroupsCountAll = vs.Count;
+        _nestedNetworkGroupsCount = count - vs.Distinct().Count();
+        /////////////////////////////////
+        _totalServicesObjectsCount = _cpTcpServices.Count + _cpUdpServices.Count + _cpSctpServices.Count + _cpIcmpServices.Count + _cpDceRpcServices.Count + _cpOtherServices.Count + _cpServiceGroups.Count;
+        //
+        List<string> allServiceNames = new List<string>();
+        _duplicateServicesObjectsCount += _cpTcpServices.Count - _cpTcpServices.Select(n => n.Port).Distinct().Count();
+        _duplicateServicesObjectsCount += _cpUdpServices.Count - _cpUdpServices.Select(n => n.Port).Distinct().Count();
+        //
+        vs = new List<string>();
+        foreach (var item in _cpServiceGroups) { vs.AddRange(item.Members); }
+        count = _nestedServicesGroupsCountAll = vs.Count;
+        _nestedServicesGroupsCount = count - vs.Distinct().Count();
     }
 }
