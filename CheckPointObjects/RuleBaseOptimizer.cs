@@ -232,12 +232,29 @@ namespace CheckPointObjects
             List<string> comments_parts = commentToProcess.Split(' ').ToList();
             Regex regex = new Regex(@"[0-9]+[)]");
 
+            //cisco and fortigate
             if (regex.IsMatch(comments_parts[0]))
                 foreach (string part in comments_parts)
                 {
                     if (regex.IsMatch(part))
                         commentBuilder += " " + part.Remove(part.Length - 1);
                 }
+            //FG
+            else if (comments_parts[0].Equals("Matched") && comments_parts[1].Equals("rule"))
+            {
+                commentBuilder = "Matched rule(s)";
+                Regex regexNumbers = new Regex(@"[0-9]");
+                foreach (string word in comments_parts)
+                {
+                    if (regexNumbers.IsMatch(word))
+                    {
+                        if (commentBuilder.Equals("Matched rule(s)"))
+                            commentBuilder += " " + word;
+                        else
+                            commentBuilder += ", " + word;
+                    }
+                }
+            }
             else
                 return commentToProcess;
 
