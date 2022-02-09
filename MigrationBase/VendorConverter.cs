@@ -198,12 +198,22 @@ namespace MigrationBase
             // HTML files
             VendorHtmlFile = _targetFolder + "\\" + _vendorFileName + ".html";
             VendorManagmentReportHtmlFile = $"{_targetFolder}\\{_vendorFileName}_managment_report.html";
-            WarningsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_warnings.html";
-            ErrorsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_errors.html";
             ObjectsHtmlFile = _targetFolder + "\\" + _vendorFileName + "_objects.html";
             PolicyHtmlFile = _targetFolder + "\\" + _policyPackageName + ".html";
             PolicyOptimizedHtmlFile = _targetFolder + "\\" + _policyPackageOptimizedName + ".html";
             NatHtmlFile = _targetFolder + "\\" + _vendorFileName + "_NAT.html";
+
+            //check on exist warn and err reports
+            string warn = _targetFolder + "\\" + _vendorFileName + "_warnings.html";
+            if (File.Exists(warn))
+            {
+                WarningsHtmlFile = warn;
+            }
+            string err = _targetFolder + "\\" + _vendorFileName + "_errors.html";
+            if (File.Exists(warn))
+            {
+                ErrorsHtmlFile = err;
+            }
         }
 
         public void ChangeTargetFolder(string targetFolderNew, string targetFileNameNew)
@@ -897,23 +907,8 @@ namespace MigrationBase
 
         protected void CreateObjectsScript()
         {
-
-            using (var file = new StreamWriter(ObjectsScriptFile, false))
-            {
-                file.WriteLine(CLIScriptBuilder.GenerateScriptHeader(_toolVersion, true));
-                file.WriteLine(CLIScriptBuilder.GenerateRunCommandScript("failed_objects.txt"));
-                file.WriteLine(CLIScriptBuilder.GenerateLoginScript(_domainName, "failed_objects.txt"));
-
-                if (LDAP_Account_Unit != null && !LDAP_Account_Unit.Trim().Equals(""))
-                {
-                    file.WriteLine("LDAPAU=" + LDAP_Account_Unit);
-                    file.WriteLine("NUSE=`mgmt_cli show generic-objects name $LDAPAU -s id.txt |grep \"total:\" | cut -f2 -d\":\" | cut -c 2,`");
-                    file.WriteLine(Environment.NewLine);
-                }
-
-                file.WriteLine(CLIScriptBuilder.GenerateDiagnosticsCommandScript("SmartMove_Create_Objects", GetVendorName()));
-
-                int totalObjectsCount = _cpDomains.Count +
+            CheckPoint_NetworkGroup commonNetGroupAllInternal = _cpNetworkGroups.Where(i => i.Name == "all_internal").FirstOrDefault();
+            int totalObjectsCount = _cpDomains.Count +
                                         _cpHosts.Count +
                                         _cpNetworks.Count +
                                         _cpRanges.Count +
@@ -933,10 +928,29 @@ namespace MigrationBase
                                         _cpTimeGroups.Count +
                                         _cpAccessRoles.Count;
 
-                if (_cpSimpleGateway != null)
+            if (_cpSimpleGateway != null)
+            {
+                ++totalObjectsCount;
+            }
+
+            if (totalObjectsCount == 1 && _cpNetworkGroups.Contains(commonNetGroupAllInternal))
+                return;
+
+            using (var file = new StreamWriter(ObjectsScriptFile, false))
+            {
+                file.WriteLine(CLIScriptBuilder.GenerateScriptHeader(_toolVersion, true));
+                file.WriteLine(CLIScriptBuilder.GenerateRunCommandScript("failed_objects.txt"));
+                file.WriteLine(CLIScriptBuilder.GenerateLoginScript(_domainName, "failed_objects.txt"));
+
+                if (LDAP_Account_Unit != null && !LDAP_Account_Unit.Trim().Equals(""))
                 {
-                    ++totalObjectsCount;
+                    file.WriteLine("LDAPAU=" + LDAP_Account_Unit);
+                    file.WriteLine("NUSE=`mgmt_cli show generic-objects name $LDAPAU -s id.txt |grep \"total:\" | cut -f2 -d\":\" | cut -c 2,`");
+                    file.WriteLine(Environment.NewLine);
                 }
+
+                file.WriteLine(CLIScriptBuilder.GenerateDiagnosticsCommandScript("SmartMove_Create_Objects", GetVendorName()));
+
 
                 if (totalObjectsCount > 0)
                 {
@@ -1414,9 +1428,11 @@ namespace MigrationBase
         {
             const int publishLatency = 100;
             int packageNumber = 0;
-
             foreach (CheckPoint_Package package in _cpPackages)
             {
+                if (package.SubPolicies.Count == 0 && (package.ParentLayer.Rules.Count == 0 || (package.ParentLayer.Rules.Count == 1 && package.ParentLayer.Rules[0].Name == "Cleanup rule")))
+                    continue;
+
                 validatePackage(package);
                 ++packageNumber;
 

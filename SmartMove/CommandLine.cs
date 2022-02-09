@@ -125,7 +125,7 @@ namespace SmartMove
             Console.WriteLine("\t" + "-d | --domain" + "\t\t" + "domain name (for CiscoASA, FirePower, JuniperSRX, JuniperSSG only)");
             Console.WriteLine("\t" + "-n | --nat" + "\t\t" + @"(""-n false"" |"" -n true"" [default])  convert NAT configuration [enabled by default]");
             Console.WriteLine("\t" + "-l | --ldap" + "\t\t" + "LDAP Account unit for convert user configuration option (for FortiNet, PaloAlto and Panorama only)");
-            Console.WriteLine("\t" + "-k | --skip" + "\t\t" + @"(""-k false"" |"" -k true"" [default]) do not import unused objects (for FortiNet, PaloAlto, CiscoASA and Panorama only) [enabled by default]");
+            Console.WriteLine("\t" + "-k | --skip" + "\t\t" + @"(""-k false"" |"" -k true"" [default]) do not import unused objects (for FortiNet, Firepower, PaloAlto, CiscoASA, Panorama, JuniperSRX and JuniperSSG only) [enabled by default]");
             Console.WriteLine("\t" + "-f | --format" + "\t\t" + "format of the output file (JSON[default], TEXT)");
             Console.WriteLine("\t" + "-i | --interactive" + "\t" + @"-i false | -i true [default] Interactive mode provides a better user experience.Disable when automation is required[enabled by default]");
             Console.WriteLine("\t" + "-a | --analyzer" + "\t\t" + @"mode for analyze package");
@@ -143,7 +143,7 @@ namespace SmartMove
         {
             var fullVendorsList = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FortiNet", "PaloAlto", "Panorama", "FirePower" }; //all vendors
             var vendorsList1 = new List<string> { "CiscoASA", "JuniperSRX", "JuniperSSG", "FirePower" };                                        //option -d
-            var vendorsList2 = new List<string> { "FortiNet", "PaloAlto", "Panorama", "CiscoASA" };                                             //option -k
+            var vendorsList2 = new List<string> { "FortiNet", "PaloAlto", "Panorama", "CiscoASA", "JuniperSRX", "JuniperSSG", "FirePower" };    //option -k
             if (String.IsNullOrEmpty(commandLine.Vendor))
             {
                 Console.WriteLine("Option -v is mandatory but not specified.", MessageTypes.Error);
@@ -787,13 +787,17 @@ namespace SmartMove
                     vendorConverter = converter;
                     break;
                 case "FirePower":
-                    vendorConverter = new CiscoConverter()
+                    CiscoConverter fpConverter =  new CiscoConverter()
                     {
                         isUsingForFirePower = true
                     };
+                    fpConverter.SkipUnusedObjects = commandLine.DontImportUnusedObjects;
+                    vendorConverter = fpConverter;
                     break;
                 case "JuniperSRX":
-                    vendorConverter = new JuniperConverter();
+                    JuniperConverter juniperConverter = new JuniperConverter();
+                    juniperConverter.SkipUnusedObjects = commandLine.DontImportUnusedObjects;
+                    vendorConverter = juniperConverter;
                     break;
                 case "JuniperSSG":
                     vendorConverter = new ScreenOSConverter();
@@ -1218,14 +1222,19 @@ namespace SmartMove
                 case "FirePower":
                     vendorConverter = new CiscoConverter()
                     {
-                        isUsingForFirePower = true
+                        isUsingForFirePower = true,
+                        SkipUnusedObjects = commandLine.DontImportUnusedObjects
                     };
                     break;
                 case "JuniperSRX":
-                    vendorConverter = new JuniperConverter();
+                    JuniperConverter juniperConverter = new JuniperConverter();
+                    juniperConverter.SkipUnusedObjects = commandLine.DontImportUnusedObjects;
+                    vendorConverter = juniperConverter;
                     break;
                 case "JuniperSSG":
-                    vendorConverter = new ScreenOSConverter();
+                    ScreenOSConverter screenOSConverter = new ScreenOSConverter();
+                    screenOSConverter.SkipUnusedObjects = commandLine.DontImportUnusedObjects;
+                    vendorConverter = screenOSConverter;
                     break;
                 case "FortiNet":
                     FortiGateConverter fgConverter = new FortiGateConverter();

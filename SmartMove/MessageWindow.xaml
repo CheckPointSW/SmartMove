@@ -85,10 +85,22 @@
                             </Style>
                         </Image.Style>
                     </Image>
-                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="0,20,20,20">
+                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="0,0,0,70">
+                        <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Header}"/>
+                    </TextBlock>
+                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="10,54,0,21" FontSize="12" Foreground="#FF7C7C7C">
+                        <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Columns}"/>
+                    </TextBlock>
+                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="85,54,0,21" FontSize="12">
                         <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Message}"/>
                         <Hyperlink NavigateUri="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageLinkValue}" Click="Link_OnClick">
                             <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageLinkText}"/>
+                        </Hyperlink>
+                    </TextBlock>
+                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="0,32,0,43" FontSize="12">
+                        <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageWoColumns}"/>
+                        <Hyperlink NavigateUri="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageLinkValueClean}" Click="Link_OnClick">
+                            <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageLinkTextClean}"/>
                         </Hyperlink>
                     </TextBlock>
                 </Grid>
