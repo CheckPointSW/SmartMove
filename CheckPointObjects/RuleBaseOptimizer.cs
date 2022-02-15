@@ -232,6 +232,8 @@ namespace CheckPointObjects
             List<string> comments_parts = commentToProcess.Split(' ').ToList();
             Regex regex = new Regex(@"[0-9]+[)]");
 
+            if (comments_parts.Count > 0) { 
+
             //cisco and fortigate
             if (regex.IsMatch(comments_parts[0]))
                 foreach (string part in comments_parts)
@@ -255,8 +257,22 @@ namespace CheckPointObjects
                     }
                 }
             }
+            //Panorama
+            else if (comments_parts[0].Equals("Matched") && comments_parts[1].Equals("rule:"))
+            {
+                commentBuilder = "Matched rule(s)";
+                for (int i = 2; i < comments_parts.Count; ++i)
+                {
+                    if (commentBuilder.Equals("Matched rule(s)"))
+                        commentBuilder += " " + comments_parts[i];
+                    else
+                        commentBuilder += ", " + comments_parts[i];
+                }
+
+            }
             else
                 return commentToProcess;
+            }
 
             return commentBuilder;
         }
