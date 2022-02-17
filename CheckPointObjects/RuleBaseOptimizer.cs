@@ -229,10 +229,17 @@ namespace CheckPointObjects
         {
             string commentBuilder = "optimized of access-list";
             List<string> rules = new List<string>();
-            List<string> comments_parts = commentToProcess.Split(' ').ToList();
+            List<string> comments_parts = commentToProcess.Trim().Split(' ').ToList();
             Regex regex = new Regex(@"[0-9]+[)]");
 
-            //cisco and fortigate
+            //remove empty strings and '_' chars
+            comments_parts = comments_parts.Where(s => !string.IsNullOrWhiteSpace(s) && !s.Equals("_")).Distinct().ToList();
+
+            //if there is nothing to merge return empty comment
+            if (comments_parts.Count == 0)
+                return "";
+
+            //cisco and firepower (the same code)
             if (regex.IsMatch(comments_parts[0]))
                 foreach (string part in comments_parts)
                 {
@@ -240,7 +247,7 @@ namespace CheckPointObjects
                         commentBuilder += " " + part.Remove(part.Length - 1);
                 }
             //FG
-            else if (comments_parts[0].Equals("Matched") && comments_parts[1].Equals("rule"))
+            else if (comments_parts[0].Equals("Matched") && (comments_parts[1].Equals("rule") || comments_parts[1].Equals("rule:")))
             {
                 commentBuilder = "Matched rule(s)";
                 Regex regexNumbers = new Regex(@"[0-9]");
@@ -256,7 +263,7 @@ namespace CheckPointObjects
                 }
             }
             else
-                return commentToProcess;
+                return commentToProcess.Trim();
 
             return commentBuilder;
         }
