@@ -2263,6 +2263,7 @@ namespace JuniperMigration
             cpRule.Comments = juniperRule.Description;
             cpRule.Layer = cpLayerName;
             cpRule.Enabled = !juniperRule.Inactive;
+            cpRule.ConversionComments = "Matched rule: " + juniperRule.Name;
 
             ApplyConversionIncidentOnCheckPointObject(cpRule, juniperRule);
 
