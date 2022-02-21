@@ -246,7 +246,7 @@ namespace CheckPointObjects
                     if (regex.IsMatch(part))
                         commentBuilder += " " + part.Remove(part.Length - 1);
                 }
-            //FG
+            //FG and Juniper
             else if (comments_parts[0].Equals("Matched") && (comments_parts[1].Equals("rule") || comments_parts[1].Equals("rule:")))
             {
                 commentBuilder = "Matched rule(s)";
@@ -265,7 +265,7 @@ namespace CheckPointObjects
             else
                 return commentToProcess.Trim();
 
-            return commentBuilder;
+            return commentBuilder == "Matched rule(s)" ? "" : commentBuilder;
         }
     }
 }
