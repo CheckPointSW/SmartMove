@@ -155,6 +155,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0" Text="Select the vendor for conversion:" Style="{StaticResource NormalTextBloclStyle}" FontSize="12" Foreground="#FF7C7C7C"/>
                             <ComboBox x:Name="VendorSelector" Grid.Row="1" Margin="0,6,0,0"
@@ -224,6 +225,9 @@
                             </Grid>
                             <CheckBox x:Name="SkipUnusedObjects" Grid.Row="13" Content="Do not import unused objects"
                                       IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=SkipUnusedObjectsConversion, Mode=TwoWay}"
+                                      Margin="0,15,0,0" Background="Transparent" Focusable="False"/>
+                            <CheckBox x:Name="CreateServiceGroupsConf" Grid.Row="14" Content="Import service groups"
+                                      IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=CreateServiceGroupsConfiguration, Mode=TwoWay}"
                                       Margin="0,15,0,0" Background="Transparent" Focusable="False"/>
                             <Grid Grid.Row="15" Margin="0,30,0,0" Background="Transparent" Focusable="False">
                                 <Grid.ColumnDefinitions>
