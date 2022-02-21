@@ -312,6 +312,7 @@ namespace SmartMove
             LDAPAccountUnitBlock.Visibility = Visibility.Collapsed;
             CreateServiceGroupsConf.Visibility = Visibility.Collapsed;
             ConvertUserConfiguration = false;
+            //Create service groups option
             CreateServiceGroupsConfiguration = false;
 
 
@@ -320,29 +321,29 @@ namespace SmartMove
                 case Vendor.CiscoASA:
                     ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
-                    CreateServiceGroupsConf.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.FirePower:
                     ConfigurationFileLabel = SupportedVendors.FirepowerConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
-                    CreateServiceGroupsConf.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.JuniperJunosOS:
                     ConfigurationFileLabel = SupportedVendors.JuniperConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
-                    CreateServiceGroupsConf.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.JuniperScreenOS:
                     ConfigurationFileLabel = SupportedVendors.NetScreenConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
-                    CreateServiceGroupsConf.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.FortiGate:
                     ConfigurationFileLabel = SupportedVendors.FortiGateConfigurationFileLabel;
                     DomainNameTB.Visibility = Visibility.Visible;
                     DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
-                    CreateServiceGroupsConf.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.PaloAlto:
@@ -350,7 +351,7 @@ namespace SmartMove
                     DomainNameTB.Visibility = Visibility.Visible;
                     DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
-                    CreateServiceGroupsConf.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.PaloAltoPanorama:
@@ -358,7 +359,7 @@ namespace SmartMove
                     DomainNameTB.Visibility = Visibility.Visible;
                     DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
-                    CreateServiceGroupsConf.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
             }
