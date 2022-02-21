@@ -149,6 +149,19 @@ namespace SmartMove
 
         #endregion
 
+        #region CreateServiceGroupsConfiguration
+
+        public bool CreateServiceGroupsConfiguration
+        {
+            get { return (bool)GetValue(CreateServiceGroupsConfigurationProperty); }
+            set { SetValue(CreateServiceGroupsConfigurationProperty, value); }
+        }
+
+        public static readonly DependencyProperty CreateServiceGroupsConfigurationProperty =
+            DependencyProperty.Register("CreateServiceGroupsConfigurationProperty", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+
+        #endregion
+
         #region ExportManagmentReport
         public bool ExportManagmentReport
         {
@@ -297,32 +310,40 @@ namespace SmartMove
             ConvertUserConf.Visibility = Visibility.Collapsed;
             LDAPAccountUnitTB.Visibility = Visibility.Collapsed;
             LDAPAccountUnitBlock.Visibility = Visibility.Collapsed;
-            SkipUnusedObjects.Visibility = Visibility.Collapsed;
+            CreateServiceGroupsConf.Visibility = Visibility.Collapsed;
             ConvertUserConfiguration = false;
+            //Create service groups option
+            CreateServiceGroupsConfiguration = false;
+
 
             switch (_supportedVendors.SelectedVendor)
             {
                 case Vendor.CiscoASA:
                     ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.FirePower:
                     ConfigurationFileLabel = SupportedVendors.FirepowerConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.JuniperJunosOS:
                     ConfigurationFileLabel = SupportedVendors.JuniperConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.JuniperScreenOS:
                     ConfigurationFileLabel = SupportedVendors.NetScreenConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.FortiGate:
                     ConfigurationFileLabel = SupportedVendors.FortiGateConfigurationFileLabel;
                     DomainNameTB.Visibility = Visibility.Visible;
                     DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.PaloAlto:
@@ -330,6 +351,7 @@ namespace SmartMove
                     DomainNameTB.Visibility = Visibility.Visible;
                     DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
                 case Vendor.PaloAltoPanorama:
@@ -337,6 +359,7 @@ namespace SmartMove
                     DomainNameTB.Visibility = Visibility.Visible;
                     DomainName.Visibility = Visibility.Visible;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
+                    //CreateServiceGroupsConf.Visibility = Visibility.Visible;
                     ConvertUserConf.Visibility = Visibility.Visible;
                     break;
             }
@@ -716,6 +739,7 @@ namespace SmartMove
                 default:
                     throw new InvalidDataException("Unexpected!!!");
             }
+            vendorConverter.CreateServiceGroups = CreateServiceGroupsConfiguration;
 
             //here outputformat was set to 'json' by default manually because there is no an option for it on GUI
             vendorConverter.Initialize(vendorParser, ConfigFilePath.Text, toolVersion, targetFolder, DomainName.Text, "json");
@@ -839,6 +863,7 @@ namespace SmartMove
             DomainName.IsEnabled = enable;
             ConvertNAT.IsEnabled = enable;
             SkipUnusedObjects.IsEnabled = enable;
+            CreateServiceGroupsConf.IsEnabled = enable;
             Go.IsEnabled = enable;
         }
 
