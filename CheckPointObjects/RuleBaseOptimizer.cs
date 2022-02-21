@@ -238,32 +238,47 @@ namespace CheckPointObjects
             //if there is nothing to merge return empty comment
             if (comments_parts.Count == 0)
                 return "";
+          
+            if (comments_parts.Count > 0) { 
 
-            //cisco and firepower (the same code)
-            if (regex.IsMatch(comments_parts[0]))
-                foreach (string part in comments_parts)
-                {
-                    if (regex.IsMatch(part))
-                        commentBuilder += " " + part.Remove(part.Length - 1);
-                }
-            //FG and Juniper
-            else if (comments_parts[0].Equals("Matched") && (comments_parts[1].Equals("rule") || comments_parts[1].Equals("rule:")))
-            {
-                commentBuilder = "Matched rule(s)";
-                Regex regexNumbers = new Regex(@"[0-9]");
-                foreach (string word in comments_parts)
-                {
-                    if (regexNumbers.IsMatch(word))
+                if (regex.IsMatch(comments_parts[0]))
+                    foreach (string part in comments_parts)
                     {
-                        if (commentBuilder.Equals("Matched rule(s)"))
-                            commentBuilder += " " + word;
-                        else
-                            commentBuilder += ", " + word;
+                        if (regex.IsMatch(part))
+                            commentBuilder += " " + part.Remove(part.Length - 1);
+                    }
+                //FG and Juniper
+                else if (comments_parts[0].Equals("Matched") && (comments_parts[1].Equals("rule") || comments_parts[1].Equals("rule:")))
+                {
+                    commentBuilder = "Matched rule(s)";
+                    Regex regexNumbers = new Regex(@"[0-9]");
+                    foreach (string word in comments_parts)
+                    {
+                        if (regexNumbers.IsMatch(word))
+                        {
+                            if (commentBuilder.Equals("Matched rule(s)"))
+                                commentBuilder += " " + word;
+                            else
+                                commentBuilder += ", " + word;
+                        }
                     }
                 }
+                //Panorama
+                else if (comments_parts[0].Equals("Matched") && comments_parts[1].Equals("rule:"))
+                {
+                    commentBuilder = "Matched rule(s)";
+                    for (int i = 2; i < comments_parts.Count; ++i)
+                    {
+                        if (commentBuilder.Equals("Matched rule(s)"))
+                            commentBuilder += " " + comments_parts[i];
+                        else
+                            commentBuilder += ", " + comments_parts[i];
+                    }
+
             }
             else
                 return commentToProcess.Trim();
+            }
 
             return commentBuilder == "Matched rule(s)" ? "" : commentBuilder;
         }
