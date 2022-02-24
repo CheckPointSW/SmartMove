@@ -1,6 +1,7 @@
 ﻿using MigrationBase;
 using System;
 using System.IO;
+using System.Text;
 using System.Xml.Serialization;
 
 namespace PaloAltoMigration
@@ -19,15 +20,18 @@ namespace PaloAltoMigration
         {
             Console.WriteLine("PARSE : " + filename);
 
-            ParsedLines = File.ReadAllLines(filename).Length;
+            ParsedLines = File.ReadAllLines(filename, Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback(""), new DecoderReplacementFallback(""))).Length;
 
             XmlSerializer serializer = new XmlSerializer(typeof(PA_Config));
 
             using (FileStream fileStream = new FileStream(filename, FileMode.Open))
             {
-                Config = (PA_Config)serializer.Deserialize(fileStream);
+                using (StreamReader sr = new StreamReader(fileStream, Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback(""), new DecoderReplacementFallback(""))))
+                {
+                    Config = (PA_Config)serializer.Deserialize(sr);
 
-                ParseVersion(null);
+                    ParseVersion(null);
+                }
             }
         }
 
