@@ -1370,7 +1370,7 @@ namespace NetScreenMigration
                                         ? "Detected an object with a same name in Check Point's predefined service objects repository."
                                         : "Detected an object with a non unique name. Check Point names should be case insensitive.";
                 errorTitle += " Please review for further possible modifications to objects before migration.";
-                string errorDescription = string.Format("Original name: {0}. Using unique name: {1}.", originalName, uniqueName);
+                string errorDescription = string.Format("Original name: {0}. Possible unique name: {1}.", originalName, uniqueName);
 
                 _conversionIncidents.Add(new ConversionIncident(screenOSCommand.Id, errorTitle, errorDescription, screenOSCommand.ConversionIncidentType));
 

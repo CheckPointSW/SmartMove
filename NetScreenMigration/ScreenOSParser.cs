@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace NetScreenMigration
 {
@@ -105,7 +106,7 @@ namespace NetScreenMigration
 
         private void ParseCommands(string filename)
         {
-            string[] lines = File.ReadAllLines(filename);
+            string[] lines = File.ReadAllLines(filename, Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback(""), new DecoderReplacementFallback("")));
             ParsedLines = lines.Count();
 
             int lineId = 0;
