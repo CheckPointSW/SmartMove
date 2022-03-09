@@ -311,6 +311,7 @@ namespace SmartMove
             LDAPAccountUnitTB.Visibility = Visibility.Collapsed;
             LDAPAccountUnitBlock.Visibility = Visibility.Collapsed;
             CreateServiceGroupsConf.Visibility = Visibility.Collapsed;
+            SkipUnusedObjects.Visibility = Visibility.Collapsed;
             ConvertUserConfiguration = false;
             //Create service groups option
             CreateServiceGroupsConfiguration = false;

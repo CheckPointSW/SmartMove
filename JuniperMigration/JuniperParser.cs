@@ -27,6 +27,7 @@ using System.Xml.XPath;
 using CommonUtils;
 using Newtonsoft.Json;
 using MigrationBase;
+using System.Text;
 
 namespace JuniperMigration
 {
@@ -130,7 +131,9 @@ namespace JuniperMigration
 
         private XElement LoadConfig(string filename)
         {
-            var configDoc = XDocument.Load(filename, LoadOptions.SetLineInfo);
+            StreamReader reader = new StreamReader(filename, Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback(""), new DecoderReplacementFallback("")));
+
+            var configDoc = XDocument.Load(reader, LoadOptions.SetLineInfo);
             if (configDoc.Root == null)
             {
                 throw new InvalidDataException("Invalid XML structure: XML root element is missing.");
