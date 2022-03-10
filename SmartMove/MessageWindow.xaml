@@ -85,13 +85,13 @@
                             </Style>
                         </Image.Style>
                     </Image>
-                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="0,0,0,70">
+                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="0,28,0,43">
                         <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Header}"/>
                     </TextBlock>
-                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="10,54,0,21" FontSize="12" Foreground="#FF7C7C7C">
+                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="10,54,0,21" FontSize="12" Foreground="#FF7C7C7C" Visibility="Collapsed">
                         <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Columns}"/>
                     </TextBlock>
-                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="85,54,0,21" FontSize="12">
+                    <TextBlock Grid.Column="1" Style="{StaticResource NormalTextBloclStyle}" Margin="85,54,0,21" FontSize="12" Visibility="Collapsed">
                         <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Message}"/>
                         <Hyperlink NavigateUri="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageLinkValue}" Click="Link_OnClick">
                             <Run Text="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=MessageLinkText}"/>
