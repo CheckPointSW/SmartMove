@@ -734,6 +734,14 @@ namespace MigrationBase
                     _cpServiceGroups.Add((CheckPoint_ServiceGroup)cpObject);
                     found = true;
                 }
+                else
+                {
+                    if (_cpObjects.GetPredefinedObjects().Contains(cpObject) || _cpObjects.IsKnownService(cpObject.Name))
+                    {
+                        _cpServiceGroups.Add((CheckPoint_ServiceGroup)cpObject);
+                        found = true;
+                    }
+                }
             }
 
             if (cpObject.GetType().ToString().EndsWith("_ApplicationGroup"))
