@@ -113,7 +113,7 @@ namespace MigrationBase
         #endregion
 
         #region Properties
-        public bool CreateServiceGroups { get; set; } = true;   //there is default 'true' for smart analyzer correct work
+        public bool CreateServiceGroups { get; set; }   //there is default 'true' for smart analyzer correct work
         public int TotalRules { get; set; }
         public float OptimizationPotential { get; set; }
         public string ObjectsScriptFile { get; set; }
@@ -732,16 +732,9 @@ namespace MigrationBase
                 if (CreateServiceGroups)
                 {
                     _cpServiceGroups.Add((CheckPoint_ServiceGroup)cpObject);
-                    found = true;
                 }
-                else
-                {
-                    if (_cpObjects.GetPredefinedObjects().Contains(cpObject) || _cpObjects.IsKnownService(cpObject.Name))
-                    {
-                        _cpServiceGroups.Add((CheckPoint_ServiceGroup)cpObject);
-                        found = true;
-                    }
-                }
+
+                found = true;
             }
 
             if (cpObject.GetType().ToString().EndsWith("_ApplicationGroup"))
