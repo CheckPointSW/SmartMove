@@ -113,7 +113,7 @@ namespace MigrationBase
         #endregion
 
         #region Properties
-        public bool CreateServiceGroups { get; set; }   //there is default 'true' for smart analyzer correct work
+        public bool CreateServiceGroups { get; set; } = true;    //there is default 'true' for smart analyzer correct work
         public int TotalRules { get; set; }
         public float OptimizationPotential { get; set; }
         public string ObjectsScriptFile { get; set; }
