@@ -157,6 +157,10 @@ namespace CheckPointObjects
             return (!string.IsNullOrEmpty(objectName) && _repository.ContainsKey(objectName));
         }
 
+        public bool IsPredefinedOrKnownService(string name) {
+            return HasObject(name) || IsKnownService(name);
+        }
+
         public CheckPointObject GetObject(string objectName)
         {
             if (HasObject(objectName))
