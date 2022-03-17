@@ -1994,12 +1994,17 @@ namespace NetScreenMigration
             }
             else
             {
-                string srcObjectName = ScreenOS2CheckPointServicesNameDic.ContainsKey(serviceName) ? ScreenOS2CheckPointServicesNameDic[serviceName] : CreateCheckPointServiceOrGroupForPredefinedScreenOsService(serviceName);
-                cpObject = GetCheckPointObjectOrCreateDummy(srcObjectName,
-                                                            CheckPointDummyObjectType.Service,
-                                                            policy.OrigPolicy,
-                                                            "Error creating a rule, missing information for service Screen OS object",
-                                                            "Object details: " + serviceName + ".");
+                if (_cpObjects.IsKnownService(serviceName))
+                    cpObject = _cpObjects.GetObject(serviceName);
+                else
+                {
+                    string srcObjectName = ScreenOS2CheckPointServicesNameDic.ContainsKey(serviceName) ? ScreenOS2CheckPointServicesNameDic[serviceName] : CreateCheckPointServiceOrGroupForPredefinedScreenOsService(serviceName);
+                    cpObject = GetCheckPointObjectOrCreateDummy(srcObjectName,
+                                                                CheckPointDummyObjectType.Service,
+                                                                policy.OrigPolicy,
+                                                                "Error creating a rule, missing information for service Screen OS object",
+                                                                "Object details: " + serviceName + ".");
+                }
             }
 
             return cpObject;
