@@ -23,6 +23,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using CommonUtils;
 using MigrationBase;
+using System.Text;
 
 namespace CiscoMigration
 {
@@ -138,7 +139,7 @@ namespace CiscoMigration
 
         private void ParseCommands(string filename)
         {
-            string[] lines = File.ReadAllLines(filename);
+            string[] lines = File.ReadAllLines(filename, Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback(""), new DecoderReplacementFallback("")));
             ParsedLines = lines.Count();
 
             var parents = new Stack<Indentation>();
