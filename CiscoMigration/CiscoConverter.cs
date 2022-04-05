@@ -5852,6 +5852,7 @@ namespace CiscoMigration
             optimazed = !optimazed;
             if (optimazed)
             {
+                int dis = 0;
                 int all = 0;
                 int so_count = 0;
                 int se_count = 0;
@@ -5861,6 +5862,14 @@ namespace CiscoMigration
                     foreach(var policy in layer.Rules)
                     {
                         bool any_fl = true;
+                        if (!policy.Enabled)
+                        {
+                            dis += 1;
+                        }
+                        if(policy.Comments == null || policy.Comments == "")
+                        {
+                            NewCiscoAnalizStatistic._uncommentedServicesRulesCount++;
+                        }
                         if(policy.Destination.Count > 0 && policy.Destination.First().Name.Equals("Any"))
                         {
                             de_count++;
@@ -5896,6 +5905,14 @@ namespace CiscoMigration
                 foreach(var policy in NewCiscoAnalizStatistic._Package.ParentLayer.Rules)
                 {
                     bool any_fl = true;
+                    if (!policy.Enabled)
+                    {
+                        dis += 1;
+                    }
+                    if (policy.Comments == null || policy.Comments == "")
+                    {
+                        NewCiscoAnalizStatistic._uncommentedServicesRulesCount++;
+                    }
                     if (policy.Destination.Count > 0 && policy.Destination.First().Name.Equals("Any"))
                     {
                         de_count++;
@@ -5927,44 +5944,11 @@ namespace CiscoMigration
 
                     }
                 }
-                foreach(var policy in _cpPreorderedNatRules)
-                {
-                    bool any_fl = true;
-                    if (policy.Destination != null && policy.Destination.Name.Equals("Any"))
-                    {
-                        de_count++;
-                        if (any_fl)
-                        {
-                            all++;
-                            any_fl = false;
-                        }
-
-                    }
-                    if (policy.Source != null && policy.Source.Name.Equals("Any"))
-                    {
-                        so_count++;
-                        if (any_fl)
-                        {
-                            all++;
-                            any_fl = false;
-                        }
-
-                    }
-                    if (policy.Service != null && policy.Service.Name.Equals("Any"))
-                    {
-                        se_count++;
-                        if (any_fl)
-                        {
-                            all++;
-                            any_fl = false;
-                        }
-
-                    }
-                }
                 NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount = de_count;
                 NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount = se_count;
                 NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount = so_count;
                 NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount = all;
+                NewCiscoAnalizStatistic._disabledServicesRulesCount = dis;
                 NewCiscoAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
             }
             else
@@ -6791,7 +6775,6 @@ public class NewAnalizStatistic
     {
         _unusedNetworkObjectsCount = _unusedNetworkObjectsCount >= 0 ? _unusedNetworkObjectsCount : 0;
         _unusedServicesObjectsCount = _unusedServicesObjectsCount >= 0 ? _unusedServicesObjectsCount : 0;
-        _uncommentedServicesRulesCount = _totalServicesRulesCount - _uncommentedServicesRulesCount;
         _undisabledServicesRulesCount = _disabledServicesRulesCount;
         _unrulesServicesutilizingServicesAnyCount = _rulesServicesutilizingServicesAnyCount;
         _unrulesServicesutilizingServicesAnySourceCount = _rulesServicesutilizingServicesAnySourceCount;
