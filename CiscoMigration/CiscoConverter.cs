@@ -5852,6 +5852,7 @@ namespace CiscoMigration
             optimazed = !optimazed;
             if (optimazed)
             {
+                int dis = 0;
                 int all = 0;
                 int so_count = 0;
                 int se_count = 0;
@@ -5861,6 +5862,14 @@ namespace CiscoMigration
                     foreach(var policy in layer.Rules)
                     {
                         bool any_fl = true;
+                        if (!policy.Enabled)
+                        {
+                            dis += 1;
+                        }
+                        if(policy.Comments == null || policy.Comments == "")
+                        {
+                            NewCiscoAnalizStatistic._uncommentedServicesRulesCount++;
+                        }
                         if(policy.Destination.Count > 0 && policy.Destination.First().Name.Equals("Any"))
                         {
                             de_count++;
@@ -5896,6 +5905,14 @@ namespace CiscoMigration
                 foreach(var policy in NewCiscoAnalizStatistic._Package.ParentLayer.Rules)
                 {
                     bool any_fl = true;
+                    if (!policy.Enabled)
+                    {
+                        dis += 1;
+                    }
+                    if (policy.Comments == null || policy.Comments == "")
+                    {
+                        NewCiscoAnalizStatistic._uncommentedServicesRulesCount++;
+                    }
                     if (policy.Destination.Count > 0 && policy.Destination.First().Name.Equals("Any"))
                     {
                         de_count++;
@@ -5927,44 +5944,11 @@ namespace CiscoMigration
 
                     }
                 }
-                foreach(var policy in _cpPreorderedNatRules)
-                {
-                    bool any_fl = true;
-                    if (policy.Destination != null && policy.Destination.Name.Equals("Any"))
-                    {
-                        de_count++;
-                        if (any_fl)
-                        {
-                            all++;
-                            any_fl = false;
-                        }
-
-                    }
-                    if (policy.Source != null && policy.Source.Name.Equals("Any"))
-                    {
-                        so_count++;
-                        if (any_fl)
-                        {
-                            all++;
-                            any_fl = false;
-                        }
-
-                    }
-                    if (policy.Service != null && policy.Service.Name.Equals("Any"))
-                    {
-                        se_count++;
-                        if (any_fl)
-                        {
-                            all++;
-                            any_fl = false;
-                        }
-
-                    }
-                }
                 NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount = de_count;
                 NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount = se_count;
                 NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnySourceCount = so_count;
                 NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount = all;
+                NewCiscoAnalizStatistic._disabledServicesRulesCount = dis;
                 NewCiscoAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
             }
             else
@@ -6039,9 +6023,9 @@ namespace CiscoMigration
                 file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Service: {NewCiscoAnalizStatistic._unrulesServicesutilizingServicesAnyServiceCount}</td></tr>");
                 file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Disabled Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.DisabledServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._undisabledServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.DisabledServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(NewCiscoAnalizStatistic._disabledServicesRulesCount > 0 ? "Check if rules are required." : "")}</tr>");
                 file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Times Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.TimesServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._untimesServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.TimesServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Non Logging Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.NonServicesLoggingServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.NonServicesLoggingServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'> {(NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount > 0 ? "Enable logging for these rules for better tracking and change management." : "")}</td></tr>");
+                //file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Non Logging Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.NonServicesLoggingServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.NonServicesLoggingServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'> {(NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount > 0 ? "Enable logging for these rules for better tracking and change management." : "")}</td></tr>");
                 file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Cleanup Rule</td> <td style='font-size: 14px;'>{(NewCiscoAnalizStatistic._cleanupServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._cleanupServicesRuleCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.CleanupServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewCiscoAnalizStatistic._cleanupServicesRuleCount > 0 ? "Found" : "")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Uncommented Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.UncommentedServicesRulesPercent, 25, 100)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._uncommentedServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.UncommentedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewCiscoAnalizStatistic._uncommentedServicesRulesCount > 0 ? "Comment rules for better tracking and change management compliance." : "")}</td></tr>");
+                //file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Uncommented Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewCiscoAnalizStatistic.UncommentedServicesRulesPercent, 25, 100)}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic._uncommentedServicesRulesCount}</td> <td style='font-size: 14px;'>{NewCiscoAnalizStatistic.UncommentedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewCiscoAnalizStatistic._uncommentedServicesRulesCount > 0 ? "Comment rules for better tracking and change management compliance." : "")}</td></tr>");
                 file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Optimization Potential</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? HtmlGoodImageTagManagerReport : HtmlAttentionImageTagManagerReport)}</td> <td style='font-size: 14px;'>{potentialCount}</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? potentialPersent : 0).ToString("F")}%</td> <td style='font-size: 14px;'>{GetOptPhraze(potentialCount > 0 ? (int)potentialPersent : 0)}</td></tr>");
                 file.WriteLine("</table>");
                 file.WriteLine("</body>");
@@ -6791,7 +6775,6 @@ public class NewAnalizStatistic
     {
         _unusedNetworkObjectsCount = _unusedNetworkObjectsCount >= 0 ? _unusedNetworkObjectsCount : 0;
         _unusedServicesObjectsCount = _unusedServicesObjectsCount >= 0 ? _unusedServicesObjectsCount : 0;
-        _uncommentedServicesRulesCount = _totalServicesRulesCount - _uncommentedServicesRulesCount;
         _undisabledServicesRulesCount = _disabledServicesRulesCount;
         _unrulesServicesutilizingServicesAnyCount = _rulesServicesutilizingServicesAnyCount;
         _unrulesServicesutilizingServicesAnySourceCount = _rulesServicesutilizingServicesAnySourceCount;
