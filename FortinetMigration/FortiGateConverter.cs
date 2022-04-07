@@ -182,20 +182,144 @@ namespace FortiGateMigration
             if (optimazed)
             {
                 NewFortigateAnalizStatistic.Flush();
+
             }
             else
             {
+                
+
                 int optimazed_count = 0;
                 if (_cpPackages.Count > 1)
                 {
-                    
+                    int full = 0;
+                    int all = 0;
+                    int so_count = 0;
+                    int se_count = 0;
+                    int de_count = 0;
+                    NewFortigateAnalizStatistic._nonServicesLoggingServicesRulesCount = 0;
+                    NewFortigateAnalizStatistic._timesServicesRulesCount = 0;
+                    NewFortigateAnalizStatistic._cleanupServicesRuleCount = 0;
+                    NewFortigateAnalizStatistic._uncommentedServicesRulesCount = 0;
+
+                    foreach (var layer in _cpPackages[0].SubPolicies)
+                    {
+                        full += layer.Rules.Count();
+                        foreach (var policy in layer.Rules)
+                        {
+                            bool any_fl = true;
+                            if (policy.Destination.Count > 0 && policy.Destination.First().Name.Equals("Any"))
+                            {
+                                de_count++;
+                                if (any_fl)
+                                {
+                                    all++;
+                                    any_fl = false;
+                                }
+
+                            }
+                            if (policy.Source.Count > 0 && policy.Source.First().Name.Equals("Any"))
+                            {
+                                so_count++;
+                                if (any_fl)
+                                {
+                                    all++;
+                                    any_fl = false;
+                                }
+
+                            }
+                            if (policy.Service.Count > 0 && policy.Service.First().Name.Equals("Any"))
+                            {
+                                se_count++;
+                                if (any_fl)
+                                {
+                                    all++;
+                                    any_fl = false;
+                                }
+
+                            }
+                            if (policy.Track == CheckPoint_Rule.TrackTypes.None)
+                            {
+                                NewFortigateAnalizStatistic._nonServicesLoggingServicesRulesCount++;
+                            }
+                            if (policy.Time.Count > 0)
+                            {
+                                NewFortigateAnalizStatistic._timesServicesRulesCount++;
+                            }
+                            if (policy.Name != null && policy.Name.Equals("Cleanup Rule"))
+                            {
+                                NewFortigateAnalizStatistic._cleanupServicesRuleCount++;
+                            }
+                            if (policy.Comments != "")
+                            {
+                                NewFortigateAnalizStatistic._uncommentedServicesRulesCount++;
+                            }
+                        }
+                    }
+                    foreach (var policy in _cpPackages[0].ParentLayer.Rules)
+                    {
+                        full += 1;
+                        bool any_fl = true;
+                        if (policy.Destination.Count > 0 && policy.Destination.First().Name.Equals("Any"))
+                        {
+                            de_count++;
+                            if (any_fl)
+                            {
+                                all++;
+                                any_fl = false;
+                            }
+
+                        }
+                        if (policy.Source.Count > 0 && policy.Source.First().Name.Equals("Any"))
+                        {
+                            so_count++;
+                            if (any_fl)
+                            {
+                                all++;
+                                any_fl = false;
+                            }
+
+                        }
+                        if (policy.Service.Count > 0 && policy.Service.First().Name.Equals("Any"))
+                        {
+                            se_count++;
+                            if (any_fl)
+                            {
+                                all++;
+                                any_fl = false;
+                            }
+
+                        }
+                        if (policy.Track == CheckPoint_Rule.TrackTypes.None)
+                        {
+                            NewFortigateAnalizStatistic._nonServicesLoggingServicesRulesCount++;
+                        }
+                        if (policy.Time.Count > 0)
+                        {
+                            NewFortigateAnalizStatistic._timesServicesRulesCount++;
+                        }
+                        if (policy.Name != null && policy.Name.Equals("Cleanup Rule"))
+                        {
+                            NewFortigateAnalizStatistic._cleanupServicesRuleCount++;
+                        }
+                        if (policy.Comments != "")
+                        {
+                            NewFortigateAnalizStatistic._uncommentedServicesRulesCount++;
+                        }
+                    }
+                    NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount = de_count;
+                    NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount = se_count;
+                    NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnySourceCount = so_count;
+                    NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyCount = all;
+                    NewFortigateAnalizStatistic._totalServicesRulesCount = full;
+
                     foreach (var sub_policy in _cpPackages[1].SubPolicies)
                     {
-                        optimazed_count += sub_policy.Rules.Select(x => x.ConversionComments).Where(x => x.Contains("Matched")).Count();
+                        optimazed_count += sub_policy.Rules.Count();
                     }
-                    optimazed_count += _cpPackages[1].ParentLayer.Rules.Select(x => x.ConversionComments).Where(x => x.Contains("Matched")).Count();
+                    optimazed_count += _cpPackages[1].ParentLayer.Rules.Count();
                     _rulesInOptConvertedPackage += optimazed_count;
                     NewFortigateAnalizStatistic._totalServicesRulesOptCount = optimazed_count;
+
                 }
                 if(_cpPackages.Count > 0)
                 {
@@ -3997,6 +4121,7 @@ namespace FortiGateMigration
 
                     CheckPoint_Rule cpRuleCU = new CheckPoint_Rule();
                     if(!OptimizeConf) NewFortigateAnalizStatistic._cleanupServicesRuleCount++;
+                    NewFortigateAnalizStatistic._totalServicesRulesCount++;
                     cpRuleCU.Name = "Sub-Policy Cleanup";
                     cpRuleCU.Layer = cpLayer.Name;
 
