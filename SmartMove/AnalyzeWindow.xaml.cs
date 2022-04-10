@@ -128,6 +128,12 @@ namespace SmartMove
                 case Vendor.CiscoASA:
                     vendorParser = new CiscoParser();
                     break;
+                case Vendor.FirePower:
+                    vendorParser = new CiscoParser()
+                    {
+                        isUsingForFirePower = true
+                    };
+                    break;
                 case Vendor.JuniperJunosOS:
                     vendorParser = new JuniperParser();
                     break;
@@ -282,6 +288,12 @@ namespace SmartMove
             {
                 case Vendor.CiscoASA:
                     vendorConverter = new CiscoConverter();
+                    break;
+                case Vendor.FirePower:
+                    vendorConverter = new CiscoConverter()
+                    {
+                        isUsingForFirePower = true
+                    };
                     break;
                 case Vendor.JuniperJunosOS:
                     vendorConverter = new JuniperConverter();
@@ -506,6 +518,9 @@ namespace SmartMove
             {
                 case Vendor.CiscoASA:
                     ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
+                    break;
+                case Vendor.FirePower:
+                    ConfigurationFileLabel = SupportedVendors.FirepowerConfigurationFileLabel;
                     break;
                 case Vendor.JuniperJunosOS:
                     ConfigurationFileLabel = SupportedVendors.JuniperConfigurationFileLabel;

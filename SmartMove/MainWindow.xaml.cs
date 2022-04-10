@@ -884,6 +884,7 @@ namespace SmartMove
             switch (_supportedVendors.SelectedVendor)
             {
                 case Vendor.CiscoASA:
+                case Vendor.FirePower:
                     ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
                     RulebaseOptimizedScriptLink.Visibility = Visibility.Visible; 
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
