@@ -146,6 +146,10 @@ namespace PanoramaPaloAltoMigration
 
         public bool CreateManagnetReport { get; set; }
 
+        public NewAnalizStatistic NewPaloAnalizStatistic = new NewAnalizStatistic(0, 0);
+
+        public NewAnalizStatistic NewCiscoAnalizStatistic = new NewAnalizStatistic(0, 0);
+
         protected string RuleItemsList2Html_pa(List<CheckPointObject> ruleItems, List<CheckPointObject> appsItems, bool isCellNegated, string defaultValue, ref ConversionIncidentType ruleConversionIncidentType)
         {
             if (ruleItems.Count == 0 && (appsItems == null || appsItems.Count == 0))
@@ -200,14 +204,171 @@ namespace PanoramaPaloAltoMigration
             return res;
         }
 
+        public void ExportManagmentReport(bool optimazed)
+        {
+
+
+            NewPaloAnalizStatistic._unusedNetworkObjectsCount += _cpNetworks.Count * (optimazed ? -1 : 1);
+            NewPaloAnalizStatistic._unusedNetworkObjectsCount += _cpNetworkGroups.Count * (optimazed ? -1 : 1);
+            NewPaloAnalizStatistic._unusedNetworkObjectsCount += _cpRanges.Count * (optimazed ? -1 : 1);
+            NewPaloAnalizStatistic._unusedNetworkObjectsCount += _cpHosts.Count * (optimazed ? -1 : 1);
+
+            NewPaloAnalizStatistic._unusedServicesObjectsCount += _cpTcpServices.Count * (optimazed ? -1 : 1);
+            NewPaloAnalizStatistic._unusedServicesObjectsCount += _cpUdpServices.Count * (optimazed ? -1 : 1);
+            NewPaloAnalizStatistic._unusedServicesObjectsCount += _cpSctpServices.Count * (optimazed ? -1 : 1);
+            NewPaloAnalizStatistic._unusedServicesObjectsCount += _cpIcmpServices.Count * (optimazed ? -1 : 1);
+            NewPaloAnalizStatistic._unusedServicesObjectsCount += _cpDceRpcServices.Count * (optimazed ? -1 : 1);
+            NewPaloAnalizStatistic._unusedServicesObjectsCount += _cpOtherServices.Count * (optimazed ? -1 : 1);
+            NewPaloAnalizStatistic._unusedServicesObjectsCount += _cpServiceGroups.Count * (optimazed ? -1 : 1);
+
+            if (optimazed)
+            {
+                NewPaloAnalizStatistic.Flush();
+            }
+            else
+            {
+                int optimazed_count = 0;
+                if (_cpPackages.Count == 2)
+                {
+                    int dis = 0;
+                    int all = 0;
+                    int so_count = 0;
+                    int se_count = 0;
+                    int de_count = 0;
+                    int time_count = 0;
+                    foreach (var layer in _cpPackages[0].SubPolicies)
+                    {
+                        foreach (var policy in layer.Rules)
+                        {
+                            bool any_fl = true;
+                            if (policy.Time.Count > 0)
+                            {
+                                time_count++;
+                            }
+                            if (!policy.Enabled)
+                            {
+                                dis += 1;
+                            }
+                            if (policy.Comments == null || policy.Comments == "")
+                            {
+                                NewPaloAnalizStatistic._uncommentedServicesRulesCount++;
+                            }
+                            if (policy.Destination.Count > 0 && policy.Destination.First().Name.Equals("Any"))
+                            {
+                                de_count++;
+                                if (any_fl)
+                                {
+                                    all++;
+                                    any_fl = false;
+                                }
+
+                            }
+                            if (policy.Source.Count > 0 && policy.Source.First().Name.Equals("Any"))
+                            {
+                                so_count++;
+                                if (any_fl)
+                                {
+                                    all++;
+                                    any_fl = false;
+                                }
+
+                            }
+                            if (policy.Service.Count > 0 && policy.Service.First().Name.Equals("Any"))
+                            {
+                                se_count++;
+                                if (any_fl)
+                                {
+                                    all++;
+                                    any_fl = false;
+                                }
+
+                            }
+                        }
+                    }
+                    foreach (var policy in _cpPackages[0].ParentLayer.Rules)
+                    {
+                        bool any_fl = true;
+                        if (policy.Time.Count > 0)
+                        {
+                            time_count++;
+                        }
+                        if (!policy.Enabled)
+                        {
+                            dis += 1;
+                        }
+                        if (policy.Comments == null || policy.Comments == "")
+                        {
+                            NewPaloAnalizStatistic._uncommentedServicesRulesCount++;
+                        }
+                        if (policy.Destination.Count > 0 && policy.Destination.First().Name.Equals("Any"))
+                        {
+                            de_count++;
+                            if (any_fl)
+                            {
+                                all++;
+                                any_fl = false;
+                            }
+
+                        }
+                        if (policy.Source.Count > 0 && policy.Source.First().Name.Equals("Any"))
+                        {
+                            so_count++;
+                            if (any_fl)
+                            {
+                                all++;
+                                any_fl = false;
+                            }
+
+                        }
+                        if (policy.Service.Count > 0 && policy.Service.First().Name.Equals("Any"))
+                        {
+                            se_count++;
+                            if (any_fl)
+                            {
+                                all++;
+                                any_fl = false;
+                            }
+
+                        }
+                    }
+                    NewPaloAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount = de_count;
+                    NewPaloAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount = se_count;
+                    NewPaloAnalizStatistic._rulesServicesutilizingServicesAnySourceCount = so_count;
+                    NewPaloAnalizStatistic._rulesServicesutilizingServicesAnyCount = all;
+                    NewPaloAnalizStatistic._disabledServicesRulesCount = dis;
+                    NewPaloAnalizStatistic._timesServicesRulesCount = time_count;
+
+                    foreach (var sub_policy in _cpPackages[1].SubPolicies)
+                    {
+                        optimazed_count += sub_policy.Rules.Count();
+                    }
+                    optimazed_count += _cpPackages[1].ParentLayer.Rules.Count();
+                    NewPaloAnalizStatistic._totalServicesRulesOptCount = optimazed_count;
+
+                }
+                if (_cpPackages.Count > 0)
+                {
+                    NewPaloAnalizStatistic._totalServicesRulesCount = _cpPackages[0].TotalRules();
+                    NewPaloAnalizStatistic._totalServicesRulesOptCount = _cpPackages[1].TotalRules();
+
+                    this.OptimizationPotential = NewPaloAnalizStatistic._totalServicesRulesCount > 0 ? ((NewPaloAnalizStatistic._totalServicesRulesCount - NewPaloAnalizStatistic._totalServicesRulesOptCount) * 100 / (float)NewPaloAnalizStatistic._totalServicesRulesCount) : 0;
+                    NewPaloAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups, _cpRpcServices);
+                    ExportManagmentReport();
+                    OptimizationPotential = -1;
+                    TotalRules += NewPaloAnalizStatistic._totalServicesRulesCount;
+                }
+
+            }
+        }
+
         public override void ExportManagmentReport()
         {
-            PanoramaAnalizStatistic panoramaAnalizStatistic = new PanoramaAnalizStatistic();
-            panoramaAnalizStatistic.CalculateRules(new List<CheckPoint_Package> { _cpPackages[0] }, new List<CheckPoint_NAT_Rule>());
-            panoramaAnalizStatistic.CalculateNetworks(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges);
-            panoramaAnalizStatistic.CalculateServices(_cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
-
-            var potentialCount = this.RulesInConvertedPackage() - this.RulesInConvertedOptimizedPackage();
+            NewPaloAnalizStatistic._totalFileRules += NewPaloAnalizStatistic._totalServicesRulesCount;
+            NewPaloAnalizStatistic._totalFileRulesOpt += NewPaloAnalizStatistic._totalServicesRulesOptCount;
+            var potentialCount = NewPaloAnalizStatistic._totalServicesRulesCount - NewPaloAnalizStatistic._totalServicesRulesOptCount;
+            var potentialPersent = NewPaloAnalizStatistic._totalServicesRulesCount > 0 ? (potentialCount * 100 / (float)NewPaloAnalizStatistic._totalServicesRulesCount) : 0;
+            NewPaloAnalizStatistic._fullrullPackageCount += NewPaloAnalizStatistic._fullrullPackcount;
+            NewPaloAnalizStatistic._totalrullPackageCount += NewPaloAnalizStatistic._totalServicesRulesCount;
             using (var file = new StreamWriter(VendorManagmentReportHtmlFile))
             {
                 file.WriteLine("<html>");
@@ -227,43 +388,39 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("</head>");
 
                 file.WriteLine("<body>");
-                file.WriteLine("<h2>Panorama managment report file</h2>");
+                file.WriteLine("<h2>PaloAlto managment report file</h2>");
                 file.WriteLine("<h3>OBJECTS DATABASE</h3>");
 
                 file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
                 file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.TotalNetworkObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._totalNetworkObjectsCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.TotalNetworkObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.UnusedNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._unusedNetworkObjectsCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.UnusedNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(panoramaAnalizStatistic._unusedNetworkObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.DuplicateNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._duplicateNetworkObjectsCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.DuplicateNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Network Groups</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.NestedNetworkGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._nestedNetworkGroupsCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.NestedNetworkGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.TotalNetworkObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._totalNetworkObjectsCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.TotalNetworkObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.UnusedNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._unusedNetworkObjectsCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.UnusedNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewPaloAnalizStatistic._unusedNetworkObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Network Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.DuplicateNetworkObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._duplicateNetworkObjectsCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.DuplicateNetworkObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Network Groups</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.NestedNetworkGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._nestedNetworkGroupsCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.NestedNetworkGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
                 file.WriteLine("</table>");
 
                 file.WriteLine("<h3>SERVICES DATABASE</h3>");
                 file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
                 file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.TotalServicesObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._totalServicesObjectsCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.TotalServicesObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.UnusedServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._unusedServicesObjectsCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.UnusedServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(panoramaAnalizStatistic._unusedServicesObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.DuplicateServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._duplicateServicesObjectsCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.DuplicateServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Services Groups</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.NestedServicesGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._nestedServicesGroupsCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.NestedServicesGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.TotalServicesObjectsPercent, 100, 100)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._totalServicesObjectsCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.TotalServicesObjectsPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unused Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.UnusedServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._unusedServicesObjectsCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.UnusedServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewPaloAnalizStatistic._unusedServicesObjectsCount > 0 ? "Consider deleting these objects." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Duplicate Services Objects</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.DuplicateServicesObjectsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._duplicateServicesObjectsCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.DuplicateServicesObjectsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Nested Services Groups</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.NestedServicesGroupsPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._nestedServicesGroupsCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.NestedServicesGroupsPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
                 file.WriteLine("</table>");
 
                 file.WriteLine("<h3>POLICY ANALYSIS</h3>");
                 file.WriteLine("<table style='margin-bottom: 30px; background: rgb(250,250,250);'>");
                 file.WriteLine($"   <tr><td style='font-size: 14px;'></td> <td style='font-size: 14px;'>STATUS</td> <td style='font-size: 14px;'>COUNT</td> <td style='font-size: 14px;'>PERCENT</td> <td style='font-size: 14px;'>REMEDIATION</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Rules</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.TotalServicesRulesPercent, 100, 100)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._totalServicesRulesCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.TotalServicesRulesPercent}%</td> <td style='font-size: 14px;'></td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Rules utilizing \"Any\"</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.RulesServicesutilizingServicesAnyPercent, 5, 15)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._rulesServicesutilizingServicesAnyCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.RulesServicesutilizingServicesAnyPercent.ToString("F")}%</td> <td style='font-size: 14px;'>- ANY in Source: {panoramaAnalizStatistic._rulesServicesutilizingServicesAnySourceCount}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Destination: {panoramaAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount} </td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Service: {panoramaAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Disabled Rules</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.DisabledServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._disabledServicesRulesCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.DisabledServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(panoramaAnalizStatistic._disabledServicesRulesCount > 0 ? "Check if rules are required." : "")}</tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Unnamed Rules</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.UnnamedServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._unnamedServicesRulesCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.UnnamedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(panoramaAnalizStatistic._unnamedServicesRulesCount > 0 ? "Naming rules helps log analysis." : "")}</tr>");
-
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Times Rules</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.TimesServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._timesServicesRulesCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.TimesServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
-
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Non Logging Rules</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.NonServicesLoggingServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._nonServicesLoggingServicesRulesCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.NonServicesLoggingServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'> {(panoramaAnalizStatistic._nonServicesLoggingServicesRulesCount > 0 ? "Enable logging for these rules for better tracking and change management." : "")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Stealth Rule</td> <td style='font-size: 14px;'>{(panoramaAnalizStatistic._stealthServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._stealthServicesRuleCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.StealthServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(panoramaAnalizStatistic._stealthServicesRuleCount > 0 ? "Found" : "Consider adding stealth rule near the top of the policy after necessary administrative rules denies all traffic to the <a href=\'https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewsolutiondetails=&solutionid=sk102812\'>firewall</a>")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Cleanup Rule</td> <td style='font-size: 14px;'>{(panoramaAnalizStatistic._cleanupServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._cleanupServicesRuleCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.CleanupServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(panoramaAnalizStatistic._cleanupServicesRuleCount > 0 ? "Found" : "")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Uncommented Rules</td> <td style='font-size: 14px;'>{ChoosePict(panoramaAnalizStatistic.UncommentedServicesRulesPercent, 25, 100)}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic._uncommentedServicesRulesCount}</td> <td style='font-size: 14px;'>{panoramaAnalizStatistic.UncommentedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(panoramaAnalizStatistic._uncommentedServicesRulesCount > 0 ? "Comment rules for better tracking and change management compliance." : "")}</td></tr>");
-                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Optimization Potential</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? HtmlGoodImageTagManagerReport : HtmlAttentionImageTagManagerReport)}</td> <td style='font-size: 14px;'>{potentialCount}</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? potentialCount > 0 ? 100 * potentialCount / this.RulesInConvertedPackage() : 0 : 0).ToString("F")}%</td> <td style='font-size: 14px;'>{GetOptPhraze(potentialCount > 0 ? 100 * potentialCount / this.RulesInConvertedPackage() : 0)}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Total Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.TotalServicesRulesPercent, 100, 100)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._totalServicesRulesCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.TotalServicesRulesPercent}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Rules utilizing \"Any\"</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.RulesServicesutilizingServicesAnyPercent, 5, 15)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._rulesServicesutilizingServicesAnyCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.RulesServicesutilizingServicesAnyPercent.ToString("F")}%</td> <td style='font-size: 14px;'>- ANY in Source: {NewPaloAnalizStatistic._rulesServicesutilizingServicesAnySourceCount}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Destination: {NewPaloAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount} </td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'></td> <td style='font-size: 14px;'>- ANY in Service: {NewPaloAnalizStatistic._rulesServicesutilizingServicesAnyServiceCount}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Disabled Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.DisabledServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._disabledServicesRulesCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.DisabledServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td> {(NewPaloAnalizStatistic._disabledServicesRulesCount > 0 ? "Check if rules are required." : "")}</tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Times Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.TimesServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._timesServicesRulesCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.TimesServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'></td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Non Logging Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.NonServicesLoggingServicesRulesPercent, 5, 25)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._nonServicesLoggingServicesRulesCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.NonServicesLoggingServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'> {(NewPaloAnalizStatistic._nonServicesLoggingServicesRulesCount > 0 ? "Enable logging for these rules for better tracking and change management." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Cleanup Rule</td> <td style='font-size: 14px;'>{(NewPaloAnalizStatistic._cleanupServicesRuleCount > 0 ? HtmlGoodImageTagManagerReport : HtmlSeriosImageTagManagerReport)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._cleanupServicesRuleCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.CleanupServicesRulePercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewPaloAnalizStatistic._cleanupServicesRuleCount > 0 ? "Found" : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Uncommented Rules</td> <td style='font-size: 14px;'>{ChoosePict(NewPaloAnalizStatistic.UncommentedServicesRulesPercent, 25, 100)}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic._uncommentedServicesRulesCount}</td> <td style='font-size: 14px;'>{NewPaloAnalizStatistic.UncommentedServicesRulesPercent.ToString("F")}%</td> <td style='font-size: 14px;'>{(NewPaloAnalizStatistic._uncommentedServicesRulesCount > 0 ? "Comment rules for better tracking and change management compliance." : "")}</td></tr>");
+                file.WriteLine($"   <tr><td style='font-size: 14px; color: Black;'>Optimization Potential</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? HtmlGoodImageTagManagerReport : HtmlAttentionImageTagManagerReport)}</td> <td style='font-size: 14px;'>{potentialCount}</td> <td style='font-size: 14px;'>{(potentialCount > 0 ? potentialPersent : 0).ToString("F")}%</td> <td style='font-size: 14px;'>{GetOptPhraze(potentialCount > 0 ? (int)potentialPersent : 0)}</td></tr>");
                 file.WriteLine("</table>");
                 file.WriteLine("</body>");
                 file.WriteLine("</html>");
@@ -964,7 +1121,352 @@ namespace PanoramaPaloAltoMigration
 
         public override float Analyze()
         {
-            throw new NotImplementedException();
+            string targetFileNameMain = _vendorFileName;
+            string targetFolderMain = _targetFolder;
+
+            if (IsConsoleRunning)
+                Progress = new ProgressBar();
+
+            Panorama_Config paConfig = _paParser.Config;
+
+            //call method to get divice-group and zones correlation
+            Dictionary<string, List<PA_ZoneEntry>> devgroupZoneDictionary = getZones(paConfig);
+
+            _isNatConverted = true;
+            if (LDAPAccoutUnit != null)
+                LDAP_Account_Unit = LDAPAccoutUnit.Trim();
+
+            Dictionary<string, string> _devicesUIDDict = GetDevicesUIDdict(_paParser._ArchiveName);
+
+            if (paConfig != null)
+            {
+                List<PA_TagEntry> s_TagEntries = new List<PA_TagEntry>();
+                Dictionary<string, CheckPointObject> s_cpAddressesDict = null;
+                Dictionary<string, CheckPoint_NetworkGroup> s_cpNetGroupsDict = null;
+                Dictionary<string, CheckPointObject> s_cpServicesDict = null;
+                Dictionary<string, string> s_paServicesTypesDict = null;
+                Dictionary<string, CheckPoint_ServiceGroup> s_cpServicesGroupsDict = null;
+                List<string> s_paAppFiltersList = null;
+                Dictionary<string, CheckPoint_ApplicationGroup> s_cpAppGroupsDict = null;
+                Dictionary<string, List<CheckPoint_Time>> s_cpSchedulesDict = null;
+                PA_PreRulebase s_preRulebase = null;
+                PA_PostRulebase s_postRulebase = null;
+
+                if (paConfig.Shared != null)
+                {
+                    s_cpAddressesDict = ConvertAddresses(paConfig.Shared, null);
+
+                    s_cpNetGroupsDict = ConvertAddressesGroupsWithInspection(paConfig.Shared, s_cpAddressesDict, null, null);
+
+                    s_cpServicesDict = ConvertServices(paConfig.Shared, null);
+
+                    s_paServicesTypesDict = GetServicesTypes(paConfig.Shared, null);
+
+                    s_cpServicesGroupsDict = ConvertServicesGroupsWithInspection(paConfig.Shared, s_cpServicesDict, null);
+
+                    List<string> s_appsMatchList = GetApplicationsMatchList();
+
+                    s_paAppFiltersList = GetPAApplicationsFilters(paConfig.Shared, null);
+
+                    s_cpAppGroupsDict = ConvertApplicationsGroups(new List<PA_ApplicationGroupEntry>(paConfig.Shared.ApplicationGroupsEntries), s_appsMatchList, null, s_paAppFiltersList, s_cpServicesGroupsDict);
+
+                    s_cpSchedulesDict = new Dictionary<string, List<CheckPoint_Time>>();
+                    s_cpSchedulesDict = new Dictionary<string, List<CheckPoint_Time>>();
+                    ConvertSchedules(paConfig.Shared).ForEach(x =>
+                    {
+                        string key = x.Name;
+                        x = InspectCpScheduleName(x);
+                        List<CheckPoint_Time> cpTimesList = null;
+                        if (s_cpSchedulesDict.ContainsKey(key))
+                            cpTimesList = s_cpSchedulesDict[key];
+                        else
+                            cpTimesList = new List<CheckPoint_Time>();
+                        cpTimesList.Add(x);
+                        s_cpSchedulesDict[key] = cpTimesList;
+                    });
+
+                    s_preRulebase = paConfig.Shared.PreRulebase;
+                    s_postRulebase = paConfig.Shared.PostRulebase;
+                }
+                if (paConfig.Devices != null)
+                {
+                    if (paConfig.Devices.DevicesEntry != null && paConfig.Devices.DevicesEntry.Name.Equals(LOCAL_DEVICE_ENTRY_NAME)) //we parse PA config from PA
+                    {
+                        if (paConfig.Devices.DevicesEntry.DeviceGroupEntries != null &&
+                            paConfig.Devices.DevicesEntry.DeviceGroupEntries != null &&
+                            paConfig.Devices.DevicesEntry.DeviceGroupEntries.Count > 0)
+                        {
+                            if (paConfig.Devices.DevicesEntry.DeviceGroupEntries.Count == 1)
+                            {
+                                List<CheckPoint_NetworkGroup> FWGroup_List = getPanoramaDeviceGroup(paConfig.Devices.DevicesEntry.DeviceGroupEntries[0], _devicesUIDDict);
+
+                                List<CheckPoint_NetworkGroup> devicesGroupList = new List<CheckPoint_NetworkGroup>();
+                                devicesGroupList.AddRange(FWGroup_List);
+
+                                foreach (CheckPoint_NetworkGroup FWGroup in FWGroup_List)
+                                {
+                                    if (s_cpNetGroupsDict != null)
+                                        s_cpNetGroupsDict.Add(FWGroup.Name, FWGroup);
+                                    else
+                                        s_cpNetGroupsDict = new Dictionary<string, CheckPoint_NetworkGroup>
+                                    {
+                                        { FWGroup.Name, FWGroup}
+                                    };
+                                }
+
+                                AnalyzePaDeviceGroupEntry(targetFolderMain, targetFileNameMain, paConfig.Devices.DevicesEntry.DeviceGroupEntries[0], devgroupZoneDictionary,
+                                                    s_TagEntries,
+                                                    s_cpAddressesDict,
+                                                    s_cpNetGroupsDict,
+                                                    s_cpServicesDict,
+                                                    s_paServicesTypesDict,
+                                                    s_cpServicesGroupsDict,
+                                                    s_paAppFiltersList,
+                                                    s_cpAppGroupsDict,
+                                                    s_cpSchedulesDict,
+                                                    s_preRulebase,
+                                                    s_postRulebase,
+                                                    devicesGroupList,
+                                                    _devicesUIDDict
+                                                    );
+                            }
+                            else
+                            {
+                                foreach (PA_DeviceGroupEntry paDeviceGroupEntry in paConfig.Devices.DevicesEntry.DeviceGroupEntries)
+                                {
+                                    string paDeviceGroupName = paDeviceGroupEntry.Name;
+                                    _deviceGroupNames.Add(paDeviceGroupName);
+                                    string targetFolderdeviceGroup = targetFolderMain + "\\" + paDeviceGroupName;
+                                    System.IO.Directory.CreateDirectory(targetFolderdeviceGroup);
+
+
+                                    List<CheckPoint_NetworkGroup> FWGroup_List = getPanoramaDeviceGroup(paDeviceGroupEntry, _devicesUIDDict);
+
+                                    List<CheckPoint_NetworkGroup> devicesGroupList = new List<CheckPoint_NetworkGroup>();
+                                    devicesGroupList.AddRange(FWGroup_List);
+
+                                    Dictionary<string, CheckPoint_NetworkGroup> s_cpNetGroupsDict_Global = new Dictionary<string, CheckPoint_NetworkGroup>();//to avoid duplication of device groups 
+                                    s_cpNetGroupsDict_Global = s_cpNetGroupsDict_Global.Concat(s_cpNetGroupsDict.Where(x => !s_cpNetGroupsDict_Global.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
+
+                                    foreach (CheckPoint_NetworkGroup FWGroup in FWGroup_List)
+                                    {
+                                        if (s_cpNetGroupsDict != null)
+                                        {
+                                            if (!s_cpNetGroupsDict.ContainsKey(FWGroup.Name))
+                                                s_cpNetGroupsDict.Add(FWGroup.Name, FWGroup);
+                                        }
+
+                                        else
+                                            s_cpNetGroupsDict = new Dictionary<string, CheckPoint_NetworkGroup>
+                                    {
+                                        { FWGroup.Name, FWGroup}
+                                    };
+                                    }
+
+                                    AnalyzePaDeviceGroupEntry(targetFolderdeviceGroup, paDeviceGroupName, paDeviceGroupEntry, devgroupZoneDictionary,
+                                                        s_TagEntries,
+                                                        s_cpAddressesDict,
+                                                        s_cpNetGroupsDict,
+                                                        s_cpServicesDict,
+                                                        s_paServicesTypesDict,
+                                                        s_cpServicesGroupsDict,
+                                                        s_paAppFiltersList,
+                                                        s_cpAppGroupsDict,
+                                                        s_cpSchedulesDict,
+                                                        s_preRulebase,
+                                                        s_postRulebase,
+                                                        devicesGroupList,
+                                                        _devicesUIDDict
+                                                        );
+                                    s_cpNetGroupsDict.Clear();//to avoid duplication of device groups 
+                                    s_cpNetGroupsDict = s_cpNetGroupsDict.Concat(s_cpNetGroupsDict_Global.Where(x => !s_cpNetGroupsDict.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
+                                }
+
+                                //_warningsConvertedPackage = -1;
+                                //_errorsConvertedPackage = -1;
+                                _rulesInConvertedPackage = -1;
+                                _rulesInNatLayer = -1;
+                                CleanCheckPointObjectsLists();
+
+                                // changing target folder path to folder contains config file
+                                ChangeTargetFolder(targetFolderMain, targetFileNameMain);
+                                CreateCatalogExportManagment();
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Optimizing Firewall rulebase ...");
+                Progress.SetProgress(70);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(70, "Optimizing Firewall rulebase ...");
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Analyzing objects ...");
+                Progress.SetProgress(80);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(80, "Analyzing objects ...");
+
+            VendorHtmlFile = _vendorFilePath;
+
+            ObjectsScriptFile = _targetFolder;
+            PolicyScriptFile = _targetFolder;
+
+            if (IsConsoleRunning)
+            {
+                Progress.SetProgress(100);
+                Progress.Dispose();
+            }
+
+            OptimizationPotential = NewPaloAnalizStatistic._totalFileRules > 0 ? ((NewPaloAnalizStatistic._totalFileRules - NewPaloAnalizStatistic._totalFileRulesOpt) * 100 / (float)NewPaloAnalizStatistic._totalFileRules) : 0;
+
+            return 0;
+        }
+
+        public void AnalyzePaDeviceGroupEntry(string targetFolderNew, string targetFileNameNew, PA_DeviceGroupEntry paDeviceGroupEntry, Dictionary<String, List<PA_ZoneEntry>> devgroupZoneDictionary,
+                                        List<PA_TagEntry> s_TagEntries,
+                                        Dictionary<string, CheckPointObject> s_cpAddressesDict,
+                                        Dictionary<string, CheckPoint_NetworkGroup> s_cpNetGroupsDict,
+                                        Dictionary<string, CheckPointObject> s_cpServicesDict,
+                                        Dictionary<string, string> s_paServicesTypesDict,
+                                        Dictionary<string, CheckPoint_ServiceGroup> s_cpServicesGroupsDict,
+                                        List<string> s_paAppFiltersList,
+                                        Dictionary<string, CheckPoint_ApplicationGroup> s_cpAppGroupsDict,
+                                        Dictionary<string, List<CheckPoint_Time>> s_cpSchedulesDict,
+                                        PA_PreRulebase s_preRulebase,
+                                        PA_PostRulebase s_postRulebase,
+                                        List<CheckPoint_NetworkGroup> devicesGroupList,
+                                        Dictionary<string, string> _devicesUIDDict
+                                        )
+        {
+            _isOverMaxLengthPackageName = false;
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Analyze configuration...");
+                Progress.SetProgress(35);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(35, "Analyze configuration...");
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Analyze objects...");
+                Progress.SetProgress(40);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(40, "Analyze objects...");
+
+            _cpObjects.Initialize(); // must be first!!!
+            CleanCheckPointObjectsLists(); // must be first!!!
+
+            //change folder path for writing reports
+            //if there are several device groups then each report will be placed to separate folder
+            //if only one device group exists then report will be in the same folder as config file
+            ChangeTargetFolder(targetFolderNew, targetFileNameNew);
+
+            //convert PaloAlto Ojbects to CheckPoint Objects and save them to correspondings List
+
+            Dictionary<string, CheckPoint_Zone> cpZonesDict = null;
+
+            if (devgroupZoneDictionary.ContainsKey(paDeviceGroupEntry.Name))
+            {
+                cpZonesDict = ConvertZones(devgroupZoneDictionary[paDeviceGroupEntry.Name]);
+            }
+
+            Dictionary<string, CheckPointObject> cpAddressesDict = ConvertAddresses(paDeviceGroupEntry, s_cpAddressesDict);
+
+            Dictionary<string, CheckPoint_NetworkGroup> cpNetGroupsDict = ConvertAddressesGroupsWithInspection(paDeviceGroupEntry, cpAddressesDict, s_cpNetGroupsDict, s_TagEntries);
+
+            Dictionary<string, CheckPointObject> cpServicesDict = ConvertServices(paDeviceGroupEntry, s_cpServicesDict);
+
+            Dictionary<string, string> paServicesTypesDict = GetServicesTypes(paDeviceGroupEntry, s_paServicesTypesDict);
+
+            Dictionary<string, CheckPoint_ServiceGroup> cpServicesGroupsDict = ConvertServicesGroupsWithInspection(paDeviceGroupEntry, cpServicesDict, s_cpServicesGroupsDict);
+
+            List<string> appsMatchList = GetApplicationsMatchList();
+
+            List<string> paAppFiltersList = GetPAApplicationsFilters(paDeviceGroupEntry, s_paAppFiltersList);
+
+            Dictionary<string, CheckPoint_ApplicationGroup> cpAppGroupsDict =
+                ConvertApplicationsGroups(new List<PA_ApplicationGroupEntry>(paDeviceGroupEntry.ApplicationGroupsEntries), appsMatchList, s_cpAppGroupsDict, paAppFiltersList, cpServicesGroupsDict);
+
+            Dictionary<string, List<CheckPoint_Time>> cpSchedulesDict = null;
+            if (s_cpSchedulesDict != null)
+                cpSchedulesDict = new Dictionary<string, List<CheckPoint_Time>>(s_cpSchedulesDict);
+            else
+                cpSchedulesDict = new Dictionary<string, List<CheckPoint_Time>>();
+            ConvertSchedules(paDeviceGroupEntry).ForEach(x =>
+            {
+                string key = x.Name;
+                x = InspectCpScheduleName(x);
+                List<CheckPoint_Time> cpTimesList = null;
+                if (cpSchedulesDict.ContainsKey(key))
+                    cpTimesList = cpSchedulesDict[key];
+                else
+                    cpTimesList = new List<CheckPoint_Time>();
+                cpTimesList.Add(x);
+                cpSchedulesDict[key] = cpTimesList;
+            });
+
+            Dictionary<string, CheckPoint_AccessRole> cpAccessRolesDict = new Dictionary<string, CheckPoint_AccessRole>();
+
+            if (IsConsoleRunning)
+            {
+                Console.WriteLine("Analyze policy...");
+                Progress.SetProgress(60);
+                Thread.Sleep(1000);
+            }
+            RaiseConversionProgress(60, "Analyze policy...");
+
+            ConvertSecurityPolicy(paDeviceGroupEntry, cpZonesDict,
+                                  cpAddressesDict, cpNetGroupsDict,
+                                  cpServicesDict, cpServicesGroupsDict,
+                                  appsMatchList, cpAppGroupsDict, paAppFiltersList,
+                                  cpSchedulesDict, cpAccessRolesDict, s_preRulebase, s_postRulebase, devicesGroupList, _devicesUIDDict);
+
+            (new List<CheckPoint_AccessRole>(cpAccessRolesDict.Values)).ForEach(x => AddCheckPointObject(x));
+
+            if (_isNatConverted)
+            {
+                ConvertNatPolicy(paDeviceGroupEntry, cpAddressesDict, cpNetGroupsDict, cpServicesDict, paServicesTypesDict, cpServicesGroupsDict, devicesGroupList, _devicesUIDDict);
+            }
+
+            Add_Optimized_Package();
+
+            ExportManagmentReport(true);
+
+            if (cpZonesDict != null)
+                (new List<CheckPoint_Zone>(cpZonesDict.Values)).ForEach(x => AddCheckPointObject(x));
+
+            (new List<CheckPointObject>(cpAddressesDict.Values)).ForEach(x => AddCheckPointObject(x));
+            (new List<CheckPoint_NetworkGroup>(cpNetGroupsDict.Values)).ForEach(x => AddCheckPointObject(x));
+            (new List<CheckPointObject>(cpServicesDict.Values)).ForEach(x =>
+            {
+                if (x.GetType() != typeof(CheckPoint_PredifinedObject))
+                {
+                    AddCheckPointObject(x);
+                }
+            });
+
+            (new List<CheckPoint_ServiceGroup>(cpServicesGroupsDict.Values)).ForEach(x => AddCheckPointObject(x));
+            (new List<CheckPoint_ApplicationGroup>(cpAppGroupsDict.Values)).ForEach(x => AddCheckPointObject(x));
+            (new List<List<CheckPoint_Time>>(cpSchedulesDict.Values)).ForEach(x => x.ForEach(y => AddCheckPointObject(y)));
+
+
+            ExportManagmentReport(false);
+            NewPaloAnalizStatistic.FlushObjects();
+
+
+            // to clean; must be the last!!!
+            _cpObjects.ClearRepository();
+            CleanSavedData();
         }
 
         public override Dictionary<string, int> Convert(bool convertNat)
@@ -4319,6 +4821,162 @@ namespace PanoramaPaloAltoMigration
                 file.WriteLine("</body>");
                 file.WriteLine("</html>");
             }
+        }
+    }
+
+    public class NewAnalizStatistic
+    {
+        public CheckPoint_Package _Package;
+        public int _optPackageCount = 0;
+        public int _fullrullPackcount = 0;
+        public int _fullrullPackageCount = 0;
+        public int _totalrullPackageCount = 0;
+        public int _totalNetworkObjectsCount = 0;
+        public int _unusedNetworkObjectsCount = 0;
+        public int _duplicateNetworkObjectsCount = 0;
+        public int _nestedNetworkGroupsCount = 0;
+        public int _nestedNetworkGroupsCountAll = 0;
+
+        public int _totalServicesObjectsCount = 0;
+        public int _unusedServicesObjectsCount = 0;
+        public int _duplicateServicesObjectsCount = 0;
+        public int _nestedServicesGroupsCount = 0;
+        public int _nestedServicesGroupsCountAll = 0;
+
+        public int _totalServicesRulesCount = 0;
+        public int _totalServicesRulesOptCount = 0;
+        public int _rulesServicesutilizingServicesAnyCount = 0;
+        public int _rulesServicesutilizingServicesAnySourceCount = 0;
+        public int _rulesServicesutilizingServicesAnyDestinationCount = 0;
+        public int _rulesServicesutilizingServicesAnyServiceCount = 0;
+        public int _unrulesServicesutilizingServicesAnyCount = 0;
+        public int _unrulesServicesutilizingServicesAnySourceCount = 0;
+        public int _unrulesServicesutilizingServicesAnyDestinationCount = 0;
+        public int _unrulesServicesutilizingServicesAnyServiceCount = 0;
+        public int _disabledServicesRulesCount = 0;
+        public int _undisabledServicesRulesCount = 0;
+        public int _unnamedServicesRulesCount = 0;
+        public int _timesServicesRulesCount = 0;
+        public int _untimesServicesRulesCount = 0;
+        public int _nonServicesLoggingServicesRulesCount = 0;
+        public int _stealthServicesRuleCount = 0;
+        public int _cleanupServicesRuleCount = 0;
+        public int _uncommentedServicesRulesCount = 0;
+
+        public int _totalFileRules = 0;
+        public int _totalFileRulesOpt = 0;
+
+
+        public int TotalNetworkObjectsPercent { get { return 100; } }
+        public float UnusedNetworkObjectsPercent { get { return _totalNetworkObjectsCount > 0 ? ((float)_unusedNetworkObjectsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }
+        public float DuplicateNetworkObjectsPercent { get { return _totalNetworkObjectsCount > 0 ? ((float)_duplicateNetworkObjectsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }
+        public float NestedNetworkGroupsPercent { get { return _nestedNetworkGroupsCountAll > 0 ? ((float)_nestedNetworkGroupsCount / (float)_nestedNetworkGroupsCountAll) * 100 : 0; } }
+
+        public float TotalServicesObjectsPercent { get { return 100; } }
+        public float UnusedServicesObjectsPercent { get { return _totalServicesObjectsCount > 0 ? ((float)_unusedServicesObjectsCount / (float)_totalServicesObjectsCount) * 100 : 0; } }
+        public float DuplicateServicesObjectsPercent { get { return _totalServicesObjectsCount > 0 ? ((float)_duplicateServicesObjectsCount / (float)_totalServicesObjectsCount) * 100 : 0; } }
+        public float NestedServicesGroupsPercent { get { return _nestedServicesGroupsCountAll > 0 ? ((float)_nestedServicesGroupsCount / (float)_nestedServicesGroupsCountAll) * 100 : 0; } }
+
+        public float TotalServicesRulesPercent { get { return 100; } }
+        public float RulesServicesutilizingServicesAnyPercent { get { return _totalServicesRulesCount > 0 ? ((float)_unrulesServicesutilizingServicesAnyCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+        public float DisabledServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_undisabledServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+        public float UnnamedServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_unnamedServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+        public float TimesServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_untimesServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+        public float NonServicesLoggingServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_nonServicesLoggingServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+        public float StealthServicesRulePercent { get { return _totalServicesRulesCount > 0 ? ((float)_stealthServicesRuleCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+        public float CleanupServicesRulePercent { get { return _totalServicesRulesCount > 0 ? ((float)_cleanupServicesRuleCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+        public float UncommentedServicesRulesPercent { get { return _totalServicesRulesCount > 0 ? ((float)_uncommentedServicesRulesCount / (float)_totalServicesRulesCount) * 100 : 0; } }
+
+        public NewAnalizStatistic(int fullpackcount, int totalpack)
+        {
+            _fullrullPackageCount = fullpackcount;
+            _totalrullPackageCount = totalpack;
+        }
+
+        public void Flush()
+        {
+            _fullrullPackcount = 0;
+            _totalServicesRulesCount = 0;
+            _rulesServicesutilizingServicesAnyCount = 0;
+            _rulesServicesutilizingServicesAnySourceCount = 0;
+            _rulesServicesutilizingServicesAnyDestinationCount = 0;
+            _rulesServicesutilizingServicesAnyServiceCount = 0;
+            _disabledServicesRulesCount = 0;
+            _unnamedServicesRulesCount = 0;
+            _timesServicesRulesCount = 0;
+            _nonServicesLoggingServicesRulesCount = 0;
+            _stealthServicesRuleCount = 0;
+            _cleanupServicesRuleCount = 0;
+            _uncommentedServicesRulesCount = 0;
+            _totalNetworkObjectsCount = 0;
+        }
+
+        public void FlushObjects()
+        {
+            _unusedNetworkObjectsCount = 0;
+            _duplicateNetworkObjectsCount = 0;
+            _nestedNetworkGroupsCount = 0;
+            _nestedNetworkGroupsCountAll = 0;
+
+            _totalServicesObjectsCount = 0;
+            _unusedServicesObjectsCount = 0;
+            _duplicateServicesObjectsCount = 0;
+            _nestedServicesGroupsCount = 0;
+            _nestedServicesGroupsCountAll = 0;
+        }
+
+        public void CalculateCorrectAll(List<CheckPoint_Network> _cpNetworks,
+                                                   List<CheckPoint_NetworkGroup> _cpNetworkGroups,
+                                                   List<CheckPoint_Host> _cpHosts,
+                                                   List<CheckPoint_Range> _cpRanges,
+                                                   List<CheckPoint_TcpService> _cpTcpServices,
+                                                   List<CheckPoint_UdpService> _cpUdpServices,
+                                                   List<CheckPoint_SctpService> _cpSctpServices,
+                                                   List<CheckPoint_IcmpService> _cpIcmpServices,
+                                                   List<CheckPoint_DceRpcService> _cpDceRpcServices,
+                                                   List<CheckPoint_OtherService> _cpOtherServices,
+                                                   List<CheckPoint_ServiceGroup> _cpServiceGroups,
+                                                   List<CheckPoint_RpcService> _cpRpcServices)
+        {
+            _unusedNetworkObjectsCount = _unusedNetworkObjectsCount >= 0 ? _unusedNetworkObjectsCount : 0;
+            _unusedServicesObjectsCount = _unusedServicesObjectsCount >= 0 ? _unusedServicesObjectsCount : 0;
+            _undisabledServicesRulesCount = _disabledServicesRulesCount;
+            _unrulesServicesutilizingServicesAnyCount = _rulesServicesutilizingServicesAnyCount;
+            _unrulesServicesutilizingServicesAnySourceCount = _rulesServicesutilizingServicesAnySourceCount;
+            _unrulesServicesutilizingServicesAnyDestinationCount = _rulesServicesutilizingServicesAnyDestinationCount;
+            _unrulesServicesutilizingServicesAnyServiceCount = _rulesServicesutilizingServicesAnyServiceCount;
+            _untimesServicesRulesCount = _timesServicesRulesCount;
+            _totalNetworkObjectsCount = _cpNetworks.Count + _cpHosts.Count + _cpNetworkGroups.Count + _cpRanges.Count;
+
+            //DUPLICATE CALCULATION
+            foreach (var item in _cpNetworks)
+            {
+                if (_cpNetworks.Where(nt => nt.Netmask == item.Netmask & nt.Subnet == nt.Subnet).Count() > 1) { _duplicateNetworkObjectsCount++; }
+            }
+            foreach (var item in _cpHosts)
+            {
+                if (_cpHosts.Where(nt => nt.IpAddress == item.IpAddress).Count() > 1) { _duplicateNetworkObjectsCount++; }
+            }
+            foreach (var item in _cpRanges)
+            {
+                if (_cpRanges.Where(nt => nt.RangeFrom == item.RangeFrom & nt.RangeTo == nt.RangeTo).Count() > 1) { _duplicateNetworkObjectsCount++; }
+            }
+            //
+            List<string> vs = new List<string>();
+            foreach (var item in _cpNetworkGroups) { vs.AddRange(item.Members); }
+            var count = _nestedNetworkGroupsCountAll = vs.Count;
+            _nestedNetworkGroupsCount = count - vs.Distinct().Count();
+            /////////////////////////////////
+            _totalServicesObjectsCount = _cpTcpServices.Count + _cpUdpServices.Count + _cpSctpServices.Count + _cpIcmpServices.Count + _cpDceRpcServices.Count + _cpOtherServices.Count + _cpServiceGroups.Count + _cpRpcServices.Count;
+            //
+            List<string> allServiceNames = new List<string>();
+            _duplicateServicesObjectsCount += _cpTcpServices.Count - _cpTcpServices.Select(n => n.Port).Distinct().Count();
+            _duplicateServicesObjectsCount += _cpUdpServices.Count - _cpUdpServices.Select(n => n.Port).Distinct().Count();
+            //
+            vs = new List<string>();
+            foreach (var item in _cpServiceGroups) { vs.AddRange(item.Members); }
+            count = _nestedServicesGroupsCountAll = vs.Count;
+            _nestedServicesGroupsCount = count - vs.Distinct().Count();
         }
     }
 }

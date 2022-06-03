@@ -200,6 +200,7 @@ namespace FortiGateMigration
                     NewFortigateAnalizStatistic._timesServicesRulesCount = 0;
                     NewFortigateAnalizStatistic._cleanupServicesRuleCount = 0;
                     NewFortigateAnalizStatistic._uncommentedServicesRulesCount = 0;
+                    NewFortigateAnalizStatistic._disabledServicesRulesCount = 0;
 
                     foreach (var layer in _cpPackages[0].SubPolicies)
                     {
@@ -253,6 +254,10 @@ namespace FortiGateMigration
                             {
                                 NewFortigateAnalizStatistic._uncommentedServicesRulesCount++;
                             }
+                            if(policy.Enabled == false)
+                            {
+                                NewFortigateAnalizStatistic._disabledServicesRulesCount++;
+                            }
                         }
                     }
                     foreach (var policy in _cpPackages[0].ParentLayer.Rules)
@@ -304,6 +309,10 @@ namespace FortiGateMigration
                         if (policy.Comments != "")
                         {
                             NewFortigateAnalizStatistic._uncommentedServicesRulesCount++;
+                        }
+                        if (policy.Enabled == false)
+                        {
+                            NewFortigateAnalizStatistic._disabledServicesRulesCount++;
                         }
                     }
                     NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyDestinationCount = de_count;
@@ -3598,7 +3607,6 @@ namespace FortiGateMigration
 
                             if (fgCommand_Set.Field.Equals("status") && fgCommand_Set.Value.Trim().ToLower().Equals("disable"))
                             {
-                                NewFortigateAnalizStatistic._disabledServicesRulesCount++;
                                 cpRule.Enabled = false;
                             }
 

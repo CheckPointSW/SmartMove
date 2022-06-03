@@ -41,7 +41,8 @@ class APIClientArgs:
     # single_conn is set to True by default, when work on parallel set to False
     def __init__(self, port=None, fingerprint=None, sid=None, server="127.0.0.1", http_debug_level=0,
                  api_calls=None, debug_file="", proxy_host=None, proxy_port=8080,
-                 api_version=None, unsafe=False, unsafe_auto_accept=False, context="web_api", single_conn=True, user_agent="python-api-wrapper"):
+                 api_version=None, unsafe=False, unsafe_auto_accept=False, context="web_api", single_conn=True,
+                 user_agent="python-api-wrapper", sync_frequency=2):
         self.port = port
         # management server fingerprint
         self.fingerprint = fingerprint
@@ -71,6 +72,8 @@ class APIClientArgs:
         self.single_conn = single_conn
         # User agent will be use in api call request header
         self.user_agent = user_agent
+        # Interval size in seconds of the task update
+        self.sync_frequency = sync_frequency
 
 
 class APIClient:
@@ -119,7 +122,8 @@ class APIClient:
         self.single_conn = api_client_args.single_conn
         # User agent will be use in api call request header
         self.user_agent = api_client_args.user_agent
-
+        # Interval size in seconds of the task update
+        self.sync_frequency = api_client_args.sync_frequency
 
     def __enter__(self):
         return self
@@ -220,7 +224,7 @@ class APIClient:
         :param payload: [optional] dict of additional parameters for the login command
         :return: APIResponse object with the relevant details from the login command.
         """
-        python_absolute_path = os.path.expandvars("$MDS_FWDIR/Python/bin/python")
+        python_absolute_path = os.path.expandvars("$MDS_FWDIR/Python/bin/python3")
         api_get_port_absolute_path = os.path.expandvars("$MDS_FWDIR/scripts/api_get_port.py")
         mgmt_cli_absolute_path = os.path.expandvars("$CPDIR/bin/mgmt_cli")
 
@@ -235,6 +239,11 @@ class APIClient:
             except (ValueError, subprocess.CalledProcessError):
                 port = self.get_port()
 
+            else:
+                # may be a non-standard port, update the configuration to reflect this,
+                # required for follow-up HTTPS connections
+                self.set_port(port)
+
         try:
             # This simple dict->cli format works only because the login command doesn't require
             # any complex parameters like objects and lists
@@ -245,7 +254,8 @@ class APIClient:
             if domain:
                 new_payload += ["domain", domain]
             login_response = compatible_loads(subprocess.check_output(
-                [mgmt_cli_absolute_path, "login", "-r", "true", "-f", "json", "--port", str(port)] + new_payload))
+                [mgmt_cli_absolute_path, "login", "-r", "true", "-f", "json", "--port", str(port), "--user-agent",
+                 self.user_agent] + new_payload))
             self.sid = login_response["sid"]
             self.server = "127.0.0.1"
             self.domain = domain
@@ -324,7 +334,7 @@ class APIClient:
                 res = APIResponse("", False, err_message=err_message)
             else:
                 res = APIResponse("", False, err_message=err)
-        except (http_client.CannotSendRequest, http_client.BadStatusLine) as e:
+        except (http_client.CannotSendRequest, http_client.BadStatusLine, ConnectionAbortedError) as e:
             self.conn = self.create_https_connection()
             self.conn.request("POST", url, _data, _headers)
             response = self.conn.getresponse()
@@ -345,16 +355,17 @@ class APIClient:
             json_data["password"] = "****"
             _data = json.dumps(json_data)
 
-        # Store the request and the reply (for debug purpose).
-        _api_log = {
-            "request": {
-                "url": url,
-                "payload": compatible_loads(_data),
-                "headers": _headers
-            },
-            "response": res.response()
-        }
-        self.api_calls.append(_api_log)
+        if self.debug_file:
+            # Store the request and the reply (for debug purpose).
+            _api_log = {
+                "request": {
+                    "url": url,
+                    "payload": compatible_loads(_data),
+                    "headers": _headers
+                },
+                "response": res.response()
+            }
+            self.api_calls.append(_api_log)
 
         # If we want to wait for the task to end, wait for it
         if wait_for_task is True and res.success and command != "show-task":
@@ -528,7 +539,7 @@ class APIClient:
             if completed_tasks == total_tasks:
                 task_complete = True
             else:
-                time.sleep(2)  # Wait for two seconds
+                time.sleep(self.sync_frequency)  # Wait for sync_frequency seconds
 
         self.check_tasks_status(task_result)
         return task_result
@@ -722,8 +733,7 @@ class APIClient:
 
     def create_https_connection(self):
         context = ssl.create_default_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
+        context.check_hostname = True
         # create https connection
         if self.proxy_host and self.proxy_port:
             conn = HTTPSConnection(self.proxy_host, self.proxy_port, context=context)

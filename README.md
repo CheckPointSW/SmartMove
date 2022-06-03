@@ -22,6 +22,8 @@ For SmartMove tool release notes and latest updates, please refer to Check Point
 ## Development Environment
 The tool is developed using Microsoft C# language and .Net framework version 4.5 (WPF application). The project solution file is configured for Microsoft Visual Studio 2012 and above.
 
+From version 9.1 the tool is developed using Python language version 3.7.
+
 
 ## 💧 Community
 Join the welcoming community of Check Point SmartMove developers at [CheckMATES](https://community.checkpoint.com/t5/SmartMove/bd-p/smartmove) 
