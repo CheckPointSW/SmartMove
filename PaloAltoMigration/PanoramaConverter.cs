@@ -25,6 +25,8 @@ namespace PanoramaPaloAltoMigration
 
         public bool ShowOptBashLink = true;
 
+        public bool isUsedTapMode = false;
+
         #endregion
 
         #region Private Members
@@ -3560,48 +3562,60 @@ namespace PanoramaPaloAltoMigration
 
                                 string keyLayerName = zoneNameFrom + "_TK_" + zoneNameTo;
                                 string cpGroupRuleName = zoneNameFrom + "__" + zoneNameTo;
-
-                                CheckPoint_Layer cpLayer = null;
-                                if (!cpLayersDict.TryGetValue(keyLayerName, out cpLayer))
+                                if (cpZonesDict.ContainsKey(zoneNameFrom) && cpZonesDict.ContainsKey(zoneNameTo))
                                 {
-                                    CheckPoint_Zone cpZoneSrc = cpZonesDict[zoneNameFrom];
-                                    CheckPoint_Zone cpZoneDst = cpZonesDict[zoneNameTo];
+                                    CheckPoint_Layer cpLayer = null;
+                                    if (!cpLayersDict.TryGetValue(keyLayerName, out cpLayer))
+                                    {
+                                        CheckPoint_Zone cpZoneSrc = cpZonesDict[zoneNameFrom];
+                                        CheckPoint_Zone cpZoneDst = cpZonesDict[zoneNameTo];
 
-                                    AddCheckPointObject(cpZoneSrc);
-                                    AddCheckPointObject(cpZoneDst);
+                                        AddCheckPointObject(cpZoneSrc);
+                                        AddCheckPointObject(cpZoneDst);
 
-                                    cpLayer = new CheckPoint_Layer();
-                                    cpLayer.Name = keyLayerName;
-                                    cpLayer.ApplicationsAndUrlFiltering = false;
+                                        cpLayer = new CheckPoint_Layer();
+                                        cpLayer.Name = keyLayerName;
+                                        cpLayer.ApplicationsAndUrlFiltering = false;
 
-                                    cpPackage.SubPolicies.Add(cpLayer);
-                                    validatePackage(cpPackage);
+                                        cpPackage.SubPolicies.Add(cpLayer);
+                                        validatePackage(cpPackage);
 
-                                    CheckPoint_Rule cpGroupRule = new CheckPoint_Rule();
-                                    cpGroupRule.Name = cpGroupRuleName;
-                                    cpGroupRule.Source.Add(cpZoneSrc);
-                                    cpGroupRule.Destination.Add(cpZoneDst);
-                                    cpGroupRule.Layer = cpPackage.NameOfAccessLayer;
-                                    cpGroupRule.Action = CheckPoint_Rule.ActionType.SubPolicy;
-                                    cpGroupRule.SubPolicyName = cpLayer.Name;
+                                        CheckPoint_Rule cpGroupRule = new CheckPoint_Rule();
+                                        cpGroupRule.Name = cpGroupRuleName;
+                                        cpGroupRule.Source.Add(cpZoneSrc);
+                                        cpGroupRule.Destination.Add(cpZoneDst);
+                                        cpGroupRule.Layer = cpPackage.NameOfAccessLayer;
+                                        cpGroupRule.Action = CheckPoint_Rule.ActionType.SubPolicy;
+                                        cpGroupRule.SubPolicyName = cpLayer.Name;
 
-                                    cpPackage.ParentLayer.Rules.Add(cpGroupRule);
+                                        cpPackage.ParentLayer.Rules.Add(cpGroupRule);
+                                        _rulesInConvertedPackage += 1;
+
+                                        cpGroupRuleAppFiltering[cpGroupRuleName] = false;
+                                    }
+
+                                    cpRule.Layer = cpLayer.Name;
+
+                                    cpLayer.Rules.Add(cpRule);
                                     _rulesInConvertedPackage += 1;
+                                    cpLayersDict[keyLayerName] = cpLayer;
 
-                                    cpGroupRuleAppFiltering[cpGroupRuleName] = false;
+                                    //---
+                                    if (applicationsFiltering)
+                                    {
+                                        cpLayer.ApplicationsAndUrlFiltering = true;
+                                        cpGroupRuleAppFiltering[cpGroupRuleName] = true;
+                                    }
                                 }
-
-                                cpRule.Layer = cpLayer.Name;
-
-                                cpLayer.Rules.Add(cpRule);
-                                _rulesInConvertedPackage += 1;
-                                cpLayersDict[keyLayerName] = cpLayer;
-
-                                //---
-                                if (applicationsFiltering)
+                                else
                                 {
-                                    cpLayer.ApplicationsAndUrlFiltering = true;
-                                    cpGroupRuleAppFiltering[cpGroupRuleName] = true;
+                                    ///TAP mode => skip and provide error
+                                    if (zoneNameFrom.Contains("tap") || zoneNameTo.Contains("tap"))
+                                    {
+                                        isUsedTapMode = true;
+                                        /// provide error message : 
+                                        /// https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClMzCAK
+                                    }
                                 }
                             }
                         }

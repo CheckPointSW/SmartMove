@@ -959,6 +959,14 @@ namespace SmartMove
                     ConvertedOptimizedPolicyRulesCount = (panoramaConverter.RulesInConvertedPackage() != -1) ? string.Format(" ({0} rules)", panoramaConverter.RulesInConvertedOptimizedPackage()) : " Check report.";
                     ConvertingWarningsCount = (panoramaConverter.WarningsInConvertedPackage() != -1) ? string.Format(" ({0} warnings)", panoramaConverter.WarningsInConvertedPackage()) : " Check report.";
                     ConvertingErrorsCount = (panoramaConverter.ErrorsInConvertedPackage() != -1) ? string.Format(" ({0} errors)", panoramaConverter.ErrorsInConvertedPackage()) : " Check report.";
+                    if (panoramaConverter.isUsedTapMode)
+                    {
+                        SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "will be used tap mode");
+                        ShowMessage(null, MessageTypes.Error, "these instructions", "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClMzCAK", null, null,
+                            string.Format("{1}{0}{2}", Environment.NewLine, "Tap mod was skipped.",
+                        "Please follow"));
+                        return;
+                    }
                     break;
                 default:
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Collapsed;
