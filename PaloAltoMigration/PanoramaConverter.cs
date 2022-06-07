@@ -3140,6 +3140,9 @@ namespace PanoramaPaloAltoMigration
             }
             cpPackage.ParentLayer.Name = cpPackage.NameOfAccessLayer;
 
+            ///tapMode flag
+            bool isTapMode = false;
+
             foreach (PA_SecurityRuleEntry paSecurityRuleEntry in paRules)
             {
                 List<string> messagesE = new List<string>();
@@ -3525,6 +3528,7 @@ namespace PanoramaPaloAltoMigration
 
                         List<string> zonesNamesToList = paSecurityRuleEntry.ToList;
 
+
                         foreach (string zoneNameFrom in zonesNamesFromList)
                         {
                             foreach (string zoneNameTo in zonesNamesToList)
@@ -3561,47 +3565,58 @@ namespace PanoramaPaloAltoMigration
                                 string keyLayerName = zoneNameFrom + "_TK_" + zoneNameTo;
                                 string cpGroupRuleName = zoneNameFrom + "__" + zoneNameTo;
 
-                                CheckPoint_Layer cpLayer = null;
-                                if (!cpLayersDict.TryGetValue(keyLayerName, out cpLayer))
+                                if (cpZonesDict.ContainsKey(zoneNameFrom) && cpZonesDict.ContainsKey(zoneNameTo))
                                 {
-                                    CheckPoint_Zone cpZoneSrc = cpZonesDict[zoneNameFrom];
-                                    CheckPoint_Zone cpZoneDst = cpZonesDict[zoneNameTo];
+                                    CheckPoint_Layer cpLayer = null;
+                                    if (!cpLayersDict.TryGetValue(keyLayerName, out cpLayer))
+                                    {
+                                        CheckPoint_Zone cpZoneSrc = cpZonesDict[zoneNameFrom];
+                                        CheckPoint_Zone cpZoneDst = cpZonesDict[zoneNameTo];
 
-                                    AddCheckPointObject(cpZoneSrc);
-                                    AddCheckPointObject(cpZoneDst);
+                                        AddCheckPointObject(cpZoneSrc);
+                                        AddCheckPointObject(cpZoneDst);
 
-                                    cpLayer = new CheckPoint_Layer();
-                                    cpLayer.Name = keyLayerName;
-                                    cpLayer.ApplicationsAndUrlFiltering = false;
+                                        cpLayer = new CheckPoint_Layer();
+                                        cpLayer.Name = keyLayerName;
+                                        cpLayer.ApplicationsAndUrlFiltering = false;
 
-                                    cpPackage.SubPolicies.Add(cpLayer);
-                                    validatePackage(cpPackage);
+                                        cpPackage.SubPolicies.Add(cpLayer);
+                                        validatePackage(cpPackage);
 
-                                    CheckPoint_Rule cpGroupRule = new CheckPoint_Rule();
-                                    cpGroupRule.Name = cpGroupRuleName;
-                                    cpGroupRule.Source.Add(cpZoneSrc);
-                                    cpGroupRule.Destination.Add(cpZoneDst);
-                                    cpGroupRule.Layer = cpPackage.NameOfAccessLayer;
-                                    cpGroupRule.Action = CheckPoint_Rule.ActionType.SubPolicy;
-                                    cpGroupRule.SubPolicyName = cpLayer.Name;
+                                        CheckPoint_Rule cpGroupRule = new CheckPoint_Rule();
+                                        cpGroupRule.Name = cpGroupRuleName;
+                                        cpGroupRule.Source.Add(cpZoneSrc);
+                                        cpGroupRule.Destination.Add(cpZoneDst);
+                                        cpGroupRule.Layer = cpPackage.NameOfAccessLayer;
+                                        cpGroupRule.Action = CheckPoint_Rule.ActionType.SubPolicy;
+                                        cpGroupRule.SubPolicyName = cpLayer.Name;
 
-                                    cpPackage.ParentLayer.Rules.Add(cpGroupRule);
+                                        cpPackage.ParentLayer.Rules.Add(cpGroupRule);
+                                        _rulesInConvertedPackage += 1;
+
+                                        cpGroupRuleAppFiltering[cpGroupRuleName] = false;
+                                    }
+
+                                    cpRule.Layer = cpLayer.Name;
+
+                                    cpLayer.Rules.Add(cpRule);
                                     _rulesInConvertedPackage += 1;
+                                    cpLayersDict[keyLayerName] = cpLayer;
 
-                                    cpGroupRuleAppFiltering[cpGroupRuleName] = false;
+                                    //---
+                                    if (applicationsFiltering)
+                                    {
+                                        cpLayer.ApplicationsAndUrlFiltering = true;
+                                        cpGroupRuleAppFiltering[cpGroupRuleName] = true;
+                                    }
                                 }
-
-                                cpRule.Layer = cpLayer.Name;
-
-                                cpLayer.Rules.Add(cpRule);
-                                _rulesInConvertedPackage += 1;
-                                cpLayersDict[keyLayerName] = cpLayer;
-
-                                //---
-                                if (applicationsFiltering)
+                                else
                                 {
-                                    cpLayer.ApplicationsAndUrlFiltering = true;
-                                    cpGroupRuleAppFiltering[cpGroupRuleName] = true;
+                                    ///TAP mode => skip and set flag for TAP mode
+                                    if (zoneNameFrom.Contains("tap") || zoneNameTo.Contains("tap"))
+                                    {
+                                        isTapMode = true;
+                                    }
                                 }
                             }
                         }
@@ -3612,6 +3627,9 @@ namespace PanoramaPaloAltoMigration
                     _errorsList.AddRange(messagesE);
                 }
             }
+
+            ///TAP mode => provide error
+            if (isTapMode) _errorsList.Add("Policy did not create since contain TAP mode interface");
 
             cpPackage.ParentLayer.Rules.ForEach(x =>
             {
