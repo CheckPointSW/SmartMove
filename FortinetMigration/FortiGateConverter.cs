@@ -1138,7 +1138,7 @@ namespace FortiGateMigration
                         }
                     }
 
-                    if (fgCommandConfig.ObjectName.Equals("global") && isVDom)
+                    if (fgCommandConfig.ObjectName.Equals("global"))
                     {
                         InitSystemInterfaces(fgCommandConfig.SubCommandsList);
                     }
