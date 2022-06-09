@@ -3,6 +3,7 @@ using System.IO;
 using Newtonsoft.Json;
 using MigrationBase;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace FortiGateMigration
 {
@@ -19,16 +20,30 @@ namespace FortiGateMigration
         {
             _fgCommandsList = new List<FgCommand>();
         }
-        
+
         #region Override Methods
 
         protected override void ParseVersion(object versionProvider)
         {
             string versionLine = versionProvider.ToString();
 
-            int indVersionDash = versionLine.IndexOf("-", "#config-version=".Length) + 1; //add 1 because we need to cut w/o colon
+            Regex regex = new Regex(@"[0-9][.][0-9]");
 
-            VendorVersion = versionLine.Substring(indVersionDash, versionLine.IndexOf(":") - indVersionDash);
+            MatchCollection matches = regex.Matches(versionLine);
+
+            if (matches.Count > 0)
+            {
+                int indVersionDash = versionLine.IndexOf(matches[0].Value, "#config-version=".Length);
+
+                VendorVersion = versionLine.Substring(indVersionDash, versionLine.IndexOf(":") - indVersionDash);
+            }
+            else
+            {
+
+                int indVersionDash = versionLine.IndexOf("-", "#config-version=".Length) + 1; //add 1 because we need to cut w/o colon
+
+                VendorVersion = versionLine.Substring(indVersionDash, versionLine.IndexOf(":") - indVersionDash);
+            }
         }
 
         public override void Parse(string filename)
