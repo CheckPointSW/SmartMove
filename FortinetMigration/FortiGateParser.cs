@@ -102,6 +102,11 @@ namespace FortiGateMigration
                     commandName = line;
                 }
 
+                if (commandName == "end\"")
+                {
+                    commandName = "end";
+                };
+
                 FgCommandExt fgCommandExtT = null;
 
                 switch (commandName)
