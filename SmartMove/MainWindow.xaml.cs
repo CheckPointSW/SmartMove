@@ -864,7 +864,7 @@ namespace SmartMove
             DomainName.IsEnabled = enable;
             ConvertNAT.IsEnabled = enable;
             SkipUnusedObjects.IsEnabled = enable;
-            CreateServiceGroupsConf.IsEnabled = enable;
+            CreateServiceGroupsConf.IsEnabled = false;
             Go.IsEnabled = enable;
         }
 

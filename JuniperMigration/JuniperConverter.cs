@@ -3807,7 +3807,7 @@ namespace JuniperMigration
 
         private CheckPointObject GetCheckPointObjectFromJuniperNatAddressName(string addressName, JuniperObject natRule)
         {
-            if (addressName.Equals(JuniperObject.AnyIPv4, StringComparison.InvariantCultureIgnoreCase))
+            if (addressName.Equals(JuniperObject.AnyIPv4, StringComparison.InvariantCultureIgnoreCase) || addressName.Equals("any", StringComparison.InvariantCultureIgnoreCase))
             {
                 addressName = CheckPointObject.Any;
             }
@@ -4652,7 +4652,7 @@ namespace JuniperMigration
 
         private CheckPointObject GetCheckPointObjectOrCreateDummy(string cpObjectName, string dummyObjectType, JuniperObject juniperObject, string errorTitle, string errorDescription, bool createDummy = true)
         {
-            if (cpObjectName.Equals(JuniperObject.AnyIPv4, StringComparison.InvariantCultureIgnoreCase))
+            if (cpObjectName.Equals(JuniperObject.AnyIPv4, StringComparison.InvariantCultureIgnoreCase) || cpObjectName.Equals("any", StringComparison.InvariantCultureIgnoreCase))
             {
                 cpObjectName = CheckPointObject.Any;
             }
