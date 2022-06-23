@@ -166,10 +166,15 @@ namespace CiscoMigration
                     continue;
                 }
 
+                var text = line;
+                if ((!text.Contains("no nameif") && text.Contains("nameif")) || text.Contains("ip verify reverse-path interface") || text.Contains("mtu"))
+                {
+                    text = System.Text.RegularExpressions.Regex.Replace(text, @"[()#/@;:<>{}`+=~|.!?,]", "");
+                }
                 var command = new CiscoCommand
                 {
                     Id = lineId,
-                    Text = line
+                    Text = text
                 };
 
                 int indentationChange = command.IndentationLevel - prevIndentationLevel;
