@@ -63,11 +63,8 @@ namespace PanoramaPaloAltoMigration
 
             foreach (string confFile in configFilesArray)
             {
-                if (DetectPanoramaConfFile(confFile))
-                {
-                    panoramaConfig = confFile;                    
-                    break;
-                }
+                panoramaConfig = confFile;
+                break;
             }
             return panoramaConfig;
         }
