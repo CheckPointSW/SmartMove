@@ -330,14 +330,11 @@ namespace FortiGateMigration
                     NewFortigateAnalizStatistic._totalServicesRulesOptCount = optimazed_count;
 
                 }
-                if(_cpPackages.Count > 0)
-                {
                     this.OptimizationPotential = RulesInConvertedPackage() > 0 ? ((RulesInConvertedPackage() - RulesInConvertedOptimizedPackage()) * 100 / (float)RulesInConvertedPackage()) : 0;
                     NewFortigateAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
                     ExportManagmentReport();
                     OptimizationPotential = -1;
                     TotalRules += NewFortigateAnalizStatistic._totalServicesRulesCount;
-                }
 
             }
         }
