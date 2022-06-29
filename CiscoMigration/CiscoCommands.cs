@@ -1484,20 +1484,23 @@ namespace CiscoMigration
 
             if (ciscoIds.ContainsKey(DestinationIp))
             {
-                var refObj = (Cisco_Object)ciscoIds[DestinationIp];
-                if (refObj != null)
+                if (ciscoIds[DestinationIp].GetType().Name != "Cisco_GroupObject")
                 {
-                    switch (refObj.ObjectType)
+                    var refObj = (Cisco_Object)ciscoIds[DestinationIp];
+                    if (refObj != null)
                     {
-                        case Cisco_Object.ObjectTypes.Host:
-                            DestinationIp = refObj.HostAddress;
-                            destinationIpResolved = true;
-                            break;
+                        switch (refObj.ObjectType)
+                        {
+                            case Cisco_Object.ObjectTypes.Host:
+                                DestinationIp = refObj.HostAddress;
+                                destinationIpResolved = true;
+                                break;
 
-                        case Cisco_Object.ObjectTypes.Network:
-                            DestinationIp = refObj.Network;
-                            destinationIpResolved = true;
-                            break;
+                            case Cisco_Object.ObjectTypes.Network:
+                                DestinationIp = refObj.Network;
+                                destinationIpResolved = true;
+                                break;
+                        }
                     }
                 }
             }
