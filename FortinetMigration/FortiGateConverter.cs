@@ -3557,8 +3557,6 @@ namespace FortiGateMigration
                 cpRuleLayer.Rules.Add(cpSubRuleZone);
             }
 
-            bool isIntfContainsAny = false;
-
             NewFortigateAnalizStatistic._fullrullPackcount = fgCommandsList.Count;
             foreach (FgCommand fgCommandE in fgCommandsList)
             {
@@ -3616,20 +3614,20 @@ namespace FortiGateMigration
                             {
                                 fgSrcIntfs = fgCommand_Set.Value.Trim('"').Split(new string[] { "\" \"" }, StringSplitOptions.None).ToArray();
 
-                                if (Array.IndexOf(fgSrcIntfs.Select(s => s.ToLowerInvariant()).ToArray(), "any") > -1)
-                                {
-                                    isIntfContainsAny = true;
-                                }
+                                //if (Array.IndexOf(fgSrcIntfs.Select(s => s.ToLowerInvariant()).ToArray(), "any") > -1)
+                                //{
+                                //    isIntfContainsAny = true;
+                                //}
                             }
 
                             if (fgCommand_Set.Field.Equals("dstintf"))
                             {
                                 fgDstIntfs = fgCommand_Set.Value.Trim('"').Split(new string[] { "\" \"" }, StringSplitOptions.None).ToArray();
 
-                                if (Array.IndexOf(fgDstIntfs.Select(s => s.ToLowerInvariant()).ToArray(), "any") > -1)
-                                {
-                                    isIntfContainsAny = true;
-                                }
+                                //if (Array.IndexOf(fgDstIntfs.Select(s => s.ToLowerInvariant()).ToArray(), "any") > -1)
+                                //{
+                                //    isIntfContainsAny = true;
+                                //}
                             }
 
 
@@ -4108,41 +4106,52 @@ namespace FortiGateMigration
 
             //if Src or Dst Intf DO NOT contain ANY then we create sub-layers
             //otherwise policy is plain
-            if (!isIntfContainsAny)
+            List<CheckPoint_Rule> newRootRulesList = new List<CheckPoint_Rule>();
+            foreach (CheckPoint_Rule rootRule in rootRulesList)
             {
-                package.ParentLayer.Rules.AddRange(rootRulesList);
-
-                foreach (string key in extraZonesMap.Keys)
+                if (!rootRule.Name.Contains("any"))
                 {
-                    AddCpObjectToLocalMapper(key, extraZonesMap[key]);
-                    AddCheckPointObject(extraZonesMap[key]);
-                }
-
-                _warningsList.AddRange(extraZonesWarnMsgsList);
-
-                foreach (string key in rootLayersMap.Keys)
-                {
-                    CheckPoint_Layer cpLayer = rootLayersMap[key];
-
-                    CheckPoint_Rule cpRuleCU = new CheckPoint_Rule();
-                    if(!OptimizeConf) NewFortigateAnalizStatistic._cleanupServicesRuleCount++;
-                    NewFortigateAnalizStatistic._totalServicesRulesCount++;
-                    cpRuleCU.Name = "Sub-Policy Cleanup";
-                    cpRuleCU.Layer = cpLayer.Name;
-
-                    cpLayer.Rules.Add(cpRuleCU);
-
-                    package.SubPolicies.Add(cpLayer);
-                    validatePackage(package);
+                    newRootRulesList.Add(rootRule);
                 }
             }
-            else
+            package.ParentLayer.Rules.AddRange(newRootRulesList);
+
+            
+            foreach (string key in extraZonesMap.Keys)
             {
-                foreach (CheckPoint_Rule ruleAdd in realRulesList)
+                if (key.Contains("any"))
                 {
-                    ruleAdd.Layer = package.ParentLayer.Name;
-                    package.ParentLayer.Rules.Add(ruleAdd);
+                    continue;
                 }
+                AddCpObjectToLocalMapper(key, extraZonesMap[key]);
+                AddCheckPointObject(extraZonesMap[key]);
+            }
+
+            _warningsList.AddRange(extraZonesWarnMsgsList);
+
+            foreach (string key in rootLayersMap.Keys)
+            {
+                if (key.Contains("any"))
+                {
+                    continue;
+                }
+                CheckPoint_Layer cpLayer = rootLayersMap[key];
+
+                CheckPoint_Rule cpRuleCU = new CheckPoint_Rule();
+                if (!OptimizeConf) NewFortigateAnalizStatistic._cleanupServicesRuleCount++;
+                NewFortigateAnalizStatistic._totalServicesRulesCount++;
+                cpRuleCU.Name = "Sub-Policy Cleanup";
+                cpRuleCU.Layer = cpLayer.Name;
+
+                cpLayer.Rules.Add(cpRuleCU);
+
+                package.SubPolicies.Add(cpLayer);
+                validatePackage(package);
+            }
+            foreach (CheckPoint_Rule ruleAdd in realRulesList)
+            {
+                ruleAdd.Layer = package.ParentLayer.Name;
+                package.ParentLayer.Rules.Add(ruleAdd);
             }
 
             var cpRuleFake = new CheckPoint_Rule();
