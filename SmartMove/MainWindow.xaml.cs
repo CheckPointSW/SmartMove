@@ -314,7 +314,7 @@ namespace SmartMove
             SkipUnusedObjects.Visibility = Visibility.Collapsed;
             ConvertUserConfiguration = false;
             //Create service groups option
-            CreateServiceGroupsConfiguration = false;
+            CreateServiceGroupsConfiguration = true;
 
 
             switch (_supportedVendors.SelectedVendor)
