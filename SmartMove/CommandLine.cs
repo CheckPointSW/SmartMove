@@ -500,14 +500,14 @@ namespace SmartMove
                 return;
             }
 
-            if (fileName.Length > 20)
+            if (fileName.Length > 15)
             {
                 if (FormatOutput == "text")
-                    Console.WriteLine("Configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
+                    Console.WriteLine("Configuration file name is restricted to 15 characters at most.", MessageTypes.Error);
                 else
                 {
                     JsonReport jsonReport = new JsonReport(
-                        msg: "Configuration file name is restricted to 20 characters at most.",
+                        msg: "Configuration file name is restricted to 15 characters at most.",
                         err: "err_cannot_convert_configuration_file");
                     Console.WriteLine(jsonReport.PrintJson());
                 }
@@ -933,14 +933,14 @@ namespace SmartMove
                 return;
             }
 
-            if (fileName.Length > 20)
+            if (fileName.Length > 15)
             {
                 if (FormatOutput == "text")
-                    Console.WriteLine("Configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
+                    Console.WriteLine("Configuration file name is restricted to 15 characters at most.", MessageTypes.Error);
                 else
                 {
                     JsonReport jsonReport = new JsonReport(
-                        msg: "Configuration file name is restricted to 20 characters at most.",
+                        msg: "Configuration file name is restricted to 15 characters at most.",
                         err: "err_cannot_convert_configuration_file");
                     Console.WriteLine(jsonReport.PrintJson());
                 }

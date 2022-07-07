@@ -107,10 +107,10 @@ namespace SmartMove
                 return;
             }
 
-            if (fileName.Length > 20)
+            if (fileName.Length > 15)
             {
-                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Configuration file name is restricted to 20 characters at most.");
-                MainWindow.ShowMessage("Configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Configuration file name is restricted to 15 characters at most.");
+                MainWindow.ShowMessage("Configuration file name is restricted to 15 characters at most.", MessageTypes.Error);
                 return;
             }
 
@@ -597,7 +597,7 @@ namespace SmartMove
             {
                 case Vendor.CiscoASA:
                 case Vendor.FirePower:
-                    filter = "conf files (*.conf, *.txt)|*.conf; *.txt|All files (*.*)|*.*";
+                    filter = "conf files (*.conf, *.txt, *.cfg)|*.conf; *.txt; *.cfg|All files (*.*)|*.*";
                     break;
                 case Vendor.JuniperJunosOS:
                     filter = "xml files (*.xml)|*.xml";
