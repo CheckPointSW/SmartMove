@@ -157,6 +157,12 @@ namespace JuniperMigration
                 if (versionNode != null && versionNode.Value.Length > 0)
                 {
                     VendorVersion = Regex.Match(versionNode.Value, @"\d+(\.\d+)?").Value;
+                } else
+                {
+                    if (configNode.Parent.FirstAttribute.Value.Contains("xml.juniper.net"))
+                    {
+                        VendorVersion = Regex.Match(configNode.Parent.FirstAttribute.Value, @"\d+(\.\d+)?").Value;
+                    }
                 }
             }
         }
