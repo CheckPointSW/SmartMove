@@ -475,10 +475,10 @@ namespace SmartMove
                 return;
             }
 
-            if (fileName.Length > 20)
+            if (fileName.Length > 15)
             {
-                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Configuration file name is restricted to 20 characters at most.");
-                ShowMessage("Configuration file name is restricted to 20 characters at most.", MessageTypes.Error);
+                SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Configuration file name is restricted to 15 characters at most.");
+                ShowMessage("Configuration file name is restricted to 15 characters at most.", MessageTypes.Error);
                 return;
             }
 
