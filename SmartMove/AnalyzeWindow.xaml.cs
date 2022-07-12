@@ -335,6 +335,12 @@ namespace SmartMove
                                                 "Reason: Policy exceeds the maximum number of supported policy layers.",
                                                 "To assure the smooth conversion of your data, it is recommended to contact Check Point Professional Services by sending an e-mail to"));
                 }
+                else if (ex.Message.Contains("System.OutOfMemoryException"))
+                {
+                    MainWindow.ShowMessage(null, MessageTypes.Error, null, null, null, null,
+                        String.Format("{1}{0}{2}", Environment.NewLine, "Could not analyze process file.",
+                                                "Reason: Your device is low on memory."));
+                }
                 else
                 {
                     MainWindow.ShowMessage("Could not analyze process file.", "Message:\nModule:\nClass:\nMethod:", string.Format("{0}\n{1}\n{2}\n{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);

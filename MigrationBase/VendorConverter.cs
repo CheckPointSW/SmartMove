@@ -2170,7 +2170,17 @@ namespace MigrationBase
                 cpJsonObjects.RemoveAll(x => x == null);
                 #endregion
 
-                File.WriteAllText(cpObjectsJsonPath + cpObjectsJsonFN, JsonConvert.SerializeObject(cpJsonObjects, Formatting.Indented));
+                if (cpJsonObjects.Count > 250000)
+                {
+                    File.WriteAllText(cpObjectsJsonPath + cpObjectsJsonFN, JsonConvert.SerializeObject(cpJsonObjects[0], Formatting.Indented));
+
+                    for (var i = 1; i < cpJsonObjects.Count;)
+                    {
+                        var dest = cpJsonObjects.Skip(i).Take(250000).ToArray();
+                        i += 250000;
+                        File.AppendAllText(cpObjectsJsonPath + cpObjectsJsonFN, JsonConvert.SerializeObject(dest, Formatting.Indented));
+                    }
+                } else File.WriteAllText(cpObjectsJsonPath + cpObjectsJsonFN, JsonConvert.SerializeObject(cpJsonObjects, Formatting.Indented));
 
                 string smartConnectorArchiveName = "smartconnector_" + _vendorFileName;
                 string smartConnectorArchivePath = _targetFolder + Path.DirectorySeparatorChar + smartConnectorArchiveName;
