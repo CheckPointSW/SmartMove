@@ -765,6 +765,12 @@ namespace SmartMove
                 }
                 else
                 {
+                    if (ex.Message.Contains("System.OutOfMemoryException"))
+                    {
+                        ShowMessage(null, MessageTypes.Error, null, null, null, null,
+                            String.Format("{1}{0}{2}", Environment.NewLine, "Could not convert configuration file.",
+                                                    "Reason: Your device is low on memory."));
+                    } else 
                     ShowMessage("Could not convert configuration file.", "Message:\nModule:\nClass:\nMethod:", string.Format("{0}\n{1}\n{2}\n{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
                 }
                 return;
