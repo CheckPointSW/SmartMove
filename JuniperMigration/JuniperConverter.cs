@@ -1903,9 +1903,13 @@ namespace JuniperMigration
                 {
                     string startTime = timeRange.Substring(0, timeRange.IndexOf(";"));                    
                     string stopTime = timeRange.Substring(timeRange.IndexOf(";") + 1);
-                    
-                    TimeSpan timeCheck0 = TimeSpan.ParseExact(startTime, "hh\\:mm\\:ss", CultureInfo.InvariantCulture);
-                    TimeSpan timeCheck1 = TimeSpan.ParseExact(stopTime, "hh\\:mm\\:ss", CultureInfo.InvariantCulture);
+
+                    TimeSpan timeCheck0;
+                    if (startTime.Length > 6) timeCheck0 = TimeSpan.ParseExact(startTime, "hh\\:mm\\:ss", CultureInfo.InvariantCulture);
+                    else  timeCheck0 = TimeSpan.ParseExact(startTime, "hh\\:mm", CultureInfo.InvariantCulture);
+                    TimeSpan timeCheck1;
+                    if (stopTime.Length > 6) timeCheck1 = TimeSpan.ParseExact(stopTime, "hh\\:mm\\:ss", CultureInfo.InvariantCulture);
+                    else timeCheck1 = TimeSpan.ParseExact(stopTime, "hh\\:mm", CultureInfo.InvariantCulture);
 
                     if (TimeSpan.Compare(timeCheck0, timeCheck1) == -1)
                     {
