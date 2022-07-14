@@ -19,6 +19,36 @@ For SmartMove tool release notes and latest updates, please refer to Check Point
   * In Solution Explorer, choose or open the solution. 
   * On the menu bar, choose Build, and then choose Rebuild Solution.
 
+# cp_mgmt_api_python_sdk
+Check Point API Python Development Kit simplifies the use of the Check Point Management APIs. The kit contains the API library files, and sample files demonstrating the 
+capabilities of the library. The kit is compatible with python 2 and 3.
+
+## Instructions
+### SDK usage from a remote machine
+Install the SDK by using the pip tool or by downloading the repository.
+
+#### Install with pip
+Run:
+```
+pip install cp-mgmt-api-sdk
+```
+Or:
+```
+pip install git+https://github.com/CheckPointSW/cp_mgmt_api_python_sdk
+```
+###### Note: you might be required to use "sudo" for this command.
+#### Download the repository
+Clone the repository with this command:
+```
+git clone https://github.com/CheckPointSW/cp_mgmt_api_python_sdk
+```
+or by clicking on the _‘Download ZIP’_ button and using unzip. <br>
+
+Navigate to `.../cp_mgmt_api_python_sdk/` directory and run:
+```
+pip install .
+```
+
 ## Development Environment
 The tool is developed using Microsoft C# language and .Net framework version 4.5 (WPF application). The project solution file is configured for Microsoft Visual Studio 2012 and above.
 
