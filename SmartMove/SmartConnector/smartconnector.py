@@ -9,7 +9,7 @@ import operator
 import uuid
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
-import cp-mgmt-api-sdk
+from cpapi import APIClient, APIClientArgs
 
 
 # printing messages to console and log file
@@ -1347,10 +1347,10 @@ else:
     printStatus(None, "reading and parsing processes are completed for JSON file: " + args.file)
     client_args = None
     if args.port is not None:
-        client_args = cp-mgmt-api-sdk.cpapi.APIClientArgs(server=args.management, port=args.port, context=args.context, user_agent="mgmt_cli_smartmove")
+        client_args = APIClientArgs(server=args.management, port=args.port, context=args.context, user_agent="mgmt_cli_smartmove")
     else:
-        client_args = cp-mgmt-api-sdk.cpapi.APIClientArgs(server=args.management, context=args.context, user_agent="mgmt_cli_smartmove")
-    with cp-mgmt-api-sdk.cpapi.APIClient(client_args) as client:
+        client_args = APIClientArgs(server=args.management, context=args.context, user_agent="mgmt_cli_smartmove")
+    with APIClient(client_args) as client:
         client.debug_file = "api_calls.json"
         printStatus(None, "checking fingerprint")
         if client.check_fingerprint() is False:
