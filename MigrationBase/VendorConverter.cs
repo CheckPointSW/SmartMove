@@ -2055,14 +2055,8 @@ namespace MigrationBase
         */
         public void CreateSmartConnector(bool isNeedGenOpt = false, bool isCurrentOptimized = false)
         {
-            const string dirLibName = "cpapi";
 
             string[] pySmartConnectorFNs = new string[] {
-                    dirLibName + Path.DirectorySeparatorChar + "__init__.py",
-                    dirLibName + Path.DirectorySeparatorChar + "api_exceptions.py",
-                    dirLibName + Path.DirectorySeparatorChar + "api_response.py",
-                    dirLibName + Path.DirectorySeparatorChar + "mgmt_api.py",
-                    dirLibName + Path.DirectorySeparatorChar + "utils.py",
                     "smartconnector.py"
                 };
 
