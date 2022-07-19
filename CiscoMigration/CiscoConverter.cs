@@ -992,7 +992,7 @@ namespace CiscoMigration
                     var ciscoNetwork = (Cisco_NetworkObject)command;
 
                     // The referenced object will be created on its own!!!
-                    if (string.IsNullOrEmpty(ciscoNetwork.ReferencedObject) && ciscoNetwork.Netmask != "255.255.255.255")
+                    if (string.IsNullOrEmpty(ciscoNetwork.ReferencedObject) && !ciscoNetwork.Text.Contains("255.255.255.255"))
                     {
                         var network = new CiscoNetwork(command.Id, ciscoNetwork.IpAddress, ciscoNetwork.Netmask, ciscoNetwork.MaskPrefix);
                         _ciscoNetworkObjects.Add(network);
@@ -1767,7 +1767,7 @@ namespace CiscoMigration
                     {
                         var ciscoNetwork = (Cisco_NetworkObject)child;
 
-                        if (ciscoNetwork.Netmask.Contains("255.255.255.255"))
+                        if (ciscoNetwork.Text.Contains("255.255.255.255"))
                         {
                             isHost = true;
                             var cpHost = new CheckPoint_Host();
