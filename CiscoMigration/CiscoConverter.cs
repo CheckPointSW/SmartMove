@@ -773,7 +773,7 @@ namespace CiscoMigration
                 errorTitle += " Please review for further possible modifications to objects before migration.";
                 string errorDescription = string.Format("Original name: {0}. Possible unique name: {1}.", originalName, uniqueName);
 
-                _conversionIncidents.Add(new ConversionIncident(ciscoCommand.Id, errorTitle, errorDescription, ciscoCommand.ConversionIncidentType));
+                _conversionIncidents.Add(new ConversionIncident(ciscoCommand.Id, errorTitle, errorDescription, ConversionIncidentType.Informative));
 
                 return;
             }
