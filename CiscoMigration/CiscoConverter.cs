@@ -773,7 +773,7 @@ namespace CiscoMigration
                 errorTitle += " Please review for further possible modifications to objects before migration.";
                 string errorDescription = string.Format("Original name: {0}. Possible unique name: {1}.", originalName, uniqueName);
 
-                _conversionIncidents.Add(new ConversionIncident(ciscoCommand.Id, errorTitle, errorDescription, ciscoCommand.ConversionIncidentType));
+                _conversionIncidents.Add(new ConversionIncident(ciscoCommand.Id, errorTitle, errorDescription, ConversionIncidentType.Informative));
 
                 return;
             }
@@ -992,7 +992,7 @@ namespace CiscoMigration
                     var ciscoNetwork = (Cisco_NetworkObject)command;
 
                     // The referenced object will be created on its own!!!
-                    if (string.IsNullOrEmpty(ciscoNetwork.ReferencedObject))
+                    if (string.IsNullOrEmpty(ciscoNetwork.ReferencedObject) && !ciscoNetwork.Text.Contains("255.255.255.255"))
                     {
                         var network = new CiscoNetwork(command.Id, ciscoNetwork.IpAddress, ciscoNetwork.Netmask, ciscoNetwork.MaskPrefix);
                         _ciscoNetworkObjects.Add(network);
@@ -1760,7 +1760,29 @@ namespace CiscoMigration
             {
                 var ciscoGroup = (Cisco_GroupObject)command;
 
-                if (ciscoGroup.GroupType == Cisco_GroupObject.Group_Type.Network)
+                var isHost = false;
+                foreach (var child in ciscoGroup.Children)
+                {
+                    if (child.FirstWord.Contains("network-object"))
+                    {
+                        var ciscoNetwork = (Cisco_NetworkObject)child;
+
+                        if (ciscoNetwork.Text.Contains("255.255.255.255"))
+                        {
+                            isHost = true;
+                            var cpHost = new CheckPoint_Host();
+                            cpHost.Name = ciscoGroup.CiscoId;
+                            cpHost.Name = cpHost.SafeName();
+                            cpHost.Comments = ciscoGroup.Description;
+                            cpHost.IpAddress = ciscoNetwork.IpAddress;
+                            ApplyConversionIncidentOnCheckPointObject(cpHost, ciscoGroup);
+                            CheckObjectNameValidity(cpHost, ciscoGroup);
+                            AddCheckPointObject(cpHost);
+                        }
+                    } 
+                }
+
+                if (ciscoGroup.GroupType == Cisco_GroupObject.Group_Type.Network && !isHost)
                 {
                     var cpNetworkGroup = new CheckPoint_NetworkGroup();
                     cpNetworkGroup.Name = ciscoGroup.CiscoId;
