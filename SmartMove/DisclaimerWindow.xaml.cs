@@ -64,7 +64,9 @@ namespace SmartMove
                     disclaimerText.Load(fs, DataFormats.Rtf);
                     AcceptDisclaimer.Focus();
                 }
+#pragma warning disable CS0168 // The variable 'ex' is declared but never used
                 catch (Exception ex)
+#pragma warning restore CS0168 // The variable 'ex' is declared but never used
                 {
                     MainWindow.ShowMessage("Failed to load Product legal document.\nCannot run the tool.", MessageTypes.Error);
                     Close();

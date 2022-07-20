@@ -580,7 +580,9 @@ namespace SmartMove
                 Console.WriteLine("Done.");
 
             }
+#pragma warning disable CS0168 // The variable 'ex' is declared but never used
             catch (Exception ex)
+#pragma warning restore CS0168 // The variable 'ex' is declared but never used
             {
                 if (FormatOutput == "text")
                 {
@@ -1013,7 +1015,9 @@ namespace SmartMove
                 Console.WriteLine("Done.");
 
             }
+#pragma warning disable CS0168 // The variable 'ex' is declared but never used
             catch (Exception ex)
+#pragma warning restore CS0168 // The variable 'ex' is declared but never used
             {
                 if (FormatOutput == "text")
                 {

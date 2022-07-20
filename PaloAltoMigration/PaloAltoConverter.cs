@@ -51,9 +51,9 @@ namespace PaloAltoMigration
 
         private string outputFormat = "";
 
-        //if total package name over max count of chars (20) do not create *.sh, *.tar.gz, *.zip files
+        //if total package name over max count of chars (15) do not create *.sh, *.tar.gz, *.zip files
         private bool _isOverMaxLengthPackageName = false;
-        private int _maxAllowedpackageNameLength = 20;
+        private int _maxAllowedpackageNameLength = 15;
 
         private CheckPoint_Package Add_Optimized_Package()
         {

@@ -536,9 +536,9 @@ namespace NetScreenMigration
         private Dictionary<string, CheckPointObject> _usedNetObjects = new Dictionary<string, CheckPointObject>();
         private Dictionary<string, HashSet<string>> _usedObjects = new Dictionary<string, HashSet<string>>(); //<type, [names of objects]>
 
-        //if total package name over max count of chars (20) do not create *.sh, *.tar.gz, *.zip files
+        //if total package name over max count of chars (15) do not create *.sh, *.tar.gz, *.zip files
         private bool _isOverMaxLengthPackageName = false;
-        private int _maxAllowedpackageNameLength = 20;
+        private int _maxAllowedpackageNameLength = 15;
 
         private IEnumerable<ScreenOSCommand> _screenOSAllCommands;
         private IEnumerable<ScreenOSCommand> ScreenOSAllCommands
@@ -686,7 +686,9 @@ namespace NetScreenMigration
             }
         }
 
+#pragma warning disable CS0108 // 'ScreenOSConverter._outputFormat' hides inherited member 'VendorConverter._outputFormat'. Use the new keyword if hiding was intended.
         private string _outputFormat { get; set; }
+#pragma warning restore CS0108 // 'ScreenOSConverter._outputFormat' hides inherited member 'VendorConverter._outputFormat'. Use the new keyword if hiding was intended.
         private string OutputFormat { 
             get 
             { 

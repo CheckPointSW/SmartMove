@@ -178,14 +178,16 @@ namespace JuniperMigration
         private Dictionary<int, List<CheckPoint_Rule>> _natMatchedFirewallRules = new Dictionary<int, List<CheckPoint_Rule>>();
         private Dictionary<string, CheckPointObject> _usedNetObjects = new Dictionary<string, CheckPointObject>();
         private Dictionary<string, HashSet<string>> _usedObjects = new Dictionary<string, HashSet<string>>(); //<type, [names of objects]>
+#pragma warning disable CS0108 // 'JuniperConverter._outputFormat' hides inherited member 'VendorConverter._outputFormat'. Use the new keyword if hiding was intended.
         private string _outputFormat;
+#pragma warning restore CS0108 // 'JuniperConverter._outputFormat' hides inherited member 'VendorConverter._outputFormat'. Use the new keyword if hiding was intended.
 
         private List<string> _errorsList = new List<string>(); //storing conversion errors for config
         private List<string> _warningsList = new List<string>(); //storing conversion warnings for config
 
-        //if total package name over max count of chars (20) do not create *.sh, *.tar.gz, *.zip files
+        //if total package name over max count of chars (15) do not create *.sh, *.tar.gz, *.zip files
         private bool _isOverMaxLengthPackageName = false;
-        private int _maxAllowedpackageNameLength = 20;
+        private int _maxAllowedpackageNameLength = 15;
 
         private IEnumerable<JuniperObject> _juniperZones;
         public IEnumerable<JuniperObject> JuniperZones
@@ -4263,7 +4265,9 @@ namespace JuniperMigration
                     {
                         _juniper2CheckpointServiceDuplicates.Add(application.Name, serviceName);
                     }
+#pragma warning disable CS0168 // The variable 'e' is declared but never used
                     catch (Exception e) {}
+#pragma warning restore CS0168 // The variable 'e' is declared but never used
 
                     application.ConversionIncidentType = ConversionIncidentType.Informative;
 

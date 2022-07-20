@@ -558,7 +558,9 @@ namespace SmartMove
                 SKLinkDisplay.Text = skLines[1];
                 SKLinkDisplay.Tag = skLines[2];
             }
+#pragma warning disable CS0168 // The variable 'ex' is declared but never used
             catch (Exception ex)
+#pragma warning restore CS0168 // The variable 'ex' is declared but never used
             {
                 SKTextDisplay.Text = DefaultSKText;
                 SKLinkDisplay.Text = DefaultSKLinkText;
@@ -576,7 +578,9 @@ namespace SmartMove
                 PSLinkDisplay.Text = contactLines[1];
                 PSLinkDisplay.Tag = contactLines[2];
             }
+#pragma warning disable CS0168 // The variable 'ex' is declared but never used
             catch (Exception ex)
+#pragma warning restore CS0168 // The variable 'ex' is declared but never used
             {
                 PSTextDisplay.Text = DefaultPSText;
                 PSLinkDisplay.Text = DefaultPSLinkText;
@@ -592,7 +596,9 @@ namespace SmartMove
             {
                 openFileDialog.InitialDirectory = Path.GetDirectoryName(ConfigFilePath.Text);
             }
+#pragma warning disable CS0168 // The variable 'ex' is declared but never used
             catch (Exception ex)
+#pragma warning restore CS0168 // The variable 'ex' is declared but never used
             {
                 openFileDialog.InitialDirectory = SourceFolder;
             }
@@ -650,7 +656,9 @@ namespace SmartMove
                 openFolderDialog.Description = "Select the target folder for conversion output:";
                 openFolderDialog.SelectedPath = Path.GetDirectoryName(TargetFolderPath.Text);
             }
+#pragma warning disable CS0168 // The variable 'ex' is declared but never used
             catch (Exception ex)
+#pragma warning restore CS0168 // The variable 'ex' is declared but never used
             {
                 openFolderDialog.SelectedPath = TargetFolder;
             }
