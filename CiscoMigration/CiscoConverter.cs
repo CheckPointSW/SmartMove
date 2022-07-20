@@ -520,7 +520,9 @@ namespace CiscoMigration
         private IList<CiscoCommand> _ciscoSshCommands;
         private Cisco_Hostname _ciscoHostnameCommand;
         private List<Cisco_AccessList> _ciscoGlobalAclCommands = new List<Cisco_AccessList>();
+#pragma warning disable CS0108 // 'CiscoConverter._outputFormat' hides inherited member 'VendorConverter._outputFormat'. Use the new keyword if hiding was intended.
         private string _outputFormat;
+#pragma warning restore CS0108 // 'CiscoConverter._outputFormat' hides inherited member 'VendorConverter._outputFormat'. Use the new keyword if hiding was intended.
 
         private List<CheckPoint_NAT_Rule> _cpPreorderedNatRules = new List<CheckPoint_NAT_Rule>();
 
@@ -4096,7 +4098,9 @@ namespace CiscoMigration
                             cpRule.Destination.Add(_cpObjects.GetObject(otherCiscoInterface.CiscoId));
                             if (_cpObjects.GetObject(otherCiscoInterface.CiscoId).Name.Equals("Any"))
                             {
+#pragma warning disable CS0219 // The variable 'count' is assigned but its value is never used
                                 int count = 0;
+#pragma warning restore CS0219 // The variable 'count' is assigned but its value is never used
                             }
                             if (ciscoInterface.Shutdown || otherCiscoInterface.Shutdown)
                             {
