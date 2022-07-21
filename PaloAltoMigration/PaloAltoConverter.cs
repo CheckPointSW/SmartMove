@@ -4269,6 +4269,19 @@ namespace PaloAltoMigration
                 }
                 else if (cpSrvGroupsDict.ContainsKey(member))
                 {
+                    //if cpSrvGroupsDict contains a member
+                    //whose members have a copy of the original member,
+                    //then we get an infinite recursion
+                    //to fix the bug we are skipping the call of the same member
+                    var infiniteRecursion = false;
+                    foreach (string subMember in cpSrvGroupsDict[member].Members)
+                    {
+                        if (subMember == member)
+                        {
+                            infiniteRecursion = true;
+                        }
+                    }
+                    if (!infiniteRecursion)
                     AddCpServiceGroup(cpSrvGroupsDict[member], cpServicesDict, cpSrvGroupsDict);
                     AddCheckPointObject(cpSrvGroupsDict[member]);
                 }
