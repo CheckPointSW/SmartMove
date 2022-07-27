@@ -1846,6 +1846,7 @@ namespace CiscoMigration
         }
     }
 
+
     public class Cisco_AccessList : CiscoCommand
     {
         public enum ActionType { NA, Deny, Permit };
@@ -1907,6 +1908,9 @@ namespace CiscoMigration
                         if (words.Count > 1)
                         {
                             RefObjectName = words[1];
+                            var NameValidityRegex = @"[^A-Za-z0-9_.-]";
+                            RefObjectName = Validators.ChangeNameAccordingToRules(RefObjectName);
+                            Regex.Replace(RefObjectName, NameValidityRegex, "_");
                             WordsCount = 2;
                         }
                         break;
@@ -1916,6 +1920,9 @@ namespace CiscoMigration
                         if (words.Count > 1)
                         {
                             RefObjectName = InterfacePrefix + words[1];
+                            var NameValidityRegex = @"[^A-Za-z0-9_.-]";
+                            RefObjectName = Validators.ChangeNameAccordingToRules(RefObjectName);
+                            Regex.Replace(RefObjectName, NameValidityRegex, "_");
                             WordsCount = 2;
                         }
                         break;

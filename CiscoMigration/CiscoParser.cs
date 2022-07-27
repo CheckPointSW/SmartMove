@@ -136,23 +136,47 @@ namespace CiscoMigration
                 }
             }
         }
+        private void chengeLines(List<String> newLines, int index, string ip)
+        {
+            if ((newLines[index - 1][0] == ' ' && !newLines[index - 1].Contains("description")) || (newLines[index + 1][0] == ' ' && !newLines[index + 1].Contains("description")))
+            {
+                newLines[index] = " network-object host " + ip;
+                int inserIndex = index;
+                while (newLines[inserIndex][0] == ' ')
+                {
+                    inserIndex -= 1;
+                }
+                newLines.Insert(inserIndex, "object network " + ip);
+                newLines.Insert(inserIndex+1, " host " + ip);
+            }
+        }
 
         private void ParseCommands(string filename)
         {
             string[] lines = File.ReadAllLines(filename, Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback(""), new DecoderReplacementFallback("")));
             ParsedLines = lines.Count();
 
+            var newLines = lines.ToList();
+
+            for (var i = 0; i < newLines.Count; i++)
+            {
+                if (newLines[i].Contains("255.255.255.255") && newLines[i].Contains("network-object"))
+                    chengeLines(newLines, i, newLines[i].Split(' ')[2]);
+            }
+            lines = newLines.ToArray();
+
             var parents = new Stack<Indentation>();
             var flatList = new List<CiscoCommand>();
-
             parents.Push(new Indentation(null, 0));
 
             int prevIndentationLevel = 0;
             int lineId = 0;
-
+            
             foreach (string line in lines)
             {
                 lineId++;
+                
+                
 
                 // Check for an empty line or line with just spaces.
                 if (line.Trim().Length == 0)
@@ -195,6 +219,11 @@ namespace CiscoMigration
 
                 prevIndentationLevel = command.IndentationLevel;
                 flatList.Add(FindCommand(command));
+
+                if (line.Contains("g-ext-dns-leg"))
+                {
+                    var gd = 3;
+                }
             }
 
             _ciscoCommands = flatList.BuildTree();
@@ -204,6 +233,10 @@ namespace CiscoMigration
             {
                 ParseWithChildren(command, prevCommand);
                 prevCommand = command;
+                if (command.Text.Contains("g-ext-dns-leg"))
+                {
+                    var gd = 3;
+                }
             }
 
             // Remove duplicates
