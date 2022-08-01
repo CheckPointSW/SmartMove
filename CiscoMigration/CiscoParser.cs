@@ -220,10 +220,6 @@ namespace CiscoMigration
                 prevIndentationLevel = command.IndentationLevel;
                 flatList.Add(FindCommand(command));
 
-                if (line.Contains("g-ext-dns-leg"))
-                {
-                    var gd = 3;
-                }
             }
 
             _ciscoCommands = flatList.BuildTree();
@@ -233,10 +229,6 @@ namespace CiscoMigration
             {
                 ParseWithChildren(command, prevCommand);
                 prevCommand = command;
-                if (command.Text.Contains("g-ext-dns-leg"))
-                {
-                    var gd = 3;
-                }
             }
 
             // Remove duplicates
@@ -264,7 +256,7 @@ namespace CiscoMigration
                         string routeInterfaceName = CiscoCommand.InterfacePrefix + route.InterfaceName;
                         if (routeInterfaceName == ciscoInterface.CiscoId)
                         {
-                            ciscoInterface.Topology.Add(new Cisco_Interface.Subnet(route.DestinationIp, route.DestinationNetmask));
+                            ciscoInterface.Topology.Add(new Cisco_Interface.Subnet(route.DestinationIp, route.DestinationNetmask, route.Id));
 
                             if (route.DefaultRoute)
                             {

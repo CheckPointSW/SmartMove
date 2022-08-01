@@ -1370,6 +1370,7 @@ namespace CiscoMigration
         public string VLan { get; set; }
         public string IpAddress { get; set; }
         public string Netmask { get; set; }
+        public int LineId { get; set; }
         public bool Shutdown { get; set; }
         public bool ManagementOnly { get; set; }
         public bool LeadsToInternet { get; set; }
@@ -1378,11 +1379,13 @@ namespace CiscoMigration
         {
             public string Network { get; private set; }
             public string Netmask { get; private set; }
+            public int LineId { get; private set; }
 
-            public Subnet(string sIp, string sMask)
+            public Subnet(string sIp, string sMask, int lineId)
             {
                 Network = sIp;
                 Netmask = sMask;
+                LineId = lineId;
             }
         }
 
@@ -1399,6 +1402,7 @@ namespace CiscoMigration
             VLan = "";
             IpAddress = "";
             Netmask = "";
+            LineId = 0;
             Shutdown = false;
             ManagementOnly = false;
             LeadsToInternet = false;
@@ -1439,10 +1443,11 @@ namespace CiscoMigration
                     case "ip address":
                         IpAddress = ((Cisco_IP)child).IpAddress;
                         Netmask = ((Cisco_IP)child).Netmask;
+                        LineId = ((Cisco_IP)child).Id;
 
                         if (NetworkUtils.IsValidIpv4(IpAddress) && NetworkUtils.IsValidNetmaskv4(Netmask))
                         {
-                            Topology.Add(new Subnet(NetworkUtils.GetNetwork(IpAddress, Netmask), Netmask));
+                            Topology.Add(new Subnet(NetworkUtils.GetNetwork(IpAddress, Netmask), Netmask, LineId));
                         }
                         else
                         {
