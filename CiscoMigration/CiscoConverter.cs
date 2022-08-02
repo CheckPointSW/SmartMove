@@ -5051,7 +5051,272 @@ namespace CiscoMigration
             }
         }
 
+        public class CheckPoint_Rule_With_SubPoliciesIndex
+        {
+            public int SubPoliciesIndex;
+            public CheckPoint_Rule CheckPoint_Rule;
+
+            public CheckPoint_Rule_With_SubPoliciesIndex(int SubPoliciesIndex, CheckPoint_Rule CheckPoint_Rule)
+            {
+                this.SubPoliciesIndex = SubPoliciesIndex;
+                this.CheckPoint_Rule = CheckPoint_Rule;
+            }
+        }
         private void MatchNATRulesIntoFirewallPolicy()
+        {
+            CheckPoint_Package cpPackage = _cpPackages[0];
+            int index = 0;
+             
+            List<CheckPoint_Rule_With_SubPoliciesIndex> newRules = new List<CheckPoint_Rule_With_SubPoliciesIndex>();
+
+            List<Thread> threads = new List<Thread>();
+
+
+            foreach (CheckPoint_NAT_Rule cpNatRule in _cpNatRules)
+            {
+                void SubMatchNATRulesIntoFirewallPolicy()
+                {
+
+                    if (!cpNatRule.Enabled)
+                    {
+                        return;
+                    }
+
+                    var ciscoNatCustomData = ((CiscoNatCustomData)cpNatRule.VendorCustomData);
+
+                    // For example, NAT section #4 rule...
+                    if (cpNatRule.TranslatedSource == null && cpNatRule.TranslatedDestination == null)
+                    {
+                        return;
+                    }
+
+                    // Skip dynamic object-NAT rules
+                    if (ciscoNatCustomData.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Hide)
+                    {
+                        return;
+                    }
+
+                    // Skip dynamic manual-NAT rules
+                    if (!ciscoNatCustomData.IsObjectNatRule && cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Hide && cpNatRule.TranslatedDestination == null)
+                    {
+                        return;
+                    }
+
+                    // Skip static NAT mirrored rules
+                    if (ciscoNatCustomData.IsStaticMirrorRule)
+                    {
+                        return;
+                    }
+
+                    // Skip Non-NAT rules (only twice-NAT: SourceId == TranslatedSourceId && DestinationId == TranslatedDestinationId)
+                    if (ciscoNatCustomData.IsNonNatRule)
+                    {
+                        return;
+                    }
+
+                    string natRuleInterface1 = (ciscoNatCustomData.Interface1 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + ciscoNatCustomData.Interface1) : ciscoNatCustomData.Interface1;
+                    string natRuleInterface2 = (ciscoNatCustomData.Interface2 != CiscoCommand.Any) ? (CiscoCommand.InterfacePrefix + ciscoNatCustomData.Interface2) : ciscoNatCustomData.Interface2;
+
+                    foreach (CheckPoint_Rule cpParentRule in cpPackage.ParentLayer.Rules)
+                    {
+                        if (cpParentRule.Action != CheckPoint_Rule.ActionType.SubPolicy)
+                        {
+                            continue;
+                        }
+
+                        if (cpParentRule.Source[0] is CheckPoint_PredifinedObject && cpParentRule.Source[0].Name.Equals(CheckPointObject.Any))
+                        {
+                            if (cpParentRule.SubPolicyName != GlobalRulesSubpolicyName)
+                            {
+                                continue;
+                            }
+                        }
+
+                        CheckPoint_Zone parentLayerRuleZone = new CheckPoint_Zone();
+                        if (cpParentRule.SubPolicyName == GlobalRulesSubpolicyName)
+                        {
+                            parentLayerRuleZone.Name = "any";
+                        }
+                        else
+                        {
+                            parentLayerRuleZone = (CheckPoint_Zone)cpParentRule.Source[0];
+                        }
+
+                        // NAT rule interfaces should match on firewall rule interfaces (zones)
+                        if (natRuleInterface1 != CiscoCommand.Any && natRuleInterface1 != parentLayerRuleZone.Name &&
+                            natRuleInterface2 != CiscoCommand.Any && natRuleInterface2 != parentLayerRuleZone.Name)
+                        {
+                            continue;
+                        }
+                        int SubPoliciesIndex = -1;
+                        // Get into the relevant sub-policy
+                        foreach (CheckPoint_Layer subPolicy in cpPackage.SubPolicies)
+                        {
+                            SubPoliciesIndex++;
+                            if (subPolicy.Name != cpParentRule.SubPolicyName)
+                            {
+                                continue;
+                            }
+
+                            for (int ruleNumber = 0; ruleNumber < subPolicy.Rules.Count; ruleNumber++)
+                            {
+                                var cpRule = subPolicy.Rules[ruleNumber];
+
+                                // Do not match on cleanup rule
+                                if (cpRule.IsCleanupRule())
+                                {
+                                    continue;
+                                }
+
+                                // Do not match if rule's destination is 'any'
+                                if (cpRule.Destination.Count == 1)
+                                {
+                                    string destinationName = cpRule.Destination[0].Name;
+                                    if (destinationName == CheckPointObject.Any)
+                                    {
+                                        continue;
+                                    }
+
+                                    if (destinationName.StartsWith(CiscoCommand.InterfacePrefix))
+                                    {
+                                        // get Cisco interface object
+                                        var ciscoInterface = (Cisco_Interface)_ciscoParser.GetCommandByCiscoId(destinationName);
+                                        if (ciscoInterface != null && (ciscoInterface.LeadsToInternet || ciscoInterface.SecurityLevel == 0))
+                                        {
+                                            continue;
+                                        }
+                                    }
+                                }
+
+                                CheckPointObject newRuleDest = null;
+                                bool serviceMatchedToo = false;
+
+                                //dont't check added matched NAT rules
+                                if (!cpRule.ConversionComments.StartsWith("Matched NAT rule") && IsFirewallRuleMatchedByNATRule(parentLayerRuleZone, cpNatRule, cpRule, out newRuleDest, out serviceMatchedToo))
+                                {
+                                    string translatedSourceName = (cpNatRule.TranslatedSource != null) ? cpNatRule.TranslatedSource.Name : "original";
+                                    string translatedDestName = (cpNatRule.TranslatedDestination != null) ? cpNatRule.TranslatedDestination.Name : "original";
+                                    string translatedServiceName = (cpNatRule.TranslatedService != null) ?
+                                                                   cpNatRule.TranslatedService.Name : (cpNatRule.Service != null ? cpNatRule.Service.Name : "");
+
+                                    var newRule = new CheckPoint_Rule();
+
+                                    newRule.Enabled = cpRule.Enabled;
+                                    //if (!cpRule.Enabled)
+                                    //{
+                                    //    NewCiscoAnalizStatistic._disabledServicesRulesCount++;
+                                    //}
+
+                                    if (!cpRule.Track.Equals(TrackTypes.Log))
+                                    {
+                                        NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
+                                    }
+                                    newRule.Source.AddRange(cpRule.Source);
+                                    newRule.Destination.Add(newRuleDest);
+                                    if (serviceMatchedToo)
+                                    {
+                                        newRule.Service.Add(_cpObjects.GetObject(translatedServiceName));
+                                    }
+                                    else
+                                    {
+                                        newRule.Service.AddRange(cpRule.Service);
+                                    }
+                                    newRule.Time.AddRange(cpRule.Time);
+                                    if (cpRule.Time.Count > 0 && !cpRule.Time.First().Name.Equals("Any"))
+                                    {
+                                        NewCiscoAnalizStatistic._timesServicesRulesCount++;
+                                    }
+                                    newRule.Action = cpRule.Action;
+                                    newRule.Layer = subPolicy.Name;
+                                    newRule.ConvertedCommandId = cpNatRule.ConvertedCommandId;
+                                    newRule.ConversionIncidentType = (cpRule.ConversionIncidentType != ConversionIncidentType.None) ? cpRule.ConversionIncidentType : cpNatRule.ConversionIncidentType;
+                                    if (serviceMatchedToo)
+                                    {
+                                        translatedServiceName = (cpNatRule.TranslatedService != null) ? cpNatRule.TranslatedService.Name : "original";
+                                        newRule.ConversionComments = "Matched NAT rule ((" + cpNatRule.ConvertedCommandId + ") translated source: " + translatedSourceName + ", translated dest: " + translatedDestName + ", translated service: " + translatedServiceName + ")";
+                                    }
+                                    else
+                                    {
+                                        newRule.ConversionComments = "Matched NAT rule ((" + cpNatRule.ConvertedCommandId + ") translated source: " + translatedSourceName + ", translated dest: " + translatedDestName + ")";
+                                    }
+
+                                    //don't add duplicated rules
+                                    bool ruleIsAlreadyAdded = false;
+                                    foreach (var rule in subPolicy.Rules)
+                                    {
+                                        if (newRule.CompareTo(rule))
+                                        {
+                                            ruleIsAlreadyAdded = true;
+                                            break;
+                                        }
+                                    }
+
+                                    // Add a new rule ABOVE the matched rule.
+                                    if (!ruleIsAlreadyAdded)
+                                    {
+                                        //subPolicy.Rules.Insert(ruleNumber, newRule);
+                                        newRules.Add( new CheckPoint_Rule_With_SubPoliciesIndex(SubPoliciesIndex: SubPoliciesIndex, CheckPoint_Rule: newRule));
+                                    }
+
+                                    if (newRule.ConversionIncidentType != ConversionIncidentType.None)
+                                    {
+                                        cpPackage.ConversionIncidentType = ConversionIncidentType.Informative;
+                                    }
+
+                                    // If NAT rule's service is "any" (null), we need to keep matching for all relevant FW rules.
+                                    if (serviceMatchedToo)
+                                    {
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        ++ruleNumber;   // this is because we are changing the collection during iteration!!!
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (index % 100 == 0)
+                {
+                    foreach (Thread t in threads)
+                    {
+                        if (t.IsAlive) 
+                            t.Join();
+                    }
+                }
+                index++;
+                Thread thread = new Thread(SubMatchNATRulesIntoFirewallPolicy);
+                threads.Add(thread);
+                thread.Start();
+            }
+            foreach (Thread t in threads)
+            {
+                if (t.IsAlive) t.Join();
+            }
+
+            //remove duplicates
+            for (int ruleNumber = 0; ruleNumber < newRules.Count; ruleNumber++)
+            {
+                for (int ruleNumber2 = 0; ruleNumber2 < newRules.Count; ruleNumber2++)
+                {
+                    if ( newRules[ruleNumber].CheckPoint_Rule.CompareTo(newRules[ruleNumber2].CheckPoint_Rule) && ruleNumber != ruleNumber2 && newRules[ruleNumber].SubPoliciesIndex == newRules[ruleNumber2].SubPoliciesIndex)
+                    {
+
+                        newRules.Remove(newRules[ruleNumber2]);
+                    }
+                }
+            }
+            foreach (CheckPoint_Rule_With_SubPoliciesIndex rule in newRules)
+            {
+                cpPackage.SubPolicies[rule.SubPoliciesIndex].Rules.Add(rule.CheckPoint_Rule);
+            }
+
+        }
+
+        ///if have some problem with MatchNATRulesIntoFirewallPolicy, then remove current MatchNATRulesIntoFirewallPolicy and uncomment old MatchNATRulesIntoFirewallPolicy
+        /*
+       private void MatchNATRulesIntoFirewallPolicy()
         {
             CheckPoint_Package cpPackage = _cpPackages[0];
 
@@ -5255,6 +5520,9 @@ namespace CiscoMigration
                 }
             }
         }
+        */
+
+
 
         /// <summary>
         /// !!! This method's logic follows the instructions from the "NAT rules matching FlowChart.vsd" document !!!
