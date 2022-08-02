@@ -5268,10 +5268,6 @@ namespace CiscoMigration
                                     {
                                         break;
                                     }
-                                    else
-                                    {
-                                        ++ruleNumber;   // this is because we are changing the collection during iteration!!!
-                                    }
                                 }
                             }
                         }
