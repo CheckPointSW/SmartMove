@@ -1030,14 +1030,21 @@ def addAccessRules(client, userRules, userLayerName, skipCleanUpRule, mergedNetw
             if userRule['Action'] == 3:
                 payload["inline-layer"] = userRule['SubPolicyName']
            
-            # Due to the custom-fields.field-[1-3] having a limit of 254 Characters, this is used as a workaround 
+           # Due to the custom-fields.field-[1-3] having a limit of 254 Characters, this is used as a workaround
             # Rule comments will stil be imported if they exist in userRule['Comments']
-            # The default value is False, so custom-fields will still be utilized. 
-            
-            isIgnoreConversionComments != True:
+            # The default value is False, so custom-fields will still be utilized.
+            #
+            # If the Conversion Comments is > 150, then we should trim it.
+            # This matches the behavior in CheckPointObjects/CLIScriptBuilder.cs
+            #
+            if isIgnoreConversionComments != True:
                 if userRule['ConversionComments'].strip() != "":
-                    payload["custom-fields"] = {"field-1": userRule['ConversionComments']}
-            # 
+                    if len(userRule['ConversionComments']) > 150:
+                        newConversionComment = (userRule['ConversionComments'][:147] +'...')
+                        payload["custom-fields"] = {"field-1": newConversionComment}
+                    else:
+                        payload["custom-fields"] = {"field-1": userRule['ConversionComments']}
+            #
             addedRule = addUserObjectToServer(client, "add-access-rule", payload, changeName=False)
             if addedRule is not None:
                 printStatus(None, "REPORT: access rule is added")
