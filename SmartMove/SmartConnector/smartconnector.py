@@ -1029,8 +1029,22 @@ def addAccessRules(client, userRules, userLayerName, skipCleanUpRule, mergedNetw
             }
             if userRule['Action'] == 3:
                 payload["inline-layer"] = userRule['SubPolicyName']
-            if userRule['ConversionComments'].strip() != "":
-                payload["custom-fields"] = {"field-1": userRule['ConversionComments']}
+           
+           # Due to the custom-fields.field-[1-3] having a limit of 254 Characters, this is used as a workaround
+            # Rule comments will stil be imported if they exist in userRule['Comments']
+            # The default value is False, so custom-fields will still be utilized.
+            #
+            # If the Conversion Comments is > 150, then we should trim it.
+            # This matches the behavior in CheckPointObjects/CLIScriptBuilder.cs
+            #
+            if isIgnoreConversionComments != True:
+                if userRule['ConversionComments'].strip() != "":
+                    if len(userRule['ConversionComments']) > 150:
+                        newConversionComment = (userRule['ConversionComments'][:147] +'...')
+                        payload["custom-fields"] = {"field-1": newConversionComment}
+                    else:
+                        payload["custom-fields"] = {"field-1": userRule['ConversionComments']}
+            #
             addedRule = addUserObjectToServer(client, "add-access-rule", payload, changeName=False)
             if addedRule is not None:
                 printStatus(None, "REPORT: access rule is added")
@@ -1230,7 +1244,8 @@ args_parser.add_argument('-d', '--domain', default=None,
                          help="The name/uid of the domain you want to log into in an MDS environment.")
 args_parser.add_argument('--replace-from-global-first', default="false",
                          help="The argument indicates that SmartConnector should use 'Global' objects at first, by default it uses 'Local' objects. [true, false]")
-
+args_parser.add_argument('--ignore-conversion-comments', default="false",
+                         help="The argument indicates that SmartConnector should not add conversion comments into custom-fields [true, false]")
 args = args_parser.parse_args()
 
 file_name_log = "smartconnector"
@@ -1267,11 +1282,23 @@ elif args.replace_from_global_first.lower() != "true" and args.replace_from_glob
                 "smartconnector.py: error: argument --replace-from-global-first: invalid boolean value: '" + args.replace_from_global_first + "'")
     print("")
     args_parser.print_help()
+elif args.ignore_conversion_comments.lower() != "true" and args.ignore_conversion_comments.lower() != "false":
+    print("")
+    printStatus(None, None,
+                "smartconnector.py: error: argument '--ignore-conversion-comments: invalid boolean value: '" + args.ignore_conversion_comments + "'")
+    print("")
+    args_parser.print_help()
+
 else:
     if args.replace_from_global_first.lower() == "true":
         isReplaceFromGlobalFirst = True
     elif args.replace_from_global_first.lower() == "false":
         isReplaceFromGlobalFirst = False
+    if args.ignore_conversion_comments.lower() == "true":
+        isIgnoreConversionComments = True
+    else:
+       isIgnoreConversionComments = False
+
     printStatus(None, "Input arguments:")
     printStatus(None, "root flag is set" if args.root else "root flag is not set")
     printStatus(None, "management: " + args.management)
@@ -1284,6 +1311,7 @@ else:
     printStatus(None, "file: " + args.file)
     printStatus(None, "threshold: " + str(args.threshold))
     printStatus(None, "replace-from-global-first: " + str(isReplaceFromGlobalFirst))
+    printStatus(None, "ignore-conversion-comments: " + str(isIgnoreConversionComments))
     printStatus(None, "===========================================")
     printStatus(None, "reading and parsing processes are started for JSON file: " + args.file)
     with open(args.file) as json_file:
