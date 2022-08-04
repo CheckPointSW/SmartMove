@@ -1034,15 +1034,16 @@ def addAccessRules(client, userRules, userLayerName, skipCleanUpRule, mergedNetw
             # Rule comments will stil be imported if they exist in userRule['Comments']
             # The default value is False, so custom-fields will still be utilized.
             #
-            # If the Conversion Comments is > 150, then we should trim it.
-            # This matches the behavior in CheckPointObjects/CLIScriptBuilder.cs
+            # If the Conversion Comments is > 250, then we should trim it.
+            # This matches the behavior in CheckPointObjects/CLIScriptBuilder.cs (limit there is 150)
             #
             if isIgnoreConversionComments != True:
                 if userRule['ConversionComments'].strip() != "":
-                    if len(userRule['ConversionComments']) > 150:
-                        newConversionComment = (userRule['ConversionComments'][:147] +'...')
+                    if len(userRule['ConversionComments']) > 250:
+                        lenConversionComments=len(userRule['ConversionComments'])
+                        newConversionComment = (userRule['ConversionComments'][:250] +'...')
                         payload["custom-fields"] = {"field-1": newConversionComment}
-                        printStatus(None, "WARN: Conversion Comment truncated due to length")
+                        printStatus(None, "WARN: Conversion Comment truncated due to length (" + str(lenConversionComment) +")")
                     else:
                         payload["custom-fields"] = {"field-1": userRule['ConversionComments']}
             #
