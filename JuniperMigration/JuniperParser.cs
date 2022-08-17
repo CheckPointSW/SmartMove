@@ -59,6 +59,7 @@ namespace JuniperMigration
             ParseApplicationsAndGroups(configNode);
             parseSchedulers(configNode);			
             ParsePolicy(configNode);
+            ParsePolicyFromGroups(configNode);
             ParseNat(configNode);
             AttachRoutesToInterfacesTopology();
         }
@@ -443,6 +444,44 @@ namespace JuniperMigration
             }
 
             // Append the policy default action as a global rule!!!
+            var juniperDefaultActionRule = new Juniper_GlobalPolicyRule();
+            juniperDefaultActionRule.GenerateDefaultActionRule(defaultAction);
+            _juniperGlobalPolicyRules.Add(juniperDefaultActionRule);
+        }
+
+        private void ParsePolicyFromGroups(XElement configNode)
+        {
+            var zonePolicies = configNode.XPathSelectElements("./groups/security/policies/policy");
+            foreach (var zonePolicy in zonePolicies)
+            {
+                JuniperObject juniperZonePolicy = new Juniper_ZonePolicy();
+                juniperZonePolicy.Parse(zonePolicy, null);
+                _juniperObjects.Add(juniperZonePolicy);
+
+                var policies = zonePolicy.Elements("policy");
+                foreach (var policy in policies)
+                {
+                    var juniperRule = new Juniper_PolicyRule();
+                    juniperRule.Parse(policy, null);
+                    ((Juniper_ZonePolicy)juniperZonePolicy).Rules.Add(juniperRule);
+                }
+            }
+
+            var globalPolicies = configNode.XPathSelectElements("./groups/security/policies/global/policy");
+            foreach (var globalPolicy in globalPolicies)
+            {
+                var juniperGlobalRule = new Juniper_GlobalPolicyRule();
+                juniperGlobalRule.Parse(globalPolicy, null);
+                _juniperGlobalPolicyRules.Add(juniperGlobalRule);
+            }
+
+            var defaultAction = Juniper_PolicyRule.ActionType.Deny;
+            var policyDefaultAction = configNode.XPathSelectElement("./groups/security/policies/default-policy");
+            if (policyDefaultAction != null && policyDefaultAction.Element("permit-all") != null)
+            {
+                defaultAction = Juniper_PolicyRule.ActionType.Permit;
+            }
+
             var juniperDefaultActionRule = new Juniper_GlobalPolicyRule();
             juniperDefaultActionRule.GenerateDefaultActionRule(defaultAction);
             _juniperGlobalPolicyRules.Add(juniperDefaultActionRule);
