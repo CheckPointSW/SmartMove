@@ -4033,18 +4033,28 @@ namespace JuniperMigration
                     {
                         continue;
                     }
-					
-                    var parentLayerRuleZone = (CheckPoint_Zone)cpParentRule.Source[0];
-                    if (parentLayerRuleZone == null)
+					try
                     {
-                        continue;
+                        var parentLayerRuleZone = (CheckPoint_Zone)cpParentRule.Source[0];
+
+                        if (parentLayerRuleZone == null)
+                        {
+                            continue;
+                        }
+
+                        // NAT rule source zone(s)/interface(s) should match on firewall rule source zone
+                        if (!IsFirewallRuleSourceZoneMatchedByNATRule(parentLayerRuleZone.Name, juniperNatCustomData))
+                        {
+                            continue;
+                        }
+                    } catch (Exception ex)
+                    {
+                        if (ex.Message == "Unable to cast object of type 'CheckPointObjects.CheckPoint_NetworkGroup' to type 'CheckPointObjects.CheckPoint_Zone'.")
+                            continue;
+                        else throw ex;
                     }
 
-                    // NAT rule source zone(s)/interface(s) should match on firewall rule source zone
-                    if (!IsFirewallRuleSourceZoneMatchedByNATRule(parentLayerRuleZone.Name, juniperNatCustomData))
-                    {
-                        continue;
-                    }
+                    
 
                     // Get into the relevant sub-policy
                     foreach (CheckPoint_Layer subPolicy in cpPackage.SubPolicies)
@@ -4709,8 +4719,15 @@ namespace JuniperMigration
 
                 juniperObject.ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
 
-                errorDescription = string.Format("{0} Using dummy object: {1}.", errorDescription, cpDummyObject.Name);
-                _conversionIncidents.Add(new ConversionIncident(juniperObject.LineNumber, errorTitle, errorDescription, juniperObject.ConversionIncidentType));
+                if (cpObjectName.Contains("<") && cpObjectName.Contains(">") && cpObjectName.Contains("*"))
+                {
+                    errorDescription = string.Format("wildcard expression is not supported");
+                    _conversionIncidents.Add(new ConversionIncident(juniperObject.LineNumber, "Error creating a parent layer rule", errorDescription, juniperObject.ConversionIncidentType));
+                } else
+                {
+                    errorDescription = string.Format("{0} Using dummy object: {1}.", errorDescription, cpDummyObject.Name);
+                    _conversionIncidents.Add(new ConversionIncident(juniperObject.LineNumber, errorTitle, errorDescription, juniperObject.ConversionIncidentType));
+                }
             }
 
             return cpDummyObject;
