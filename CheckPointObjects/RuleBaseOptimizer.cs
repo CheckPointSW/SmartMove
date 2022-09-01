@@ -90,7 +90,7 @@ namespace CheckPointObjects
             {
                 CheckPoint_Rule rule = newRule.Clone();
                 rule.Layer = layer.Name;
-                rule.Comments = "";
+                // rule.Comments = "";
                 rule.ConversionComments = newRule.ConversionComments;
                 layer.Rules.Add(rule);
             }
@@ -181,6 +181,10 @@ namespace CheckPointObjects
 
         private static bool IsRuleSimilarToRule(CheckPoint_Rule rule1, CheckPoint_Rule rule2)
         {
+            if (rule1.Comments != rule2.Comments || string.IsNullOrEmpty(rule1.Comments) && true)
+            {
+                return false;
+            }
             if (rule1.Action != rule2.Action)
             {
                 return false;
