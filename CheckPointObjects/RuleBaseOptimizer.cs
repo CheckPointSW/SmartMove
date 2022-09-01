@@ -131,7 +131,7 @@ namespace CheckPointObjects
             mergedRule.Track = rule1.Track;
             mergedRule.SourceNegated = rule1.SourceNegated;
             mergedRule.DestinationNegated = rule1.DestinationNegated;
-            mergedRule.Comments = "";
+            mergedRule.Comments = rule1.Comments;
             mergedRule.ConversionComments = rule1.ConversionComments + " | " + rule2.ConversionComments;
             mergedRule.ConvertedCommandId = rule1.ConvertedCommandId;
             mergedRule.ConversionIncidentType = ConversionIncidentType.None;
