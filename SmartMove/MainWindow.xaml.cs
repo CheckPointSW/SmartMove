@@ -312,9 +312,11 @@ namespace SmartMove
             LDAPAccountUnitBlock.Visibility = Visibility.Collapsed;
             CreateServiceGroupsConf.Visibility = Visibility.Collapsed;
             SkipUnusedObjects.Visibility = Visibility.Collapsed;
+            OptimizeByComments.Visibility = Visibility.Collapsed;
             ConvertUserConfiguration = false;
             //Create service groups option
             CreateServiceGroupsConfiguration = true;
+            
 
 
             switch (_supportedVendors.SelectedVendor)
@@ -323,6 +325,7 @@ namespace SmartMove
                     ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     //CreateServiceGroupsConf.Visibility = Visibility.Visible;
+                    OptimizeByComments.Visibility = Visibility.Visible;
                     break;
                 case Vendor.FirePower:
                     ConfigurationFileLabel = SupportedVendors.FirepowerConfigurationFileLabel;
@@ -700,6 +703,7 @@ namespace SmartMove
                 case Vendor.CiscoASA:
                     CiscoConverter ciscoConverter = new CiscoConverter();
                     ciscoConverter.SkipUnusedObjects = SkipUnusedObjectsConversion;
+                    ciscoConverter.OptimizeByComments = OptimizeByComments.IsChecked;
                     vendorConverter = ciscoConverter;
                     break;
                 case Vendor.FirePower:
@@ -1117,6 +1121,9 @@ namespace SmartMove
             canCloseWindow = true;
         }
 
+
         #endregion
+
+        
     }
 }

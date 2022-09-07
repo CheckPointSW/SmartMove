@@ -20,7 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using CommonUtils;
-
+ 
 namespace CheckPointObjects
 {
     /// <summary>
@@ -37,7 +37,7 @@ namespace CheckPointObjects
     /// </summary>
     public static class RuleBaseOptimizer
     {
-        public static CheckPoint_Layer Optimize(CheckPoint_Layer originalLayer, string newName)
+        public static CheckPoint_Layer Optimize(CheckPoint_Layer originalLayer, string newName, bool? isOptimizeByComments = false)
         {
             CheckPoint_Layer curLayer = originalLayer;
             CheckPoint_Layer newLayer;
@@ -48,7 +48,7 @@ namespace CheckPointObjects
 
                 foreach (CheckPoint_Rule rule in curLayer.Rules)
                 {
-                    AddRule(nextLayer, rule);
+                    AddRule(nextLayer, rule, isOptimizeByComments);
                 }
 
                 if (nextLayer.Rules.Count == curLayer.Rules.Count)
@@ -67,8 +67,8 @@ namespace CheckPointObjects
 
             return newLayer;
         }
-
-        private static void AddRule(CheckPoint_Layer layer, CheckPoint_Rule newRule)
+    
+        private static void AddRule(CheckPoint_Layer layer, CheckPoint_Rule newRule, bool? isOptimizeByComments)
         {
             bool match = false;
 
@@ -77,7 +77,7 @@ namespace CheckPointObjects
             {
                 for (int i = pos; i < layer.Rules.Count(); i++)
                 {
-                    if (IsRuleSimilarToRule(layer.Rules[i], newRule))
+                    if (IsRuleSimilarToRule(layer.Rules[i], newRule, isOptimizeByComments))
                     {
                         layer.Rules[i] = MergeRules(layer.Rules[i], newRule);
                         match = true;
@@ -178,13 +178,14 @@ namespace CheckPointObjects
 
             return (matchedRules == 0) ? -1 : (pos + 1);
         }
-
-        private static bool IsRuleSimilarToRule(CheckPoint_Rule rule1, CheckPoint_Rule rule2)
+        
+        private static bool IsRuleSimilarToRule(CheckPoint_Rule rule1, CheckPoint_Rule rule2, bool? isOptimizeByComments)
         {
-            if (rule1.Comments != rule2.Comments || string.IsNullOrEmpty(rule1.Comments) && true)
+            if (rule1.Comments != rule2.Comments || string.IsNullOrEmpty(rule1.Comments) && (bool)isOptimizeByComments)
             {
                 return false;
             }
+            
             if (rule1.Action != rule2.Action)
             {
                 return false;
