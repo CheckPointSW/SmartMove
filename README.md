@@ -33,6 +33,16 @@ The tool is developed using Microsoft C# language and .Net framework version 4.5
 
 From version 9.1 the tool is developed using Python language version 3.7.
 
+### Note:
+Please create the pull request with a request to merge into the staging branch instead of into the master branch. 
+
+This allows us to do testing, and to make any additional edits or changes after the merge but before merging to master.
+
+### A Note About Maintenance:
+
+NOTICE! Maintenance of this program is on a ''best effort'' basis. 
+We try to get to issues and pull requests as quickly as we can. 
+
 
 ## 💧 Community
 Join the welcoming community of Check Point SmartMove developers at [CheckMATES](https://community.checkpoint.com/t5/SmartMove/bd-p/smartmove) 
