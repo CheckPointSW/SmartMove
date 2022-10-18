@@ -42,7 +42,7 @@ namespace SmartMove
             AssociatedObject.PreviewMouseLeftButtonDown -= OnTextBoxPreviewMouseLeftButtonDown;
             AssociatedObject.LostFocus -= OnTextBoxLostFocus;
         }
-        
+
         #endregion
 
         #region Event Handlers
@@ -60,7 +60,7 @@ namespace SmartMove
         {
             AssociatedObject.Select(0, 0);
         }
-        
+
         #endregion
     }
 }

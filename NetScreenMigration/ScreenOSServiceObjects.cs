@@ -209,7 +209,7 @@ namespace NetScreenMigration
         }
 
         public override int Parse(ScreenOSCommand command, int baseParamIndex)
-        {   
+        {
             base.Parse(command, baseParamIndex);
 
             /* Get Ip protocol id if exist*/
@@ -246,7 +246,7 @@ namespace NetScreenMigration
 
         public override int Parse(ScreenOSCommand command, int baseParamIndex)
         {
-            int index =  base.Parse(command, baseParamIndex);
+            int index = base.Parse(command, baseParamIndex);
             ProtocolType = ProtocolTypeEnum.Udp;
 
             if (SrcPort != "any")
@@ -323,7 +323,7 @@ namespace NetScreenMigration
             {
                 IcmpType = byte.Parse(command.GetParam(baseParamIndex + 1));
             }
-            
+
             /* Code*/
             if (command.GetParam(baseParamIndex + 2) == "code")
             {
@@ -376,7 +376,7 @@ namespace NetScreenMigration
             return baseParamIndex + 2;
         }
 
-        public override string ToCheckPointPortInfo(){ return Name().ToUpper() + "_" + Uuid;}
+        public override string ToCheckPointPortInfo() { return Name().ToUpper() + "_" + Uuid; }
     }
 
     public class ServiceProtocolObject_SunRPC : ServiceProtocolObject
@@ -408,7 +408,7 @@ namespace NetScreenMigration
             }
             set
             {
-                string []programValue = value.Split('-');
+                string[] programValue = value.Split('-');
                 ProgramStart = programValue[0];
                 if (programValue.Length == 1)
                 {
@@ -445,7 +445,7 @@ namespace NetScreenMigration
                         ProgramEnd = _maxProgram.ToString();
                     }
 
-                    if(ProgramStart != ProgramEnd)
+                    if (ProgramStart != ProgramEnd)
                     {
                         ConversionIncidentMessage = "ScreenOS SUN-RPC service object with program range is not supported in Check Point. Using only first program number in range";
                     }

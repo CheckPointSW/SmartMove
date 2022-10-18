@@ -36,9 +36,9 @@ namespace FortiGateMigration
 
         private List<string> _errorsList = new List<string>(); //storing conversion errors for config or each VDOM
         private List<string> _warningsList = new List<string>(); //storing conversion warnings for config or each VDOM
-        
+
         private HashSet<string> _skippedNames = new HashSet<string>(); //if objects was skipped by error of validation here need to be placed his name
-        
+
         private Dictionary<string, List<CheckPointObject>> _localMapperFgCp = new Dictionary<string, List<CheckPointObject>>(); //storing map of FG names to CheckPoint objects
 
         private Dictionary<string, List<CheckPoint_Host>> _interfacesMapperFgCp = new Dictionary<string, List<CheckPoint_Host>>(); //storing information about interfaces
@@ -186,7 +186,7 @@ namespace FortiGateMigration
             }
             else
             {
-                
+
 
                 int optimazed_count = 0;
                 if (_cpPackages.Count > 1)
@@ -254,7 +254,7 @@ namespace FortiGateMigration
                             {
                                 NewFortigateAnalizStatistic._uncommentedServicesRulesCount++;
                             }
-                            if(policy.Enabled == false)
+                            if (policy.Enabled == false)
                             {
                                 NewFortigateAnalizStatistic._disabledServicesRulesCount++;
                             }
@@ -330,11 +330,11 @@ namespace FortiGateMigration
                     NewFortigateAnalizStatistic._totalServicesRulesOptCount = optimazed_count;
 
                 }
-                    this.OptimizationPotential = RulesInConvertedPackage() > 0 ? ((RulesInConvertedPackage() - RulesInConvertedOptimizedPackage()) * 100 / (float)RulesInConvertedPackage()) : 0;
-                    NewFortigateAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
-                    ExportManagmentReport();
-                    OptimizationPotential = -1;
-                    TotalRules += NewFortigateAnalizStatistic._totalServicesRulesCount;
+                this.OptimizationPotential = RulesInConvertedPackage() > 0 ? ((RulesInConvertedPackage() - RulesInConvertedOptimizedPackage()) * 100 / (float)RulesInConvertedPackage()) : 0;
+                NewFortigateAnalizStatistic.CalculateCorrectAll(_cpNetworks, _cpNetworkGroups, _cpHosts, _cpRanges, _cpTcpServices, _cpUdpServices, _cpSctpServices, _cpIcmpServices, _cpDceRpcServices, _cpOtherServices, _cpServiceGroups);
+                ExportManagmentReport();
+                OptimizationPotential = -1;
+                TotalRules += NewFortigateAnalizStatistic._totalServicesRulesCount;
 
             }
         }
@@ -1424,7 +1424,7 @@ namespace FortiGateMigration
                 }
             }
 
-            if(_cpPackages.Count > 0)
+            if (_cpPackages.Count > 0)
             {
                 Add_Optimized_Package();
                 foreach (var sub_policy in _cpPackages[1].SubPolicies)
@@ -1509,7 +1509,7 @@ namespace FortiGateMigration
 
             if (_vDomNames.Count > 0) // create HTML files which contain links to each report
             {
-               CreateCatalogExportManagment();
+                CreateCatalogExportManagment();
             }
 
             VendorHtmlFile = _vendorFilePath;
@@ -3484,7 +3484,8 @@ namespace FortiGateMigration
 
         public void Add_Package(List<FgCommand> fgCommandsList, bool convertNat, string commentPhraze)
         {
-            if (IsConsoleRunning) {
+            if (IsConsoleRunning)
+            {
                 Console.WriteLine(commentPhraze);
                 Progress.SetProgress(70);
                 Thread.Sleep(1000);
@@ -3751,7 +3752,7 @@ namespace FortiGateMigration
                             {
                                 string fgScheduleRule = fgCommand_Set.Value.Trim('"');
 
-                                if(!fgScheduleRule.Equals("always"))
+                                if (!fgScheduleRule.Equals("always"))
                                 {
                                     NewFortigateAnalizStatistic._timesServicesRulesCount++;
                                 }
@@ -4001,7 +4002,7 @@ namespace FortiGateMigration
                         realRulesList.Add(cpRule);
 
                         NewFortigateAnalizStatistic._totalServicesRulesCount++;
-                        if(in_service) NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
+                        if (in_service) NewFortigateAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
                         _rulesInConvertedPackage += 1;
 
                         if (cpRuleUG != null)
@@ -4116,7 +4117,7 @@ namespace FortiGateMigration
             }
             package.ParentLayer.Rules.AddRange(newRootRulesList);
 
-            
+
             foreach (string key in extraZonesMap.Keys)
             {
                 if (key.Contains("any"))
@@ -5537,7 +5538,7 @@ namespace FortiGateMigration
             HashSet<string> output = new HashSet<string>();
             Dictionary<string, string> portsTcp = new Dictionary<string, string>();       //list of used ports for TCP <port, service>
             Dictionary<string, string> portsUdp = new Dictionary<string, string>();       //list of used ports for UDP <port, service>
-            HashSet<string> groupNames = new HashSet<string>();                     //set of groups names for check duplicates 
+            HashSet<string> groupNames = new HashSet<string>();                     //set of groups names for check duplicates
 
             foreach (FgCommand parsedElement in fgCommandsList)
             {
@@ -5660,7 +5661,7 @@ namespace FortiGateMigration
     public class FgStaticRoute
     {
         public FgStaticRoute() { }
-        public FgStaticRoute (string name, string network, string mask, string gateway, string device) : this()
+        public FgStaticRoute(string name, string network, string mask, string gateway, string device) : this()
         {
             Name = string.IsNullOrEmpty(name) ? string.Empty : name;
             Network = string.IsNullOrEmpty(network) ? string.Empty : network;
@@ -5788,7 +5789,7 @@ public class NewAnalizStatistic
         //DUPLICATE CALCULATION
         foreach (var item in _cpNetworks)
         {
-            if (_cpNetworks.Where(nt =>  nt.Netmask == item.Netmask & nt.Subnet == nt.Subnet).Count() > 1) { _duplicateNetworkObjectsCount++; }
+            if (_cpNetworks.Where(nt => nt.Netmask == item.Netmask & nt.Subnet == nt.Subnet).Count() > 1) { _duplicateNetworkObjectsCount++; }
         }
         foreach (var item in _cpHosts)
         {
