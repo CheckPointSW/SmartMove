@@ -14,17 +14,17 @@ namespace CommonUtils
     {
         [DataMember]
         public string msg { get; set; }
-        
+
         [DataMember(EmitDefaultValue = false)]
         public string warning { get; set; }
-        
+
         [DataMember(EmitDefaultValue = false)]
         public string error { get; set; }
 
 
 
-        public JsonReport() {}
-        public JsonReport (string msg, string err = null, string warning = null) : this()
+        public JsonReport() { }
+        public JsonReport(string msg, string err = null, string warning = null) : this()
         {
             this.msg = msg;
             if (err != null)
@@ -55,7 +55,8 @@ namespace CommonUtils
         [DataMember(Name = "Conversion errors")]
         public int errors { get; set; }
 
-        public TotalJsonReport() {
+        public TotalJsonReport()
+        {
             errors = 0;
             warnings = 0;
         }

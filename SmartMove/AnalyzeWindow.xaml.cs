@@ -154,7 +154,7 @@ namespace SmartMove
                     if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "The system cannot find the required files. ");
-                        MainWindow.ShowMessage(null, MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions", 
+                        MainWindow.ShowMessage(null, MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions",
                             null, null, String.Format("{1}{0}{2}", Environment.NewLine, "The system cannot find the required files. ", "Please follow"));
                         return;
                     }
@@ -330,7 +330,7 @@ namespace SmartMove
                 OutputPanel.Visibility = Visibility.Collapsed;
                 if (ex is InvalidDataException && ex.Message != null && ex.Message.Contains("Policy exceeds the maximum number"))
                 {
-                    MainWindow.ShowMessage(null, MessageTypes.Error, "ps@checkpoint.com", "mailto:ps@checkpoint.com", null, null, 
+                    MainWindow.ShowMessage(null, MessageTypes.Error, "ps@checkpoint.com", "mailto:ps@checkpoint.com", null, null,
                         String.Format("{1}{0}{2}{0}{3}", Environment.NewLine, "SmartAnalyze is unable to analyze the provided policy.",
                                                 "Reason: Policy exceeds the maximum number of supported policy layers.",
                                                 "To assure the smooth conversion of your data, it is recommended to contact Check Point Professional Services by sending an e-mail to"));

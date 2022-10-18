@@ -491,7 +491,7 @@ namespace CheckPointObjects
         public string IpProtocol { get; set; }
 
         public CheckPoint_OtherService() : base() { }
-        public CheckPoint_OtherService (string name, string ipprotocol, string comments, List<string> tags) : base()
+        public CheckPoint_OtherService(string name, string ipprotocol, string comments, List<string> tags) : base()
         {
             Name = name;
             IpProtocol = ipprotocol;
@@ -517,7 +517,7 @@ namespace CheckPointObjects
     {
         public List<string> Members = new List<string>();
         public int MembersPublishIndex { get; set; }
-        public int MembersMaxPublishSize { get; set; } 
+        public int MembersMaxPublishSize { get; set; }
 
         public CheckPoint_ServiceGroup() : base()
         {
@@ -538,7 +538,7 @@ namespace CheckPointObjects
             int index = ((MembersPublishIndex + MembersMaxPublishSize) > Members.Count) ? Members.Count : MembersPublishIndex + MembersMaxPublishSize;
             return (MembersPublishIndex == 0 ? "create " : "update ") + "service group [" + Name + "]: " + index + "/" + Members.Count + " members";
         }
-        
+
     }
 
     public class CheckPoint_ApplicationGroup : CheckPointObject

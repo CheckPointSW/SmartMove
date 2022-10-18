@@ -16,7 +16,7 @@ namespace SmartMove
         {
             if (args != null && args.Length > 0)
             {
-                CommandLine commandLine = new CommandLine(args);                
+                CommandLine commandLine = new CommandLine(args);
 
                 //display command help
                 if (args[0].Equals("--help") || args[0].Equals("/?") || args[0].Equals("-h"))
@@ -27,34 +27,35 @@ namespace SmartMove
                 args = commandLine.regenerateArgs(Environment.CommandLine);
 
                 commandLine = commandLine.Parse(args);
-/*
-                Console.WriteLine();
-                Console.WriteLine(" -> Config file name: " + commandLine.ConfigFileName);
-                Console.WriteLine(" -> Target folder: " + commandLine.TargetFolder);
-                Console.WriteLine(" -> Vendor: " + commandLine.Vendor);
-                Console.WriteLine(" -> Domain: " + commandLine.Domain);
-                Console.WriteLine(" -> Convert NAT option: " + commandLine.ConvertNat);
-                Console.WriteLine(" -> LDAP account unit: " + commandLine.LdapAccountUnit);
-                Console.WriteLine(" -> Convert user configuration option: " + commandLine.ConvertUserConfiguration);
-                Console.WriteLine(" -> Don't import unused objects option: " + commandLine.DontImportUnusedObjects);
-                Console.WriteLine();*/
+                /*
+                                Console.WriteLine();
+                                Console.WriteLine(" -> Config file name: " + commandLine.ConfigFileName);
+                                Console.WriteLine(" -> Target folder: " + commandLine.TargetFolder);
+                                Console.WriteLine(" -> Vendor: " + commandLine.Vendor);
+                                Console.WriteLine(" -> Domain: " + commandLine.Domain);
+                                Console.WriteLine(" -> Convert NAT option: " + commandLine.ConvertNat);
+                                Console.WriteLine(" -> LDAP account unit: " + commandLine.LdapAccountUnit);
+                                Console.WriteLine(" -> Convert user configuration option: " + commandLine.ConvertUserConfiguration);
+                                Console.WriteLine(" -> Don't import unused objects option: " + commandLine.DontImportUnusedObjects);
+                                Console.WriteLine();*/
 
                 int exitCode = commandLine.CheckOptionsValidity(commandLine);
-                
+
                 if (exitCode == 0)
                 {
                     return 0;
-                } else 
-                {   
-                    if(commandLine.IsAnalyze)
+                }
+                else
+                {
+                    if (commandLine.IsAnalyze)
                     {
                         Console.WriteLine($"IS ANALYZE {commandLine.IsAnalyze}");
-                        commandLine.DoAnalyze(commandLine); 
+                        commandLine.DoAnalyze(commandLine);
                     }
                     else
                     {
                         commandLine.DoMigration(commandLine);
-                    }               
+                    }
                     return 0;
                 }
             }
@@ -65,6 +66,6 @@ namespace SmartMove
                 return app.Run();
             }
         }
-        
+
     }
 }

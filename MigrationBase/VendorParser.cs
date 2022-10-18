@@ -27,7 +27,7 @@ namespace MigrationBase
         #region Private Members
 
         protected string VendorVersion = "";
-        
+
         #endregion
 
         #region Properties

@@ -196,7 +196,7 @@ namespace CheckPointObjects
                 return false;
             }
 
-            if ((rule1.Time.Count != rule2.Time.Count) || 
+            if ((rule1.Time.Count != rule2.Time.Count) ||
                 (rule1.Time.Count > 0 && rule2.Time.Count > 0 && rule1.Time[0].Name != rule2.Time[0].Name))
             {
                 return false;
@@ -238,8 +238,9 @@ namespace CheckPointObjects
             //if there is nothing to merge return empty comment
             if (comments_parts.Count == 0)
                 return "";
-          
-            if (comments_parts.Count > 0) { 
+
+            if (comments_parts.Count > 0)
+            {
 
                 if (regex.IsMatch(comments_parts[0]))
                     foreach (string part in comments_parts)
@@ -275,9 +276,9 @@ namespace CheckPointObjects
                             commentBuilder += ", " + comments_parts[i];
                     }
 
-            }
-            else
-                return commentToProcess.Trim();
+                }
+                else
+                    return commentToProcess.Trim();
             }
 
             return commentBuilder == "Matched rule(s)" ? "" : commentBuilder;

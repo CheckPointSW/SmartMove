@@ -21,24 +21,24 @@ namespace PanoramaPaloAltoMigration
         public Panorama_Config Config { get; set; }
 
         public override void Export(string filename)
-        {            
+        {
         }
 
         public override void Parse(string filename)
         {
 
         }
-        
+
         public void ParseWithTargetFolder(string filename, string targetFolder)
         {
             if (!targetFolder.EndsWith("\\"))
                 targetFolder += "\\";
-            UncompressArchive(filename,targetFolder);            
-            
+            UncompressArchive(filename, targetFolder);
+
             string outConfigsFolder = targetFolder + "configs";
             _ArchiveName = outConfigsFolder;
             string panoramaConfig = GetPanoramaConfFile(outConfigsFolder);
-           
+
             XmlSerializer serializer = new XmlSerializer(typeof(Panorama_Config));
 
             using (FileStream fileStream = new FileStream(panoramaConfig, FileMode.Open))
@@ -55,8 +55,8 @@ namespace PanoramaPaloAltoMigration
         }
 
         public string GetPanoramaConfFile(string outConfigsFolder)
-        {            
-            string panoramaConfig = null;            
+        {
+            string panoramaConfig = null;
 
             string[] configsFolder = Directory.GetDirectories(outConfigsFolder);//get uncompressed folder name 
             string[] configFilesArray = Directory.GetFiles(configsFolder[0]);//get list of panorama and firewalls config files
@@ -90,19 +90,19 @@ namespace PanoramaPaloAltoMigration
         /// </summary>        
         public bool CheckPaloAltoConfiguartion(String filename)
         {
-            bool is_panorama = false;            
+            bool is_panorama = false;
             List<string> archiveExt = new List<string> { ".tgz" };
 
             string extension = Path.GetExtension(filename);
-            
+
             if (archiveExt.Contains(extension))
             {
                 is_panorama = true;
             }
             else
             {
-                Console.WriteLine("Configs archive must be in .tgz format!");                
-            }            
+                Console.WriteLine("Configs archive must be in .tgz format!");
+            }
             return is_panorama;
         }
 
@@ -110,23 +110,23 @@ namespace PanoramaPaloAltoMigration
         {
             string compressorsDirPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "compressors";
             string archiveCopyName = targetFolder + archiveName.Substring(archiveName.LastIndexOf("\\") + 1);
-            archiveCopyName = archiveCopyName.Substring(0, archiveCopyName.IndexOf(".tgz")) + "_copy" + ".tgz";            
-            File.Copy(archiveName, archiveCopyName, true);            
+            archiveCopyName = archiveCopyName.Substring(0, archiveCopyName.IndexOf(".tgz")) + "_copy" + ".tgz";
+            File.Copy(archiveName, archiveCopyName, true);
 
             #region uncompress .TGZ archive 
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.UseShellExecute = false;
             startInfo.CreateNoWindow = true;
             Process uncompressProc = null;
-            startInfo.FileName = Path.Combine(compressorsDirPath, "gzip.exe");            
+            startInfo.FileName = Path.Combine(compressorsDirPath, "gzip.exe");
             startInfo.WorkingDirectory = archiveCopyName.Substring(0, archiveCopyName.LastIndexOf("\\"));
             startInfo.Arguments = "-d" + " \"" + archiveCopyName + "\"";
             startInfo.RedirectStandardOutput = true;
             uncompressProc = Process.Start(startInfo);
-            startInfo.RedirectStandardError = true;            
+            startInfo.RedirectStandardError = true;
 
             string output = uncompressProc.StandardOutput.ReadToEnd();
-            uncompressProc.WaitForExit();            
+            uncompressProc.WaitForExit();
             #endregion
 
             #region uncompress .TAR archive
@@ -139,12 +139,12 @@ namespace PanoramaPaloAltoMigration
             startInfo.CreateNoWindow = true;
 
             string tarArchiveName = archiveCopyName.Substring(0, archiveCopyName.LastIndexOf(".tgz")) + ".tar";
-            
+
             startInfo.FileName = Path.Combine(compressorsDirPath, "gtar.exe");
-            
+
             string outConfigsFolder = tarArchiveName.Substring(0, tarArchiveName.LastIndexOf("\\")) + "\\configs";
             Directory.CreateDirectory(outConfigsFolder);
-            startInfo.WorkingDirectory = outConfigsFolder;                     
+            startInfo.WorkingDirectory = outConfigsFolder;
             startInfo.Arguments = "-xvf \"" + tarArchiveName + "\" --force-local";
             startInfo.RedirectStandardOutput = true;
             uncompressTarProc = Process.Start(startInfo);
@@ -154,7 +154,7 @@ namespace PanoramaPaloAltoMigration
             uncompressTarProc.WaitForExit();
 
             if (File.Exists(tarArchiveName))
-                File.Delete(tarArchiveName);            
+                File.Delete(tarArchiveName);
             #endregion
         }
     }

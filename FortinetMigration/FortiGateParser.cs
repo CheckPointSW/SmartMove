@@ -83,7 +83,7 @@ namespace FortiGateMigration
                 // Check for weird stuff
                 if (line.StartsWith("#"))
                 {
-                    if(line.StartsWith("#config-version=") && line.Contains(":"))
+                    if (line.StartsWith("#config-version=") && line.Contains(":"))
                     {
                         ParseVersion(line);
                     }

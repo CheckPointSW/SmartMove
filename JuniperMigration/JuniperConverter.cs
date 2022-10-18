@@ -159,7 +159,7 @@ namespace JuniperMigration
             public bool IsStaticMirrorRule { get; set; }
             public List<string> SourceZonesOrInterfaces = new List<string>();
         }
-        
+
         #endregion
 
         #region Private Members
@@ -1710,13 +1710,13 @@ namespace JuniperMigration
                 AddCheckPointObject(serviceGroup);
             }
         }
-		private void Add_Schedulers()
+        private void Add_Schedulers()
         {
             List<string> cpTimeRangesNamesUniq = new List<string>();
             foreach (Juniper_Scheduler scheduler in _juniperParser.Filter("_Scheduler"))
             {
                 List<CheckPoint_Time> timesList = new List<CheckPoint_Time>();//will store time-objects for separate days with different hours-ranges                              
-                
+
                 int postfixIndex = 1;//postfix of time-object in case Juniper scheduler is split to several objects     
 
                 if (scheduler.StartStopDates.Count == 0)
@@ -1725,13 +1725,14 @@ namespace JuniperMigration
                     cpTime.Comments = "Old Time Object name: " + scheduler.Name;
                     cpTime.StartNow = true;
                     cpTime.EndNever = true;
-					cpTime.Name = checkTimeNameLength(scheduler.Name, cpTimeRangesNamesUniq);
-					
+                    cpTime.Name = checkTimeNameLength(scheduler.Name, cpTimeRangesNamesUniq);
+
                     Add_TimeObject(scheduler, cpTime, timesList, cpTimeRangesNamesUniq);
                     foreach (CheckPoint_Time time in timesList)
                         AddCheckPointObject(time);
                 }
-                else {
+                else
+                {
                     foreach (string sdate in scheduler.StartStopDates) //create separate time-object for each start-date
                     {
                         CheckPoint_Time cpTime = new CheckPoint_Time();
@@ -1739,7 +1740,7 @@ namespace JuniperMigration
                         //2020-09-06.01:01;2020-09-08.12:30
                         if (scheduler.StartStopDates.Count == 1)
                         {
-                            cpTime.Name = checkTimeNameLength(scheduler.Name, cpTimeRangesNamesUniq);                       
+                            cpTime.Name = checkTimeNameLength(scheduler.Name, cpTimeRangesNamesUniq);
                         }
                         else
                         {
@@ -1751,8 +1752,8 @@ namespace JuniperMigration
                                 while (cpTimeRangesNamesUniq.Contains(cpTime.Name))
                                 {
                                     cpTime.Name = scheduler.Name.Substring(0, 8) + "_" + postfixIndex++;
-                                }                                
-                            }                                
+                                }
+                            }
                         }
                         cpTime.StartNow = false;
                         DateTime date = DateTime.ParseExact(sdate.Substring(0, sdate.IndexOf(";")), "yyyy-MM-dd.HH:mm", CultureInfo.InvariantCulture);
@@ -1763,13 +1764,13 @@ namespace JuniperMigration
                         date = DateTime.ParseExact(sdate.Substring(sdate.IndexOf(";") + 1), "yyyy-MM-dd.HH:mm", CultureInfo.InvariantCulture);
                         cpTime.EndDate = date.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture).Trim();
                         cpTime.EndTime = date.ToString("HH:mm").Trim();
-                        
+
                         Add_TimeObject(scheduler, cpTime, timesList, cpTimeRangesNamesUniq);
 
                         foreach (CheckPoint_Time time in timesList)
                             AddCheckPointObject(time);
-                    }                    
-                }  
+                    }
+                }
             }
         }
 
@@ -1816,7 +1817,7 @@ namespace JuniperMigration
                         cpTime.RecurrencePattern = CheckPoint_Time.RecurrencePatternEnum.Daily;
 
                         processHoursRanges(scheduler.patternDictionary[day], cpTime);
-                        
+
                         timesList.Add(cpTime);
                         cpTimeRangesNamesUniq.Add(cpTime.Name);
                     }
@@ -1825,16 +1826,16 @@ namespace JuniperMigration
                         cpTime.RecurrencePattern = CheckPoint_Time.RecurrencePatternEnum.Weekly;
 
                         if (scheduler.patternDictionary[day][0].Equals("all-day"))
-                        {                            
+                        {
                             cpTime.RecurrenceWeekdays.Add((CheckPoint_Time.Weekdays)daysList.IndexOf(day));
-                            
+
                             timesList.Add(cpTime);
                             cpTimeRangesNamesUniq.Add(cpTime.Name);
                         }
                         else if (scheduler.patternDictionary[day][0].Equals("exclude"))
                         {
                             if (!daysAreAddedToPattern && dailyIsConfigured)
-                            {                                
+                            {
                                 if (!cpTime.RecurrenceWeekdays.Contains(CheckPoint_Time.Weekdays.Sun))
                                     cpTime.RecurrenceWeekdays.Add(CheckPoint_Time.Weekdays.Sun);
                                 if (!cpTime.RecurrenceWeekdays.Contains(CheckPoint_Time.Weekdays.Mon))
@@ -1877,7 +1878,7 @@ namespace JuniperMigration
                             {
                                 processHoursRanges(scheduler.patternDictionary[day], cpTimeAdd);
                             }
-                            
+
                             timesList.Add(cpTimeAdd);
                             cpTimeRangesNamesUniq.Add(cpTimeAdd.Name);
                         }
@@ -1891,7 +1892,7 @@ namespace JuniperMigration
                 cpTimeRangesNamesUniq.Add(cpTime.Name);
             }
 
-            return timesList;                   
+            return timesList;
         }
 
         /// <summary>
@@ -1903,12 +1904,12 @@ namespace JuniperMigration
             {
                 if (timeRange.IndexOf(";") != -1)
                 {
-                    string startTime = timeRange.Substring(0, timeRange.IndexOf(";"));                    
+                    string startTime = timeRange.Substring(0, timeRange.IndexOf(";"));
                     string stopTime = timeRange.Substring(timeRange.IndexOf(";") + 1);
 
                     TimeSpan timeCheck0;
                     if (startTime.Length > 6) timeCheck0 = TimeSpan.ParseExact(startTime, "hh\\:mm\\:ss", CultureInfo.InvariantCulture);
-                    else  timeCheck0 = TimeSpan.ParseExact(startTime, "hh\\:mm", CultureInfo.InvariantCulture);
+                    else timeCheck0 = TimeSpan.ParseExact(startTime, "hh\\:mm", CultureInfo.InvariantCulture);
                     TimeSpan timeCheck1;
                     if (stopTime.Length > 6) timeCheck1 = TimeSpan.ParseExact(stopTime, "hh\\:mm\\:ss", CultureInfo.InvariantCulture);
                     else timeCheck1 = TimeSpan.ParseExact(stopTime, "hh\\:mm", CultureInfo.InvariantCulture);
@@ -1917,18 +1918,19 @@ namespace JuniperMigration
                     {
                         if (timeRanges.IndexOf(timeRange) == 0)
                         {
-                            cpTime.HoursRangesEnabled_1 = true;                                                        
-                            cpTime.HoursRangesFrom_1 = timeCheck0.ToString(@"hh\:mm").Trim();                            
+                            cpTime.HoursRangesEnabled_1 = true;
+                            cpTime.HoursRangesFrom_1 = timeCheck0.ToString(@"hh\:mm").Trim();
                             cpTime.HoursRangesTo_1 = timeCheck1.ToString(@"hh\:mm").Trim();
-                        } else
+                        }
+                        else
                         {
-                            cpTime.HoursRangesEnabled_2 = true;                            
-                            cpTime.HoursRangesFrom_2 = timeCheck0.ToString(@"hh\:mm").Trim();                            
+                            cpTime.HoursRangesEnabled_2 = true;
+                            cpTime.HoursRangesFrom_2 = timeCheck0.ToString(@"hh\:mm").Trim();
                             cpTime.HoursRangesTo_2 = timeCheck1.ToString(@"hh\:mm").Trim();
-                        }                        
-                    }                  
+                        }
+                    }
                 }
-            }            
+            }
         }
 
         private CheckPoint_Package Add_Package(bool isPreExecution = false)
@@ -2339,17 +2341,17 @@ namespace JuniperMigration
 
                 cpRule.Destination.Add(cpObject);
             }
-			
+
             //add scheduler
             foreach (var scheduler in juniperRule.Scheduler)
-            {   
+            {
                 cpObject = GetCheckPointObjectOrCreateDummy(scheduler,
                                                         "Time",
                                                         juniperRule,
                                                         "Not applying time-range objects.",
                                                         "Appropriate time object should be added manually.");
-                cpRule.Time.Add(cpObject);                
-              
+                cpRule.Time.Add(cpObject);
+
             }
 
             // Avoid general "icmp-proto" service duplicates
@@ -2362,7 +2364,7 @@ namespace JuniperMigration
                                                             juniperRule,
                                                             "Error creating a rule, missing information for application Juniper object",
                                                             "Application object details: " + application + ".");
-                
+
                 if (cpObject.Name == "icmp-proto")
                 {
                     if (hasGeneralIcmpService)
@@ -4033,7 +4035,7 @@ namespace JuniperMigration
                     {
                         continue;
                     }
-					try
+                    try
                     {
                         var parentLayerRuleZone = (CheckPoint_Zone)cpParentRule.Source[0];
 
@@ -4047,14 +4049,15 @@ namespace JuniperMigration
                         {
                             continue;
                         }
-                    } catch (Exception ex)
+                    }
+                    catch (Exception ex)
                     {
                         if (ex.Message == "Unable to cast object of type 'CheckPointObjects.CheckPoint_NetworkGroup' to type 'CheckPointObjects.CheckPoint_Zone'.")
                             continue;
                         else throw ex;
                     }
 
-                    
+
 
                     // Get into the relevant sub-policy
                     foreach (CheckPoint_Layer subPolicy in cpPackage.SubPolicies)
@@ -4193,7 +4196,7 @@ namespace JuniperMigration
                     return true;
                 }
 
-                if (fwRule.Service.Count == 0){}
+                if (fwRule.Service.Count == 0) { }
                 else if (fwRule.Service.Count == 1 && fwRule.Service[0].Name == CheckPointObject.Any)
                 {
                     // There is only one service in FW rule and it is "any", no matter what NAT rule service is...
@@ -4276,7 +4279,7 @@ namespace JuniperMigration
                         _juniper2CheckpointServiceDuplicates.Add(application.Name, serviceName);
                     }
 #pragma warning disable CS0168 // The variable 'e' is declared but never used
-                    catch (Exception e) {}
+                    catch (Exception e) { }
 #pragma warning restore CS0168 // The variable 'e' is declared but never used
 
                     application.ConversionIncidentType = ConversionIncidentType.Informative;
@@ -4707,7 +4710,7 @@ namespace JuniperMigration
                     cpDummyObject = new CheckPoint_ServiceGroup { Name = "_Err_in_service-line_" + juniperObject.LineNumber };
                     break;
                 case "Time":
-                    cpDummyObject = new CheckPoint_Time { Name = cpObjectName};
+                    cpDummyObject = new CheckPoint_Time { Name = cpObjectName };
                     break;
             }
 
@@ -4723,7 +4726,8 @@ namespace JuniperMigration
                 {
                     errorDescription = string.Format("wildcard expression is not supported");
                     _conversionIncidents.Add(new ConversionIncident(juniperObject.LineNumber, "Error creating a parent layer rule", errorDescription, juniperObject.ConversionIncidentType));
-                } else
+                }
+                else
                 {
                     errorDescription = string.Format("{0} Using dummy object: {1}.", errorDescription, cpDummyObject.Name);
                     _conversionIncidents.Add(new ConversionIncident(juniperObject.LineNumber, errorTitle, errorDescription, juniperObject.ConversionIncidentType));
@@ -4871,7 +4875,7 @@ namespace JuniperMigration
                 Thread.Sleep(1000);
             }
             RaiseConversionProgress(30, "Converting rules ...");
-            Add_Package(); 
+            Add_Package();
 
             if (_cpPackages.Count > 0)
             {
@@ -4974,7 +4978,7 @@ namespace JuniperMigration
             // Resolve the conversion categories/lines count to report to the user.
             ConversionIncidentCategoriesCount = _conversionIncidents.GroupBy(error => error.Title).Count();
             ConversionIncidentsCommandsCount = _conversionIncidents.GroupBy(error => error.LineNumber).Count();
-            
+
             if (!_isOverMaxLengthPackageName)
             {
                 CreateSmartConnector(true, false);
@@ -5147,7 +5151,7 @@ namespace JuniperMigration
                     foreach (var policy in layer.Rules)
                     {
                         bool any_fl = true;
-                        if(policy.Time.Count > 0)
+                        if (policy.Time.Count > 0)
                         {
                             time_count++;
                         }
