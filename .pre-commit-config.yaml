@@ -9,6 +9,9 @@ repos:
     -   id: check-ast
     -   id: check-docstring-first
     -   id: end-of-file-fixer
+    -   id: check-builtin-literals
+    -   id: debug-statements
+    -   id: forbid-new-submodules
 -   repo: https://github.com/asottile/pyupgrade
     rev: v3.1.0
     hooks:

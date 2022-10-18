@@ -1383,7 +1383,7 @@ else:
                 login_res = client.login_with_api_key(args.key, domain=args.domain)
 
             if login_res.success is False:
-                printStatus(None, "Login failed: {}".format(login_res.error_message))
+                printStatus(None, f"Login failed: {login_res.error_message}")
             else:
                 printStatus(None, "")
                 mergedNetworkObjectsMap = {}
