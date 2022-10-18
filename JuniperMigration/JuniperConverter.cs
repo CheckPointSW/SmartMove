@@ -1418,7 +1418,7 @@ namespace JuniperMigration
             }
         }
 
-        // This method resolves the interfaces subnets overlaping issue by creating 
+        // This method resolves the interfaces subnets overlaping issue by creating
         // a new network group with excusion (CheckPoint_GroupWithExclusion).
         private void Add_or_Modify_InterfaceNetworkGroups()
         {
@@ -1715,9 +1715,9 @@ namespace JuniperMigration
             List<string> cpTimeRangesNamesUniq = new List<string>();
             foreach (Juniper_Scheduler scheduler in _juniperParser.Filter("_Scheduler"))
             {
-                List<CheckPoint_Time> timesList = new List<CheckPoint_Time>();//will store time-objects for separate days with different hours-ranges                              
+                List<CheckPoint_Time> timesList = new List<CheckPoint_Time>();//will store time-objects for separate days with different hours-ranges
 
-                int postfixIndex = 1;//postfix of time-object in case Juniper scheduler is split to several objects     
+                int postfixIndex = 1;//postfix of time-object in case Juniper scheduler is split to several objects
 
                 if (scheduler.StartStopDates.Count == 0)
                 {// check if time object has Start Time
@@ -1777,7 +1777,7 @@ namespace JuniperMigration
         /// <summary>
         /// Check the length of time object name.
         /// CheckPoint time object name is limited to 11 chars. In case it's more than 11 it's either truncated or truncated and completed with postfix so that to be unique.
-        /// </summary>         
+        /// </summary>
         private string checkTimeNameLength(string timeName, List<string> cpTimeRangesNamesUniq)
         {
             int postfixIndex = 1;
@@ -1804,7 +1804,7 @@ namespace JuniperMigration
 
             bool dailyIsConfigured = false;
 
-            bool daysAreAddedToPattern = false;//used for exclude statement. 
+            bool daysAreAddedToPattern = false;//used for exclude statement.
             //In case some day is excluded from the scheduler, RecurrencePattern is changed to weekly and all days except excluded day are added to RecurrenceWeekdays (need to be done once)
 
             if (scheduler.patternDictionary.Keys.Count != 0)
@@ -1856,7 +1856,7 @@ namespace JuniperMigration
                         }
                         else
                         {
-                            CheckPoint_Time cpTimeAdd = new CheckPoint_Time();//create separate time-object for each day in case hours ranges for day are set                                              
+                            CheckPoint_Time cpTimeAdd = new CheckPoint_Time();//create separate time-object for each day in case hours ranges for day are set
 
                             cpTimeAdd = cpTime.Clone();
 
@@ -2182,7 +2182,7 @@ namespace JuniperMigration
                             CheckPoint_Rule cpRule = Juniper_To_CPRule(globalPolicyRule, subPolicy.Name, null, null);
                             subPolicy.Rules.Add(cpRule);
 
-                            // If the global rule didn't have an incident previously, 
+                            // If the global rule didn't have an incident previously,
                             // and the incident was just encountered during this convertion, retain the incident!!!
                             if (globalPolicyRule.ConversionIncidentType == ConversionIncidentType.None)
                             {
@@ -2300,7 +2300,7 @@ namespace JuniperMigration
 
                 if (!isGlobalRule && cpObject == null)
                 {
-                    // If the source object was not found in the address-book of source-zone, 
+                    // If the source object was not found in the address-book of source-zone,
                     // try in global address-book without zone suffix.
                     cpObject = GetCheckPointObjectOrCreateDummy(source,
                                                                 "NetworkGroup",
@@ -2330,7 +2330,7 @@ namespace JuniperMigration
 
                 if (!isGlobalRule && cpObject == null)
                 {
-                    // If the dest object was not found in the address-book of dest-zone, 
+                    // If the dest object was not found in the address-book of dest-zone,
                     // try in global address-book without zone suffix.
                     cpObject = GetCheckPointObjectOrCreateDummy(dest,
                                                                 "NetworkGroup",
@@ -2433,7 +2433,7 @@ namespace JuniperMigration
 
                 if (cpObject == null)
                 {
-                    // If the source object was not found in the address-book of source-zone, 
+                    // If the source object was not found in the address-book of source-zone,
                     // try in global address-book without zone suffix.
                     cpObject = GetCheckPointObjectOrCreateDummy(source,
                                                                 "NetworkGroup",

@@ -2167,7 +2167,7 @@ namespace CiscoMigration
                                     break;
 
                                 default:
-                                    // No need to check also for CiscoKnownServices.IsKnownServiceNumber here, 
+                                    // No need to check also for CiscoKnownServices.IsKnownServiceNumber here,
                                     // because it is already done in Cisco_ServiceObject class!!!
                                     if (CiscoKnownServices.IsKnownService(ciscoService.Protocol))
                                     {
@@ -2781,7 +2781,7 @@ namespace CiscoMigration
 
                 availableZones.Add(cpZone);
 
-                // If the _isInterInterfaceTrafficAllowed flag is on and there are at least two Cisco interfaces with zero security level, 
+                // If the _isInterInterfaceTrafficAllowed flag is on and there are at least two Cisco interfaces with zero security level,
                 // we should add parent rules for the equivalent CP zones to allow traffic between them.
                 if (ciscoInterface.SecurityLevel == 0)
                 {
@@ -2983,7 +2983,7 @@ namespace CiscoMigration
         {
             if (_ciscoGlobalAclCommands.Count > 0)
             {
-                // remove clenup rule of each sublayer if global rules exist because cleanup rule should be added after global-rules                
+                // remove clenup rule of each sublayer if global rules exist because cleanup rule should be added after global-rules
                 foreach (var subpolicy in package.SubPolicies)
                 {
                     if (subpolicy.Rules.Count > 0)
@@ -3035,7 +3035,7 @@ namespace CiscoMigration
 
                 foreach (var globalPolicyRule in _ciscoGlobalAclCommands)
                 {
-                    // Append the global policy rules BELOW the existing sub-policies.                    
+                    // Append the global policy rules BELOW the existing sub-policies.
                     CheckPoint_Rule cpRule = Acl_To_CPRule(globalPolicyRule, cpSubLayer4GlobalRules.Name);
                     cpSubLayer4GlobalRules.Rules.Add(cpRule);
                 }
@@ -3123,7 +3123,7 @@ namespace CiscoMigration
                                         NewCiscoAnalizStatistic._nonServicesLoggingServicesRulesCount++;
                                     }
 
-                                    // If the global ACL didn't have an incident previously, 
+                                    // If the global ACL didn't have an incident previously,
                                     // and the incident was just encountered during this convertion, retain the incident!!!
                                     if (ciscoAcl.ConversionIncidentType == ConversionIncidentType.None)
                                     {
@@ -3721,7 +3721,7 @@ namespace CiscoMigration
                                 NewCiscoAnalizStatistic._rulesServicesutilizingServicesAnyCount++;
                             }
 
-                            // This may happen, for example, if: 
+                            // This may happen, for example, if:
                             // 1. both source and destination protocols are defined on the Cisco service
                             // 2. the Cisco service has a duplicate name
                             if (ciscoReferencedService.ConversionIncidentType != ConversionIncidentType.None)
@@ -4052,7 +4052,7 @@ namespace CiscoMigration
 
                 availableZones.Add(cpZone);
 
-                // If the _isInterInterfaceTrafficAllowed flag is on and there are at least two Cisco interfaces with zero security level, 
+                // If the _isInterInterfaceTrafficAllowed flag is on and there are at least two Cisco interfaces with zero security level,
                 // we should add sub-policies for the equivalent CP zones to allow traffic between them.
                 if (ciscoInterface.SecurityLevel == 0)
                 {
@@ -4834,7 +4834,7 @@ namespace CiscoMigration
                                                                                    "Translated service details: " + ciscoNat.TranslatedServiceId + ".");
                 }
 
-                // Static NAT: if a source is a network or a network group and a translated source is a host, 
+                // Static NAT: if a source is a network or a network group and a translated source is a host,
                 // we should convert to dynamic NAT rule!!!
                 if (cpNatRule.Method == CheckPoint_NAT_Rule.NatMethod.Static)
                 {

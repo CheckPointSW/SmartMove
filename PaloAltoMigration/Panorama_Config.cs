@@ -99,7 +99,7 @@ namespace PanoramaPaloAltoMigration
     }
     /*
         public class PA_StackTemplates: PA_Entry
-        {        
+        {
             [XmlElement("member")]
             public List<string> StackTemplateMembers { get; set; }
         }

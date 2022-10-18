@@ -9,7 +9,7 @@
     <BitmapImage x:Key="CpLogo" UriSource="/Resources/CPLogo.png"/>
     <BitmapImage x:Key="ErrorIcon" UriSource="/Resources/big_error.png"/>
     <BitmapImage x:Key="WarningIcon" UriSource="/Resources/big_warning.png"/>
-    <BitmapImage x:Key="InfoIcon" UriSource="/Resources/big_info.png"/> 
+    <BitmapImage x:Key="InfoIcon" UriSource="/Resources/big_info.png"/>
 
     <!-- Icon resources -->
     <DrawingBrush x:Key="MinimizeIconBrush" Viewbox="0,0,16,16" ViewboxUnits="Absolute">
@@ -229,7 +229,7 @@
         <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="Content" Value="OK"/>
     </Style>
-    
+
     <!-- ComboBox -->
     <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#BCE3FE"/>
     <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#333333"/>
@@ -306,7 +306,7 @@
                     <Border Name="DropDownBorder"
                             Margin="0,1,0,0"
                             Background="White"
-                            BorderThickness="1" 
+                            BorderThickness="1"
                             BorderBrush="{TemplateBinding BorderBrush}"/>
                     <ScrollViewer Margin="4" SnapsToDevicePixels="True">
                         <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>

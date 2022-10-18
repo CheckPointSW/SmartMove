@@ -202,7 +202,7 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add dns-domain " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("is-sub-domain", IsSubDomain, !IsSubDomain) //"is-sub-domain" is a required field by documentation 
+                + WriteParam("is-sub-domain", IsSubDomain, !IsSubDomain) //"is-sub-domain" is a required field by documentation
                 + WriteListParam("tags", Tags, true);
         }
 
@@ -303,7 +303,7 @@ namespace CheckPointObjects
         public bool IsPanoramaDeviceGroup = false;
 
         /// <summary>
-        /// This property is used to overcome the problematic order of objects creation for 
+        /// This property is used to overcome the problematic order of objects creation for
         /// GroupWithExclusion and NetworkGroup types cross-referencing each other.
         /// </summary>
         public bool CreateAfterGroupsWithExclusion { get; set; }
@@ -866,7 +866,7 @@ namespace CheckPointObjects
             {
                 return true;   // sub-policy's automatic cleanup rule
             }
-            return checkRuleType(ActionType.Drop);// user defined cleanup rule           
+            return checkRuleType(ActionType.Drop);// user defined cleanup rule
         }
 
         /// <summary>

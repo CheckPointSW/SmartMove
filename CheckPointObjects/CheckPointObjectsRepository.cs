@@ -22,7 +22,7 @@ using System.Linq;
 namespace CheckPointObjects
 {
     /// <summary>
-    /// Repository for Check Point objects created during the convertion from 3rd party configuration and 
+    /// Repository for Check Point objects created during the convertion from 3rd party configuration and
     /// predefined Check Point objects.
     /// Objects are identified by their names.
     /// </summary>

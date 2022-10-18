@@ -29,7 +29,7 @@ namespace SmartMove
         }
 
         #region command line options
-        //–s “D:\SmartMove\Content\config.txt” 
+        //–s “D:\SmartMove\Content\config.txt”
         private string configFileName { get; set; }
         public string ConfigFileName
         {
@@ -765,7 +765,7 @@ namespace SmartMove
                     }
                     break;
             }
-            #endregion                       
+            #endregion
 
             string vendorFileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
 
@@ -896,7 +896,7 @@ namespace SmartMove
 
 
         /*
-         * This is the analog to MainWindow.Go_OnClick() function if application is run as WPF. 
+         * This is the analog to MainWindow.Go_OnClick() function if application is run as WPF.
          * It performs the migration.
          */
         public void DoMigration(CommandLine commandLine)
@@ -1200,7 +1200,7 @@ namespace SmartMove
                     }
                     break;
             }
-            #endregion                       
+            #endregion
 
             string vendorFileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
 

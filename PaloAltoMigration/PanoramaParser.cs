@@ -58,7 +58,7 @@ namespace PanoramaPaloAltoMigration
         {
             string panoramaConfig = null;
 
-            string[] configsFolder = Directory.GetDirectories(outConfigsFolder);//get uncompressed folder name 
+            string[] configsFolder = Directory.GetDirectories(outConfigsFolder);//get uncompressed folder name
             string[] configFilesArray = Directory.GetFiles(configsFolder[0]);//get list of panorama and firewalls config files
 
             foreach (string confFile in configFilesArray)
@@ -87,7 +87,7 @@ namespace PanoramaPaloAltoMigration
 
         /// <summary>
         /// //checks if Panorama or standalone PA firewall configuration is converted
-        /// </summary>        
+        /// </summary>
         public bool CheckPaloAltoConfiguartion(String filename)
         {
             bool is_panorama = false;
@@ -113,7 +113,7 @@ namespace PanoramaPaloAltoMigration
             archiveCopyName = archiveCopyName.Substring(0, archiveCopyName.IndexOf(".tgz")) + "_copy" + ".tgz";
             File.Copy(archiveName, archiveCopyName, true);
 
-            #region uncompress .TGZ archive 
+            #region uncompress .TGZ archive
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.UseShellExecute = false;
             startInfo.CreateNoWindow = true;

@@ -22,7 +22,7 @@ namespace CommonUtils
 {
     /// <summary>
     /// Represents a conversion incident.
-    /// An incident may be detected during the parsing process of the configuration file, or 
+    /// An incident may be detected during the parsing process of the configuration file, or
     /// during the conversion process itself.
     /// </summary>
     public class ConversionIncident : IEquatable<ConversionIncident>, IEqualityComparer<ConversionIncident>

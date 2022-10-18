@@ -1090,8 +1090,8 @@ namespace SmartMove
         }
 
         /// <summary>
-        /// Build a message for displaying. If need to show technical columns like "method", "Class" then need to pass to message 
-        /// message after columns, list of columns to colums and to header pass main message. If need just display a text 
+        /// Build a message for displaying. If need to show technical columns like "method", "Class" then need to pass to message
+        /// message after columns, list of columns to colums and to header pass main message. If need just display a text
         /// then pass to message, columns, header null values and fill only messageWoColumns
         /// </summary>
         /// <param name="message">message for displaying with columns. If need display without columns set to null</param>

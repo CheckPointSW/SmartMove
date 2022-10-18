@@ -1245,7 +1245,7 @@ namespace PanoramaPaloAltoMigration
                                     List<CheckPoint_NetworkGroup> devicesGroupList = new List<CheckPoint_NetworkGroup>();
                                     devicesGroupList.AddRange(FWGroup_List);
 
-                                    Dictionary<string, CheckPoint_NetworkGroup> s_cpNetGroupsDict_Global = new Dictionary<string, CheckPoint_NetworkGroup>();//to avoid duplication of device groups 
+                                    Dictionary<string, CheckPoint_NetworkGroup> s_cpNetGroupsDict_Global = new Dictionary<string, CheckPoint_NetworkGroup>();//to avoid duplication of device groups
                                     s_cpNetGroupsDict_Global = s_cpNetGroupsDict_Global.Concat(s_cpNetGroupsDict.Where(x => !s_cpNetGroupsDict_Global.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
 
                                     foreach (CheckPoint_NetworkGroup FWGroup in FWGroup_List)
@@ -1278,7 +1278,7 @@ namespace PanoramaPaloAltoMigration
                                                         devicesGroupList,
                                                         _devicesUIDDict
                                                         );
-                                    s_cpNetGroupsDict.Clear();//to avoid duplication of device groups 
+                                    s_cpNetGroupsDict.Clear();//to avoid duplication of device groups
                                     s_cpNetGroupsDict = s_cpNetGroupsDict.Concat(s_cpNetGroupsDict_Global.Where(x => !s_cpNetGroupsDict.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
                                 }
 
@@ -1595,7 +1595,7 @@ namespace PanoramaPaloAltoMigration
                                     List<CheckPoint_NetworkGroup> devicesGroupList = new List<CheckPoint_NetworkGroup>();
                                     devicesGroupList.AddRange(FWGroup_List);
 
-                                    Dictionary<string, CheckPoint_NetworkGroup> s_cpNetGroupsDict_Global = new Dictionary<string, CheckPoint_NetworkGroup>();//to avoid duplication of device groups 
+                                    Dictionary<string, CheckPoint_NetworkGroup> s_cpNetGroupsDict_Global = new Dictionary<string, CheckPoint_NetworkGroup>();//to avoid duplication of device groups
                                     s_cpNetGroupsDict_Global = s_cpNetGroupsDict_Global.Concat(s_cpNetGroupsDict.Where(x => !s_cpNetGroupsDict_Global.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
 
                                     foreach (CheckPoint_NetworkGroup FWGroup in FWGroup_List)
@@ -1628,7 +1628,7 @@ namespace PanoramaPaloAltoMigration
                                                         devicesGroupList,
                                                         _devicesUIDDict
                                                         );
-                                    s_cpNetGroupsDict.Clear();//to avoid duplication of device groups 
+                                    s_cpNetGroupsDict.Clear();//to avoid duplication of device groups
                                     s_cpNetGroupsDict = s_cpNetGroupsDict.Concat(s_cpNetGroupsDict_Global.Where(x => !s_cpNetGroupsDict.ContainsKey(x.Key))).ToDictionary(x => x.Key, x => x.Value);
                                 }
 
@@ -1689,7 +1689,7 @@ namespace PanoramaPaloAltoMigration
 
         /// <summary>
         /// Creates network group object for panorama device group
-        /// </summary>       
+        /// </summary>
         public List<CheckPoint_NetworkGroup> getPanoramaDeviceGroup(PA_DeviceGroupEntry deviceGroupEntry, Dictionary<string, string> _devicesUIDDict)
         {
             List<PA_DevicesGroupDevicesEntry> devices = deviceGroupEntry.DevicesGroupDevicesEntries;
@@ -2227,7 +2227,7 @@ namespace PanoramaPaloAltoMigration
 
             if (s_cpNetGroupsDict == null)
             {
-                return cpNetGroupsDict;//don't inspect address groups from shared section because they will be inspected further while device-group processing 
+                return cpNetGroupsDict;//don't inspect address groups from shared section because they will be inspected further while device-group processing
             }
             else
             {
@@ -2268,15 +2268,15 @@ namespace PanoramaPaloAltoMigration
                 foreach (string member in cpNetGroupCheck.Members)
                 {
 
-                    if (cpAddressesNamesDict.ContainsKey(member)) //group member is in Addresses                    
+                    if (cpAddressesNamesDict.ContainsKey(member)) //group member is in Addresses
                     {
                         cpNetGroupResult.Members.Add(cpAddressesNamesDict[member].Name);
                     }
-                    else if (cpNetGroupsResult.ContainsKey(member)) //group member is converted and added to Addresses Groups                    
+                    else if (cpNetGroupsResult.ContainsKey(member)) //group member is converted and added to Addresses Groups
                     {
                         cpNetGroupResult.Members.Add(cpNetGroupsResult[member].Name);
                     }
-                    else if (cpNetGroupsCheck.ContainsKey(member)) //group member is not converted yet                    
+                    else if (cpNetGroupsCheck.ContainsKey(member)) //group member is not converted yet
                     {
                         cpNetGroupsResult = InspectAddressGroups(cpAddressesNamesDict, cpNetGroupsCheck, cpNetGroupsResult);
 
@@ -4730,7 +4730,7 @@ namespace PanoramaPaloAltoMigration
             Dictionary<string, string> devicesUIDDict = new Dictionary<string, string>();
 
             string outConfigsFolder = filename;
-            string[] configsFolder = Directory.GetDirectories(outConfigsFolder);//get uncompressed folder name 
+            string[] configsFolder = Directory.GetDirectories(outConfigsFolder);//get uncompressed folder name
             string[] configFilesArray = Directory.GetFiles(configsFolder[0]);
 
             string configName;

@@ -29,7 +29,7 @@ namespace CheckPointObjects
     ///    1. both rules have the same action, and
     ///    2. both rules are enabled or disabled, and
     ///    3. both rules have source and destination columns negated or not, and
-    ///    4. both rules have the same time objects, and 
+    ///    4. both rules have the same time objects, and
     ///    5. either one of the following is true:
     ///       5.1. both the source and destination columns match
     ///       5.2. both the source and service columns match

@@ -5538,7 +5538,7 @@ namespace FortiGateMigration
             HashSet<string> output = new HashSet<string>();
             Dictionary<string, string> portsTcp = new Dictionary<string, string>();       //list of used ports for TCP <port, service>
             Dictionary<string, string> portsUdp = new Dictionary<string, string>();       //list of used ports for UDP <port, service>
-            HashSet<string> groupNames = new HashSet<string>();                     //set of groups names for check duplicates 
+            HashSet<string> groupNames = new HashSet<string>();                     //set of groups names for check duplicates
 
             foreach (FgCommand parsedElement in fgCommandsList)
             {
