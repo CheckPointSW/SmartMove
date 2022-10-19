@@ -24,6 +24,7 @@ using CommonUtils;
 using CheckPointObjects;
 using MigrationBase;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Threading;
 using CiscoMigration.CiscoMigration;
 using static CheckPointObjects.CheckPoint_Rule;
@@ -47,7 +48,7 @@ namespace CiscoMigration
         #region GUI params
 
         public bool SkipUnusedObjects { get; set; } //check if Optimized configuration is requested
-
+        
         #endregion
 
         #region Helper Classes
@@ -5737,7 +5738,7 @@ namespace CiscoMigration
             foreach (CheckPoint_Layer layer in regularPackage.SubPolicies)
             {
                 string optimizedSubPolicyName = layer.Name + "_opt";
-
+                
                 CheckPoint_Layer optimizedLayer = RuleBaseOptimizer.Optimize(layer, optimizedSubPolicyName);
                 foreach (CheckPoint_Rule subSubRule in optimizedLayer.Rules)
                 {
