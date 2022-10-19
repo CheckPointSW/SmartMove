@@ -30,7 +30,7 @@ namespace SmartMove
         }
 
         #region command line options
-        //–s “D:\SmartMove\Content\config.txt” 
+        //–s “D:\SmartMove\Content\config.txt”
         private string configFileName { get; set; }
         public string ConfigFileName
         {
@@ -322,7 +322,7 @@ namespace SmartMove
                                 _successCommands = false;
                                 Console.WriteLine("Value for option -d is not specified! ", MessageTypes.Error);
                             }
-                            else if(args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            else if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
                                 this.domain = args[i + 1];
                             else
                             {
@@ -371,7 +371,7 @@ namespace SmartMove
                                 this.ldapAccountUnit = args[i + 1];
                                 this.ConvertUserConfiguration = true;
                             }
-                            else 
+                            else
                             {
                                 this.ConvertUserConfiguration = true;
                                 //Console.WriteLine("Value for option -u is not specified! ", MessageTypes.Error);
@@ -408,7 +408,7 @@ namespace SmartMove
                                 _successCommands = false;
                                 Console.WriteLine("Value for option -f is not specified! ", MessageTypes.Error);
                             }
-                            else if(new List<string>() { "text", "json" }.Contains(args[i + 1].ToLower()))
+                            else if (new List<string>() { "text", "json" }.Contains(args[i + 1].ToLower()))
                                 FormatOutput = args[i + 1];
                             else
                             {
@@ -457,10 +457,10 @@ namespace SmartMove
                             break;
                         }
                     case "-a":
-                    case "--analyzer": 
+                    case "--analyzer":
                         {
                             this.isAnalyze = true;
-                            break; 
+                            break;
                         }
                     case "-obc":
                     case "--optimize-by-comments": // adding flag to optimize by comments option
@@ -792,7 +792,7 @@ namespace SmartMove
                     }
                     break;
             }
-            #endregion                       
+            #endregion
 
             string vendorFileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
 
@@ -816,7 +816,7 @@ namespace SmartMove
                     vendorConverter = converter;
                     break;
                 case "FirePower":
-                    CiscoConverter fpConverter =  new CiscoConverter()
+                    CiscoConverter fpConverter = new CiscoConverter()
                     {
                         isUsingForFirePower = true
                     };
@@ -923,7 +923,7 @@ namespace SmartMove
 
 
         /*
-         * This is the analog to MainWindow.Go_OnClick() function if application is run as WPF. 
+         * This is the analog to MainWindow.Go_OnClick() function if application is run as WPF.
          * It performs the migration.
          */
         public void DoMigration(CommandLine commandLine)
@@ -1035,7 +1035,7 @@ namespace SmartMove
 
                 if (commandLine.Vendor.Equals("Panorama"))
                 {
-                    
+
                     PanoramaParser panParser = (PanoramaParser)vendorParser;
                     panParser.ParseWithTargetFolder(ciscoFile, Path.GetFullPath(TargetFolder));
                 }
@@ -1125,7 +1125,7 @@ namespace SmartMove
 
                 case "JuniperSSG":
                     break;
-                
+
                 case "FirePower":
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
@@ -1232,7 +1232,7 @@ namespace SmartMove
                     }
                     break;
             }
-            #endregion                       
+            #endregion
 
             string vendorFileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
 

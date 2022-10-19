@@ -202,7 +202,7 @@ namespace CheckPointObjects
         public override string ToCLIScript()
         {
             return "add dns-domain " + WriteParam("name", SafeName(), "") + WriteParam("comments", Comments, "")
-                + WriteParam("is-sub-domain", IsSubDomain, !IsSubDomain) //"is-sub-domain" is a required field by documentation 
+                + WriteParam("is-sub-domain", IsSubDomain, !IsSubDomain) //"is-sub-domain" is a required field by documentation
                 + WriteListParam("tags", Tags, true);
         }
 
@@ -303,7 +303,7 @@ namespace CheckPointObjects
         public bool IsPanoramaDeviceGroup = false;
 
         /// <summary>
-        /// This property is used to overcome the problematic order of objects creation for 
+        /// This property is used to overcome the problematic order of objects creation for
         /// GroupWithExclusion and NetworkGroup types cross-referencing each other.
         /// </summary>
         public bool CreateAfterGroupsWithExclusion { get; set; }
@@ -491,7 +491,7 @@ namespace CheckPointObjects
         public string IpProtocol { get; set; }
 
         public CheckPoint_OtherService() : base() { }
-        public CheckPoint_OtherService (string name, string ipprotocol, string comments, List<string> tags) : base()
+        public CheckPoint_OtherService(string name, string ipprotocol, string comments, List<string> tags) : base()
         {
             Name = name;
             IpProtocol = ipprotocol;
@@ -517,7 +517,7 @@ namespace CheckPointObjects
     {
         public List<string> Members = new List<string>();
         public int MembersPublishIndex { get; set; }
-        public int MembersMaxPublishSize { get; set; } 
+        public int MembersMaxPublishSize { get; set; }
 
         public CheckPoint_ServiceGroup() : base()
         {
@@ -538,7 +538,7 @@ namespace CheckPointObjects
             int index = ((MembersPublishIndex + MembersMaxPublishSize) > Members.Count) ? Members.Count : MembersPublishIndex + MembersMaxPublishSize;
             return (MembersPublishIndex == 0 ? "create " : "update ") + "service group [" + Name + "]: " + index + "/" + Members.Count + " members";
         }
-        
+
     }
 
     public class CheckPoint_ApplicationGroup : CheckPointObject
@@ -866,7 +866,7 @@ namespace CheckPointObjects
             {
                 return true;   // sub-policy's automatic cleanup rule
             }
-            return checkRuleType(ActionType.Drop);// user defined cleanup rule           
+            return checkRuleType(ActionType.Drop);// user defined cleanup rule
         }
 
         /// <summary>
@@ -1106,4 +1106,3 @@ namespace CheckPointObjects
         }
     }
 }
-

@@ -63,7 +63,7 @@ namespace NetScreenMigration
                 List<string> tempArrayList = trimmedText.Split(delimiterChars).ToList();
 
                 // Gather strings with spaces between quotes
-                for (int i = 0; i < tempArrayList.Count;++i)
+                for (int i = 0; i < tempArrayList.Count; ++i)
                 {
                     if (tempArrayList[i].First() == '\"' && tempArrayList[i].Last() != '\"')
                     {
@@ -146,7 +146,7 @@ namespace NetScreenMigration
                 NotAnInterestingCommand = true;
             }
         }
-        
+
         public int GetNumOfParams()
         {
             if (_words == null)
@@ -237,14 +237,14 @@ namespace NetScreenMigration
         }
     }
 
-    public class ScreenOSCommand_Address: ScreenOSCommand
+    public class ScreenOSCommand_Address : ScreenOSCommand
     {
         public enum AddressTypeEnum { NA, Host, Network, Domain };
 
         private string _zone = "";
         private string _objectName = "";
         private string _mask = "";
-    
+
         public AddressTypeEnum AddressType { get; set; }
         public string IpAddress { get; set; }
         public string Domain { get; set; }
@@ -308,7 +308,7 @@ namespace NetScreenMigration
         public override void Parse(ScreenOSCommand command)
         {
             base.Parse(command);
-            
+
             // Check if base parse marked the command as interesting
             if (NotAnInterestingCommand)
             {
@@ -342,7 +342,7 @@ namespace NetScreenMigration
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
                 ConversionIncidentMessage = string.Format("ScreenOS address object with complex wildcard mask {0} is not supported. Using subnet 1.1.1.0/255.255.255.0", commandParam);
             }
-            else if(string.IsNullOrEmpty(commandParam) || IsInQuotation(commandParam))
+            else if (string.IsNullOrEmpty(commandParam) || IsInQuotation(commandParam))
             {
                 Domain = command.GetParam(4);
                 AddressType = AddressTypeEnum.Domain;
@@ -358,7 +358,7 @@ namespace NetScreenMigration
             if (IsInQuotation(commandParam))
             {
                 Comment = commandParam;
-            }  
+            }
         }
     }
 
@@ -396,7 +396,7 @@ namespace NetScreenMigration
         public override void Parse(ScreenOSCommand command)
         {
             base.Parse(command);
-            
+
             // Check if base parse marked the command as interesting
             if (NotAnInterestingCommand)
             {
@@ -432,7 +432,7 @@ namespace NetScreenMigration
 
         private readonly int _maxTimeout = 2160;
         private string _serviceName = "";
-       
+
         public int TimeOut { get; set; }
         public TimeOutUnitsEnum TimeOutUnits { get; set; }
         public bool IsSessionCacheEnabled { get; set; }
@@ -465,7 +465,7 @@ namespace NetScreenMigration
         public override void Parse(ScreenOSCommand command)
         {
             base.Parse(command);
-            
+
             // Check if base parse marked the command as interesting
             if (NotAnInterestingCommand)
             {
@@ -529,10 +529,10 @@ namespace NetScreenMigration
 
             if (commandString == "session-cache")
             {
-                ConversionIncidentMessage = commandString ;
+                ConversionIncidentMessage = commandString;
                 IsSessionCacheEnabled = true;
                 commandString = command.GetParam(++index);
-                
+
             }
 
             if (commandString == "timeout")
@@ -598,7 +598,7 @@ namespace NetScreenMigration
             get { return _serviceObjectName.Trim('"'); }
             set { _serviceObjectName = value; }
         }
- 
+
         public ScreenOSCommand_GroupService()
         {
             KnownCommand = true;
@@ -674,7 +674,7 @@ namespace NetScreenMigration
             ObjectName = command.GetParam(2);
             IpAddressFirst = command.GetParam(3);
             IpAddressLast = command.GetParam(4);
-        
+
             if (!NetworkUtils.IsValidIpv4(IpAddressFirst) ||
                 !NetworkUtils.IsValidIpv4(IpAddressLast) ||
                 NetworkUtils.Ip2Number(IpAddressLast) < NetworkUtils.Ip2Number(IpAddressFirst))
@@ -690,8 +690,8 @@ namespace NetScreenMigration
         private string _zoneName = "";
 
         public static string[] PredefinedZones = { "Trust", "Untrust", "DMZ" };
-        public static string[] SpecialPredefinedZones = { "MGT" , "Null" , "Untrust-Tun", "V1-Null", "V1-Trust", "V1-Untrust" , "V1-DMZ" };
-        public static string[] UnsupportedPredefinedZones = { "HA", "VLAN"};
+        public static string[] SpecialPredefinedZones = { "MGT", "Null", "Untrust-Tun", "V1-Null", "V1-Trust", "V1-Untrust", "V1-DMZ" };
+        public static string[] UnsupportedPredefinedZones = { "HA", "VLAN" };
         public static string Global = "Global";
 
         public bool IsPredefinedZones { get; set; }
@@ -731,7 +731,7 @@ namespace NetScreenMigration
             string commandParam = command.GetParam(2);
             if (IsInQuotation(commandParam))
             {
-                if(PredefinedZones.Contains(commandParam.Trim('"')))
+                if (PredefinedZones.Contains(commandParam.Trim('"')))
                 {
                     IsPredefinedZones = true;
                 }
@@ -758,7 +758,7 @@ namespace NetScreenMigration
                 }
             }
             else if (commandParam == "id")
-            {   
+            {
                 // New definition of zone
                 int zoneId = 0;
                 if (int.TryParse(command.GetParam(3), out zoneId))
@@ -814,7 +814,7 @@ namespace NetScreenMigration
 
         private string _zone = "";
 
-        public string InterfaceName { get; set; } 
+        public string InterfaceName { get; set; }
         public string IP { get; set; }
         public string Mask { get; set; }
         public bool IsSecondery { get; set; }
@@ -874,7 +874,7 @@ namespace NetScreenMigration
 
                 case "tag":
                     InterfaceObjectType = InterfaceObjectTypeEnum.Zone;
-                    index+=3;
+                    index += 3;
                     break;
 
                 case "nat":
@@ -955,9 +955,9 @@ namespace NetScreenMigration
             }
 
             if (InterfaceObjectType == InterfaceObjectTypeEnum.Ip &&
-                NetworkUtils.GetNetwork(IP,Mask) == NetworkUtils.GetNetwork(gateway, Mask))
+                NetworkUtils.GetNetwork(IP, Mask) == NetworkUtils.GetNetwork(gateway, Mask))
             {
-                return true;  
+                return true;
             }
 
             // Check inside children
@@ -985,8 +985,8 @@ namespace NetScreenMigration
         public string Interface { get; set; }
         public string Gateway { get; set; }
         public string Description { get; set; }
-        public int    Metric { get; set; }
-        public bool   IsPermanent { get; set; }
+        public int Metric { get; set; }
+        public bool IsPermanent { get; set; }
 
         public bool DefaultRoute
         {
@@ -1070,7 +1070,7 @@ namespace NetScreenMigration
 
     public class ScreenOSCommand_Policy : ScreenOSCommand
     {
-        public enum ActoinEnum { Na, Permit, Reject, Deny};
+        public enum ActoinEnum { Na, Permit, Reject, Deny };
         public enum PolicyNatTypeEnum { Na, Policy, Vip, Mip, Dip, PolicyBaseDest, PolicyBaseSrcDest };
 
         public int PolicyId { get; set; }
@@ -1267,7 +1267,7 @@ namespace NetScreenMigration
         }
 
         public static PolicyNatTypeEnum GetDestNatType(string destObjName)
-        {   
+        {
             if (destObjName.Trim('"') == "Any" || destObjName.Trim('"').Length < 4)
             {
                 return PolicyNatTypeEnum.Policy;
@@ -1343,7 +1343,7 @@ namespace NetScreenMigration
         }
     }
 
-    public class ScreenOsCommand_InterfceNatDIP: ScreenOSCommand
+    public class ScreenOsCommand_InterfceNatDIP : ScreenOSCommand
     {
         private readonly int _baseIndex = 3;
         private bool _isPATEnabled;
@@ -1384,18 +1384,18 @@ namespace NetScreenMigration
         public override void Parse(ScreenOSCommand command)
         {
             int paramIndex = command.GetParamPosition("dip");
-            
+
             if (paramIndex < _baseIndex)
             {
                 NotAnInterestingCommand = true;
                 return;
             }
-                
+
             if (paramIndex != _baseIndex)
             {
                 ConversionIncidentType = ConversionIncidentType.Informative;
                 List<string> notSupportedParams = command.GetParams(3, paramIndex - 3);
-                ConversionIncidentMessage = string.Join(" ", notSupportedParams.ToArray()) + ", " ;
+                ConversionIncidentMessage = string.Join(" ", notSupportedParams.ToArray()) + ", ";
             }
 
             // Get Dip Id
@@ -1466,7 +1466,7 @@ namespace NetScreenMigration
 
         public override void Parse(ScreenOSCommand command)
         {
-           int paramIndex = _baseIndex;
+            int paramIndex = _baseIndex;
 
             // Get group Dip Id
             string commandParam = command.GetParam(paramIndex);
@@ -1475,7 +1475,7 @@ namespace NetScreenMigration
             {
                 GroupDipId = tempInt;
             }
-            else 
+            else
             {
                 NotAnInterestingCommand = true;
                 return;
@@ -1569,7 +1569,7 @@ namespace NetScreenMigration
             else
             {
                 ConversionIncidentType = ConversionIncidentType.ManualActionRequired;
-                ConversionIncidentMessage  = "ScreenOS interface object with MIP instruction, option " + commandParam + " is not supported. Ignoring command";
+                ConversionIncidentMessage = "ScreenOS interface object with MIP instruction, option " + commandParam + " is not supported. Ignoring command";
                 return;
             }
 
@@ -1616,7 +1616,7 @@ namespace NetScreenMigration
 
         public string Vip { get; set; }
         public bool ShuoldUseInterfcaeIp { get; set; }
-        public VipInfo VipData { get; set; }    
+        public VipInfo VipData { get; set; }
 
         public ScreenOsCommand_InterfceNatVIP()
         {

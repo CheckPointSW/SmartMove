@@ -1,4 +1,4 @@
-
+build.bat
 SmartMove/SmartConnector/*.pyc
 SmartMove/SmartConnector/.idea
 SmartMove/compressors/*.exe
