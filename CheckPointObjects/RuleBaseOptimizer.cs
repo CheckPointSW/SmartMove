@@ -280,7 +280,7 @@ namespace CheckPointObjects
                 return commentToProcess.Trim();
             }
 
-            return (commentBuilder == "Matched rule(s)" ? "" : commentBuilder).Substring(0, Math.Min(commentBuilder.Length, 250));
+            return commentBuilder == "Matched rule(s)" ? "" : commentBuilder;
         }
     }
 }
