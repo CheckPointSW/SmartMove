@@ -787,7 +787,7 @@ namespace CheckPointObjects
                 + WriteParam("inline-layer", SubPolicyName, "")
                 + WriteParam("name", Name, "")
                 + WriteListParam("install-on", (from o in Target select o).ToList(), true)
-                + WriteParam("custom-fields.field-1", ConversionComments.Substring(0, Math.Min(ConversionComments.Length, 150)), "");
+                + WriteParam("custom-fields.field-1", ConversionComments.Substring(0, Math.Min(ConversionComments.Length, 250)), "");
         }
 
         public override string ToCLIScriptInstruction()
