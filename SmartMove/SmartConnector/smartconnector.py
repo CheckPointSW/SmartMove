@@ -1423,7 +1423,7 @@ else:
                 mergedNetworkObjectsMap.update(processHosts(client, userHosts))
                 mergedNetworkObjectsMap.update(processNetworks(client, userNetworks))
                 mergedNetworkObjectsMap.update(processRanges(client, userRanges))
-                mergedNetworkObjectsMap.update(processNetGroups(client, userNetGroups, mergedNetworkObjectsMap))  # TODO check if the output is correct
+                mergedNetworkObjectsMap.update(processNetGroups(client, userNetGroups, mergedNetworkObjectsMap)) 
                 mergedNetworkObjectsMap.update(processSimpleGateways(client, userSimpleGateways))
                 mergedNetworkObjectsMap.update(processZones(client, userZones))
                 mergedServicesObjectsMap = {}
