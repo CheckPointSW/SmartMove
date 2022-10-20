@@ -1423,11 +1423,7 @@ else:
                 mergedNetworkObjectsMap.update(processHosts(client, userHosts))
                 mergedNetworkObjectsMap.update(processNetworks(client, userNetworks))
                 mergedNetworkObjectsMap.update(processRanges(client, userRanges))
-<<<<<<< HEAD
-                mergedNetworkObjectsMap.update(processNetGroups(client, userNetGroups, mergedNetworkObjectsMap))
-=======
                 mergedNetworkObjectsMap.update(processNetGroups(client, userNetGroups, mergedNetworkObjectsMap)) 
->>>>>>> 4d08fa05d3252e21b44ee2f070db3df78cb3421f
                 mergedNetworkObjectsMap.update(processSimpleGateways(client, userSimpleGateways))
                 mergedNetworkObjectsMap.update(processZones(client, userZones))
                 mergedServicesObjectsMap = {}
