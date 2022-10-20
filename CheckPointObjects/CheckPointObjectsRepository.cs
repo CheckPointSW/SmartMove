@@ -22,7 +22,7 @@ using System.Linq;
 namespace CheckPointObjects
 {
     /// <summary>
-    /// Repository for Check Point objects created during the convertion from 3rd party configuration and 
+    /// Repository for Check Point objects created during the convertion from 3rd party configuration and
     /// predefined Check Point objects.
     /// Objects are identified by their names.
     /// </summary>
@@ -32,8 +32,8 @@ namespace CheckPointObjects
 
         private class ObjectInfo
         {
-            public CheckPointObject Object  { get; private set; }
-            public bool IsPredefined  { get; private set; }
+            public CheckPointObject Object { get; private set; }
+            public bool IsPredefined { get; private set; }
 
             public ObjectInfo(CheckPointObject cpObject, bool isPredefined)
             {
@@ -157,7 +157,8 @@ namespace CheckPointObjects
             return (!string.IsNullOrEmpty(objectName) && _repository.ContainsKey(objectName));
         }
 
-        public bool IsPredefinedOrKnownService(string name) {
+        public bool IsPredefinedOrKnownService(string name)
+        {
             return HasObject(name) || IsKnownService(name);
         }
 

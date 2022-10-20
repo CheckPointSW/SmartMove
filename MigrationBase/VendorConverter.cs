@@ -129,11 +129,12 @@ namespace MigrationBase
         public string ErrorsHtmlFile { get; set; }
         public int ConversionIncidentCategoriesCount { get; set; }
         public int ConversionIncidentsCommandsCount { get; set; }
-        public bool IsConsoleRunning { 
-            get 
-            { 
-                return _calledFromConsole; 
-            } 
+        public bool IsConsoleRunning
+        {
+            get
+            {
+                return _calledFromConsole;
+            }
             set
             {
                 _calledFromConsole = value;
@@ -1596,7 +1597,7 @@ namespace MigrationBase
                         for (int i = 0; i < obj.Members.Count; i += groupsMaxBulkSize)
                         {
                             file.WriteLine("<div id=\"" + obj.Name + "_" + i + "\">");
-                            
+
                             obj.MembersPublishIndex = i;
                             file.WriteLine(obj.ToCLIScript());
 
@@ -2174,7 +2175,8 @@ namespace MigrationBase
                         i += 250000;
                         File.AppendAllText(cpObjectsJsonPath + cpObjectsJsonFN, JsonConvert.SerializeObject(dest, Formatting.Indented));
                     }
-                } else File.WriteAllText(cpObjectsJsonPath + cpObjectsJsonFN, JsonConvert.SerializeObject(cpJsonObjects, Formatting.Indented));
+                }
+                else File.WriteAllText(cpObjectsJsonPath + cpObjectsJsonFN, JsonConvert.SerializeObject(cpJsonObjects, Formatting.Indented));
 
                 string smartConnectorArchiveName = "smartconnector_" + _vendorFileName;
                 string smartConnectorArchivePath = _targetFolder + Path.DirectorySeparatorChar + smartConnectorArchiveName;
@@ -2387,7 +2389,7 @@ namespace MigrationBase
 
             if (isOptNeeded)
             {
-                if (!File.Exists(cpObjectsJsonPath + optimizedNameJson)) 
+                if (!File.Exists(cpObjectsJsonPath + optimizedNameJson))
                     return;
             }
 

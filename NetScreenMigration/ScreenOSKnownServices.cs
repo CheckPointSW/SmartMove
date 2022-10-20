@@ -173,7 +173,7 @@ namespace NetScreenMigration
         {
             foreach (KeyValuePair<string, List<string>> pair in _screenOSPredefinedServicesGroup)
             {
-                if (pair.Value.Contains (serviceName))
+                if (pair.Value.Contains(serviceName))
                 {
                     return true;
                 }
@@ -187,7 +187,7 @@ namespace NetScreenMigration
         }
 
         /* ScreenOS Predefined service groups map to CP groups*/
-        public static bool IsKnownPredefinedServiceGroupInCp(string screenOsGroupName,out string cpGroupName)
+        public static bool IsKnownPredefinedServiceGroupInCp(string screenOsGroupName, out string cpGroupName)
         {
             cpGroupName = "";
             if (_screenOSPredefinedServicesGroupToCpGroup.ContainsKey(screenOsGroupName))

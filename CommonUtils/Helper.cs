@@ -12,7 +12,7 @@ namespace CommonUtils
         {
             HashSet<string> list = new HashSet<string>();
 
-            foreach(string str in originalList)
+            foreach (string str in originalList)
             {
                 list.Add(str);
             }

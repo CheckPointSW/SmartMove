@@ -41,7 +41,7 @@ namespace JuniperMigration
         private readonly List<JuniperObject> _juniperObjects = new List<JuniperObject>();
         private readonly List<Juniper_GlobalPolicyRule> _juniperGlobalPolicyRules = new List<Juniper_GlobalPolicyRule>();
         private readonly Dictionary<string, List<string>> _addressNamesOverZonesLookup = new Dictionary<string, List<string>>(StringComparer.InvariantCultureIgnoreCase);
-        
+
         #endregion
 
         #region Public Methods
@@ -57,7 +57,7 @@ namespace JuniperMigration
             ParseInterfaces(configNode);
             ParseRoutes(configNode);
             ParseApplicationsAndGroups(configNode);
-            parseSchedulers(configNode);			
+            parseSchedulers(configNode);
             ParsePolicy(configNode);
             ParsePolicyFromGroups(configNode);
             ParseNat(configNode);
@@ -94,7 +94,7 @@ namespace JuniperMigration
             List<string> addressZones;
             return (_addressNamesOverZonesLookup.TryGetValue(name, out addressZones) && addressZones.Count > 1);
         }
-        
+
         #endregion
 
         #region Private Methods
@@ -158,7 +158,8 @@ namespace JuniperMigration
                 if (versionNode != null && versionNode.Value.Length > 0)
                 {
                     VendorVersion = Regex.Match(versionNode.Value, @"\d+(\.\d+)?").Value;
-                } else
+                }
+                else
                 {
                     if (configNode.Parent.FirstAttribute.Value.Contains("xml.juniper.net"))
                     {
@@ -354,7 +355,7 @@ namespace JuniperMigration
 
                     foreach (var term in terms)
                     {
-                        juniperObject = new Juniper_Application { LineNumber = ((IXmlLineInfo) term).LineNumber };
+                        juniperObject = new Juniper_Application { LineNumber = ((IXmlLineInfo)term).LineNumber };
                         ((Juniper_Application)juniperObject).IsJunosDefault = termApplicationObject.Name.StartsWith("junos-");   // must come before parsing!!!
                         ((Juniper_Application)juniperObject).ParseFromTerm(term, true);
                         _juniperObjects.Add(juniperObject);
@@ -394,14 +395,14 @@ namespace JuniperMigration
                 _juniperObjects.Add(juniperObject);
             }
         }
-		
+
         private void parseSchedulers(XElement configNode)
         {
             var schedulers = configNode.XPathSelectElements("./schedulers/scheduler");
             foreach (var scheduler in schedulers)
             {
-                JuniperObject juniperScheduler = new Juniper_Scheduler();                                
-                
+                JuniperObject juniperScheduler = new Juniper_Scheduler();
+
                 juniperScheduler.Parse(scheduler, null);
                 _juniperObjects.Add(juniperScheduler);
             }

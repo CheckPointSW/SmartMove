@@ -106,7 +106,7 @@ namespace SmartMove
 
         public static readonly DependencyProperty AssemblyVersionProperty =
             DependencyProperty.Register("AssemblyVersion", typeof(string), typeof(AboutWindow), new PropertyMetadata(null));
-        
+
         #endregion
 
         #region AssemblyCopyright
@@ -185,7 +185,7 @@ namespace SmartMove
                 Process.Start(psi);
             }
         }
-        
+
         #endregion
     }
 }
