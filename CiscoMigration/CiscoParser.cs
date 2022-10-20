@@ -35,8 +35,6 @@ namespace CiscoMigration
         //if we are using cisco code for fire power vendor we need set this flag to true value
         public bool isUsingForFirePower { get; set; } = false;
 
-        #region Private Members
-        
         #region Helper Classes
 
         private class Indentation
@@ -53,14 +51,14 @@ namespace CiscoMigration
 
         #endregion
 
-
+        #region Private Members
 
         private IList<CiscoCommand> _ciscoCommands = new List<CiscoCommand>();
         private Dictionary<string, CiscoCommand> _ciscoIds = new Dictionary<string, CiscoCommand>();
         private Dictionary<string, string> _ciscoAliases = new Dictionary<string, string>();
 
         public static bool SpreadAclRemarks = false;
-        
+
         #endregion
 
         #region Public Methods

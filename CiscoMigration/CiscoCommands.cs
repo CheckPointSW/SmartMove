@@ -19,9 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using CheckPointObjects;
 using CommonUtils;
-using MigrationBase;
 
 namespace CiscoMigration
 {
@@ -126,7 +124,7 @@ namespace CiscoMigration
         public ConversionIncidentType ConversionIncidentType { get; set; }
         public string ConversionIncidentMessage { get; set; }
         public List<CiscoCommand> Children { get; set; }
-        
+
         public CiscoCommand()
         {
             CiscoId = "";
@@ -2233,11 +2231,11 @@ namespace CiscoMigration
 
                 return;
             }
-            
+
             if (prevAclCommand != null && ACLName.Equals(prevAclCommand.ACLName) && !string.IsNullOrEmpty(prevAclCommand.DataForNextElement))
             {
                 Remark = prevAclCommand.DataForNextElement;
-            
+
                 if (CiscoParser.SpreadAclRemarks)
                 {
                     DataForNextElement = Remark;

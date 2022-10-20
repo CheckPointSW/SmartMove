@@ -34,7 +34,6 @@ using PaloAltoMigration;
 using PanoramaPaloAltoMigration;
 using System.ComponentModel;
 using CommonUtils;
-using CheckPointObjects;
 
 namespace SmartMove
 {
@@ -136,20 +135,7 @@ namespace SmartMove
             DependencyProperty.Register("SkipUnusedObjectsConversion", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
 
         #endregion
-        
-        #region OptimizeByCommentsConversion
 
-        public bool OptimizeByCommentsConversion
-        {
-            get { return (bool)GetValue(OptimizeByCommentsConversionProperty); }
-            set { SetValue(OptimizeByCommentsConversionProperty, value); }
-        }
-
-        public static readonly DependencyProperty OptimizeByCommentsConversionProperty =
-            DependencyProperty.Register("OptimizeByCommentsConversion", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
-
-        #endregion 
-        
         #region ConvertUserConfiguration
 
         public bool ConvertUserConfiguration
@@ -326,11 +312,9 @@ namespace SmartMove
             LDAPAccountUnitBlock.Visibility = Visibility.Collapsed;
             CreateServiceGroupsConf.Visibility = Visibility.Collapsed;
             SkipUnusedObjects.Visibility = Visibility.Collapsed;
-            OptimizeByComments.Visibility = Visibility.Collapsed;
             ConvertUserConfiguration = false;
             //Create service groups option
             CreateServiceGroupsConfiguration = true;
-            
 
 
             switch (_supportedVendors.SelectedVendor)
@@ -339,13 +323,11 @@ namespace SmartMove
                     ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     //CreateServiceGroupsConf.Visibility = Visibility.Visible;
-                    OptimizeByComments.Visibility = Visibility.Visible;
                     break;
                 case Vendor.FirePower:
                     ConfigurationFileLabel = SupportedVendors.FirepowerConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     //CreateServiceGroupsConf.Visibility = Visibility.Visible;
-                    OptimizeByComments.Visibility = Visibility.Visible;
                     break;
                 case Vendor.JuniperJunosOS:
                     ConfigurationFileLabel = SupportedVendors.JuniperConfigurationFileLabel;
@@ -720,13 +702,12 @@ namespace SmartMove
                     CiscoConverter ciscoConverter = new CiscoConverter();
                     ciscoConverter.SkipUnusedObjects = SkipUnusedObjectsConversion;
                     vendorConverter = ciscoConverter;
-                    
                     break;
                 case Vendor.FirePower:
                     vendorConverter = new CiscoConverter()
                     {
                         isUsingForFirePower = true,
-                        SkipUnusedObjects = SkipUnusedObjectsConversion,
+                        SkipUnusedObjects = SkipUnusedObjectsConversion
                     };
                     break;
                 case Vendor.JuniperJunosOS:
@@ -821,24 +802,6 @@ namespace SmartMove
                     ConvertedNatPolicyLink.MouseUp += Link_OnClick;
                 }
             }
-            
-            if (OptimizeByCommentsConversion)
-            {
-                ConvertedOptimizedPolicyLink.MouseUp -= Link_OnClick;
-                vendorConverter.ExportPolicyPackagesAsHtml();
-
-                // Check to see if there is no converted optimized.
-                if (vendorConverter.RulesInConvertedOptimizedPackage() == vendorConverter.RulesInConvertedPackage() ) // only in case the converted optimize cannot be performed.
-                {
-                    ConvertedOptimizedPolicyLink.Style = (Style)ConvertedOptimizedPolicyLink.FindResource("NormalTextBloclStyle");
-                }
-                else // otherwise the link will be clickable.
-                {
-                    ConvertedOptimizedPolicyLink.Style = (Style)ConvertedOptimizedPolicyLink.FindResource("HyperLinkStyle");
-                    ConvertedOptimizedPolicyLink.MouseUp += Link_OnClick;
-                }
-            }
-            
             if (ExportManagmentReport && (typeof(PanoramaConverter) != vendorConverter.GetType() && typeof(FortiGateConverter) != vendorConverter.GetType()))
             {
                 vendorConverter.ExportManagmentReport();
@@ -1101,13 +1064,6 @@ namespace SmartMove
                         CiscoParser.SpreadAclRemarks = true;
                         break;
                     }
-
-                    if (arg.Equals("is-optimize-by-comments", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        CiscoParser.SpreadAclRemarks = true;
-                        RuleBaseOptimizer.IsOptimizeByComments = true;
-                        break;
-                    }
                 }
 
                 if (hasArgs && !CiscoParser.SpreadAclRemarks)
@@ -1163,22 +1119,7 @@ namespace SmartMove
             messageWindow.ShowDialog();
             canCloseWindow = true;
         }
-        
-        
-        #endregion
 
-        private void OptimizeByComments_Checked(object sender, RoutedEventArgs e)
-        {
-                if (OptimizeByCommentsConversion)
-            {
-                CiscoParser.SpreadAclRemarks = true;
-                RuleBaseOptimizer.IsOptimizeByComments = true;
-            }
-            else
-            {
-                CiscoParser.SpreadAclRemarks = false;
-                RuleBaseOptimizer.IsOptimizeByComments = false;
-            }
-        }
+        #endregion
     }
 }

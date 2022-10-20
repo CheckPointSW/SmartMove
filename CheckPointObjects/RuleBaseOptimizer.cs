@@ -15,13 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ********************************************************************/
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using CommonUtils;
- 
+
 namespace CheckPointObjects
 {
     /// <summary>
@@ -35,13 +34,9 @@ namespace CheckPointObjects
     ///       5.1. both the source and destination columns match
     ///       5.2. both the source and service columns match
     ///       5.3. both the destination and service columns match
-    /// for CiscoASA and FirePower vendors there is an option to optimize by comments -
-    /// two rules can be merged if they have the same comments and in addition they up to the above criteria.
     /// </summary>
     public static class RuleBaseOptimizer
     {
-
-        public static bool IsOptimizeByComments = false;
         public static CheckPoint_Layer Optimize(CheckPoint_Layer originalLayer, string newName)
         {
             CheckPoint_Layer curLayer = originalLayer;
@@ -72,7 +67,7 @@ namespace CheckPointObjects
 
             return newLayer;
         }
-    
+
         private static void AddRule(CheckPoint_Layer layer, CheckPoint_Rule newRule)
         {
             bool match = false;
@@ -95,7 +90,7 @@ namespace CheckPointObjects
             {
                 CheckPoint_Rule rule = newRule.Clone();
                 rule.Layer = layer.Name;
-                rule.Comments = IsOptimizeByComments ? rule.Comments : "";
+                rule.Comments = "";
                 rule.ConversionComments = newRule.ConversionComments;
                 layer.Rules.Add(rule);
             }
@@ -136,7 +131,7 @@ namespace CheckPointObjects
             mergedRule.Track = rule1.Track;
             mergedRule.SourceNegated = rule1.SourceNegated;
             mergedRule.DestinationNegated = rule1.DestinationNegated;
-            mergedRule.Comments = IsOptimizeByComments ? rule1.Comments : ""; // adding or not adding comments by the user request
+            mergedRule.Comments = "";
             mergedRule.ConversionComments = rule1.ConversionComments + " | " + rule2.ConversionComments;
             mergedRule.ConvertedCommandId = rule1.ConvertedCommandId;
             mergedRule.ConversionIncidentType = ConversionIncidentType.None;
@@ -183,15 +178,9 @@ namespace CheckPointObjects
 
             return (matchedRules == 0) ? -1 : (pos + 1);
         }
-        
+
         private static bool IsRuleSimilarToRule(CheckPoint_Rule rule1, CheckPoint_Rule rule2)
         {
-             // Optimizing by comments - checks if comments of the two rules are matched and not empty
-            if (IsOptimizeByComments && rule1.Comments != rule2.Comments || IsOptimizeByComments && string.IsNullOrEmpty(rule1.Comments))
-            {
-                return false;
-            }
-            
             if (rule1.Action != rule2.Action)
             {
                 return false;
@@ -289,7 +278,7 @@ namespace CheckPointObjects
 
 
             }
-            else 
+            else
                 return commentToProcess.Trim();
 
             }
