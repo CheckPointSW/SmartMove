@@ -34,6 +34,7 @@ using PaloAltoMigration;
 using PanoramaPaloAltoMigration;
 using System.ComponentModel;
 using CommonUtils;
+using CheckPointObjects;
 
 namespace SmartMove
 {
@@ -60,7 +61,7 @@ namespace SmartMove
         private readonly SupportedVendors _supportedVendors = new SupportedVendors();
 
         private static bool canCloseWindow = true;
-        
+
         #endregion
 
         #region Construction
@@ -94,7 +95,7 @@ namespace SmartMove
             get { return _supportedVendors.SelectedVendor; }
             set { _supportedVendors.SelectedVendor = value; }
         }
-        
+
         #endregion
 
         #region ConfigurationFileLabel
@@ -135,7 +136,20 @@ namespace SmartMove
             DependencyProperty.Register("SkipUnusedObjectsConversion", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
 
         #endregion
+        
+        #region OptimizeByCommentsConversion
 
+        public bool OptimizeByCommentsConversion
+        {
+            get { return (bool)GetValue(OptimizeByCommentsConversionProperty); }
+            set { SetValue(OptimizeByCommentsConversionProperty, value); }
+        }
+
+        public static readonly DependencyProperty OptimizeByCommentsConversionProperty =
+            DependencyProperty.Register("OptimizeByCommentsConversion", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+
+        #endregion 
+        
         #region ConvertUserConfiguration
 
         public bool ConvertUserConfiguration
@@ -210,7 +224,7 @@ namespace SmartMove
 
         public static readonly DependencyProperty ConvertedPolicyRulesCountProperty =
             DependencyProperty.Register("ConvertedPolicyRulesCount", typeof(string), typeof(MainWindow), new PropertyMetadata(null));
-        
+
         #endregion
 
         #region ConvertedOptimizedPolicyRulesCount
@@ -223,7 +237,7 @@ namespace SmartMove
 
         public static readonly DependencyProperty ConvertedOptimizedPolicyRulesCountProperty =
             DependencyProperty.Register("ConvertedOptimizedPolicyRulesCount", typeof(string), typeof(MainWindow), new PropertyMetadata(null));
-        
+
         #endregion
 
         #region ConvertedNATPolicyRulesCount
@@ -270,7 +284,7 @@ namespace SmartMove
         public static string SKText { get; private set; }
         public static string SKLinkText { get; private set; }
         public static object SKLinkAddress { get; private set; }
-        
+
         #endregion
 
         #endregion
@@ -312,9 +326,11 @@ namespace SmartMove
             LDAPAccountUnitBlock.Visibility = Visibility.Collapsed;
             CreateServiceGroupsConf.Visibility = Visibility.Collapsed;
             SkipUnusedObjects.Visibility = Visibility.Collapsed;
+            OptimizeByComments.Visibility = Visibility.Collapsed;
             ConvertUserConfiguration = false;
             //Create service groups option
             CreateServiceGroupsConfiguration = true;
+            
 
 
             switch (_supportedVendors.SelectedVendor)
@@ -323,11 +339,13 @@ namespace SmartMove
                     ConfigurationFileLabel = SupportedVendors.CiscoConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     //CreateServiceGroupsConf.Visibility = Visibility.Visible;
+                    OptimizeByComments.Visibility = Visibility.Visible;
                     break;
                 case Vendor.FirePower:
                     ConfigurationFileLabel = SupportedVendors.FirepowerConfigurationFileLabel;
                     SkipUnusedObjects.Visibility = Visibility.Visible;
                     //CreateServiceGroupsConf.Visibility = Visibility.Visible;
+                    OptimizeByComments.Visibility = Visibility.Visible;
                     break;
                 case Vendor.JuniperJunosOS:
                     ConfigurationFileLabel = SupportedVendors.JuniperConfigurationFileLabel;
@@ -511,8 +529,9 @@ namespace SmartMove
                     vendorParser = new CiscoParser();
                     break;
                 case Vendor.FirePower:
-                    vendorParser = new CiscoParser() { 
-                        isUsingForFirePower = true 
+                    vendorParser = new CiscoParser()
+                    {
+                        isUsingForFirePower = true
                     };
                     break;
                 case Vendor.JuniperJunosOS:
@@ -535,7 +554,7 @@ namespace SmartMove
                     if (!File.Exists(compressorZip) || !File.Exists(compressorGtar) || !File.Exists(compressorGzip))
                     {
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "The system cannot find the required files. ");
-                        ShowMessage(null, MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions", null, null, 
+                        ShowMessage(null, MessageTypes.Error, "these instructions", "https://github.com/CheckPointSW/SmartMove#smart-connector-and-paloalto-panorama-instructions", null, null,
                             string.Format("{1}{0}{2}", Environment.NewLine, "The system cannot find the required files. ",
                         "Please follow"));
                         return;
@@ -545,7 +564,7 @@ namespace SmartMove
                 default:
                     throw new InvalidDataException("Unexpected!!!");
             }
-			
+
             Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
             EnableDisableControls(false);
             ProgressPanel.Visibility = Visibility.Visible;
@@ -553,7 +572,7 @@ namespace SmartMove
             OutputPanel.Visibility = Visibility.Visible;
 
             UpdateProgress(10, "Parsing configuration file ...");
-			
+
             string vendorFileName = Path.GetFileNameWithoutExtension(ConfigFilePath.Text);
             string toolVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             string targetFolder = TargetFolderPath.Text + "\\";
@@ -563,11 +582,11 @@ namespace SmartMove
             try
             {
                 string ciscoFile = ConfigFilePath.Text;
-		        switch (_supportedVendors.SelectedVendor)
+                switch (_supportedVendors.SelectedVendor)
                 {
                     case Vendor.PaloAltoPanorama:
-                        PanoramaParser panParser = (PanoramaParser)vendorParser;                        
-                        await Task.Run(() => panParser.ParseWithTargetFolder(ciscoFile,targetFolder));
+                        PanoramaParser panParser = (PanoramaParser)vendorParser;
+                        await Task.Run(() => panParser.ParseWithTargetFolder(ciscoFile, targetFolder));
                         break;
                     default:
                         await Task.Run(() => vendorParser.Parse(ciscoFile));
@@ -581,7 +600,7 @@ namespace SmartMove
                 EnableDisableControls(true);
                 OutputPanel.Visibility = Visibility.Collapsed;
                 SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", ex.Message + "\n" + ex.StackTrace);
-                ShowMessage("Could not convert configuration file.", "Message:\nModule:\nClass:\nMethod:", string.Format("{0}\n{1}\n{2}\n{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error); 
+                ShowMessage("Could not convert configuration file.", "Message:\nModule:\nClass:\nMethod:", string.Format("{0}\n{1}\n{2}\n{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
                 return;
             }
 
@@ -649,7 +668,7 @@ namespace SmartMove
                         ShowMessage("Unspecified FortiGate version.\nCannot find FortiGate version for the selected configuration.\nThe configuration may not parse correctly.", MessageTypes.Error);
                         return;
                     }
-                    else if(vendorParser.MajorVersion < 5)
+                    else if (vendorParser.MajorVersion < 5)
                     {
                         EnableWindow();
                         SMDebugger.PrintToDebug(TargetFolderPath.Text + "\\", "Unsupported FortiGate version (" + vendorParser.Version + ").\nThis tool supports FortiGate 5.x and above configuration files.\nThe configuration may not parse correctly.");
@@ -701,11 +720,13 @@ namespace SmartMove
                     CiscoConverter ciscoConverter = new CiscoConverter();
                     ciscoConverter.SkipUnusedObjects = SkipUnusedObjectsConversion;
                     vendorConverter = ciscoConverter;
+                    
                     break;
                 case Vendor.FirePower:
-                    vendorConverter = new CiscoConverter() {
+                    vendorConverter = new CiscoConverter()
+                    {
                         isUsingForFirePower = true,
-                        SkipUnusedObjects = SkipUnusedObjectsConversion
+                        SkipUnusedObjects = SkipUnusedObjectsConversion,
                     };
                     break;
                 case Vendor.JuniperJunosOS:
@@ -734,7 +755,7 @@ namespace SmartMove
                     vendorConverter = paConverter;
                     break;
                 case Vendor.PaloAltoPanorama:
-                    PanoramaConverter panoramaConverter = new PanoramaConverter();                    
+                    PanoramaConverter panoramaConverter = new PanoramaConverter();
                     panoramaConverter.OptimizeConf = SkipUnusedObjectsConversion;
                     panoramaConverter.ConvertUserConf = ConvertUserConfiguration;
                     panoramaConverter.LDAPAccoutUnit = ldapAccountUnit.Trim();
@@ -774,8 +795,9 @@ namespace SmartMove
                         ShowMessage(null, MessageTypes.Error, null, null, null, null,
                             String.Format("{1}{0}{2}", Environment.NewLine, "Could not convert configuration file.",
                                                     "Reason: Your device is low on memory."));
-                    } else 
-                    ShowMessage("Could not convert configuration file.", "Message:\nModule:\nClass:\nMethod:", string.Format("{0}\n{1}\n{2}\n{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
+                    }
+                    else
+                        ShowMessage("Could not convert configuration file.", "Message:\nModule:\nClass:\nMethod:", string.Format("{0}\n{1}\n{2}\n{3}", ex.Message, ex.Source, ex.TargetSite.ReflectedType.Name, ex.TargetSite.Name), MessageTypes.Error);
                 }
                 return;
             }
@@ -785,11 +807,11 @@ namespace SmartMove
             vendorConverter.ExportPolicyPackagesAsHtml();
             if (ConvertNATConfiguration)
             {
-		        ConvertedNatPolicyLink.MouseUp -= Link_OnClick;
+                ConvertedNatPolicyLink.MouseUp -= Link_OnClick;
                 vendorConverter.ExportNatLayerAsHtml();
 
                 //check if the user asked for NAT policy and no rules found.
-                if (vendorConverter.RulesInNatLayer() == 0 ) // anly if 0 then we do not show NAT report.
+                if (vendorConverter.RulesInNatLayer() == 0) // anly if 0 then we do not show NAT report.
                 {
                     ConvertedNatPolicyLink.Style = (Style)ConvertedNatPolicyLink.FindResource("NormalTextBloclStyle");
                 }
@@ -799,6 +821,24 @@ namespace SmartMove
                     ConvertedNatPolicyLink.MouseUp += Link_OnClick;
                 }
             }
+            
+            if (OptimizeByCommentsConversion)
+            {
+                ConvertedOptimizedPolicyLink.MouseUp -= Link_OnClick;
+                vendorConverter.ExportPolicyPackagesAsHtml();
+
+                // Check to see if there is no converted optimized.
+                if (vendorConverter.RulesInConvertedOptimizedPackage() == vendorConverter.RulesInConvertedPackage() ) // only in case the converted optimize cannot be performed.
+                {
+                    ConvertedOptimizedPolicyLink.Style = (Style)ConvertedOptimizedPolicyLink.FindResource("NormalTextBloclStyle");
+                }
+                else // otherwise the link will be clickable.
+                {
+                    ConvertedOptimizedPolicyLink.Style = (Style)ConvertedOptimizedPolicyLink.FindResource("HyperLinkStyle");
+                    ConvertedOptimizedPolicyLink.MouseUp += Link_OnClick;
+                }
+            }
+            
             if (ExportManagmentReport && (typeof(PanoramaConverter) != vendorConverter.GetType() && typeof(FortiGateConverter) != vendorConverter.GetType()))
             {
                 vendorConverter.ExportManagmentReport();
@@ -896,7 +936,7 @@ namespace SmartMove
                 case Vendor.CiscoASA:
                 case Vendor.FirePower:
                     ConvertedOptimizedPolicyPanel.Visibility = Visibility.Visible;
-                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible; 
+                    RulebaseOptimizedScriptLink.Visibility = Visibility.Visible;
                     CoversionIssuesPreviewPanel.Visibility = Visibility.Visible;
 
                     CiscoConverter ciscoConverter = (CiscoConverter)vendorConverter;
@@ -1006,7 +1046,7 @@ namespace SmartMove
             ConvertedPolicyPreviewPanel.Visibility = (ConvertedPolicyLink.Visibility == Visibility.Visible || ConvertedNatPolicyPanel.Visibility == Visibility.Visible || ConvertedOptimizedPolicyPanel.Visibility == Visibility.Visible) ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        
+
 
         private void LoadContactInfo()
         {
@@ -1061,6 +1101,13 @@ namespace SmartMove
                         CiscoParser.SpreadAclRemarks = true;
                         break;
                     }
+
+                    if (arg.Equals("is-optimize-by-comments", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        CiscoParser.SpreadAclRemarks = true;
+                        RuleBaseOptimizer.IsOptimizeByComments = true;
+                        break;
+                    }
                 }
 
                 if (hasArgs && !CiscoParser.SpreadAclRemarks)
@@ -1075,20 +1122,20 @@ namespace SmartMove
             {
             }
         }
-        
+
         public static void ShowMessage(string header, string columns, string message, MessageTypes messageType)
         {
             ShowMessage(message, messageType, null, null, header, columns);
         }
-        
+
         public static void ShowMessage(string message, MessageTypes messageType)
         {
             ShowMessage(null, messageType, null, null, null, null, message);
         }
 
         /// <summary>
-        /// Build a message for displaying. If need to show technical columns like "method", "Class" then need to pass to message 
-        /// message after columns, list of columns to colums and to header pass main message. If need just display a text 
+        /// Build a message for displaying. If need to show technical columns like "method", "Class" then need to pass to message
+        /// message after columns, list of columns to colums and to header pass main message. If need just display a text
         /// then pass to message, columns, header null values and fill only messageWoColumns
         /// </summary>
         /// <param name="message">message for displaying with columns. If need display without columns set to null</param>
@@ -1116,7 +1163,22 @@ namespace SmartMove
             messageWindow.ShowDialog();
             canCloseWindow = true;
         }
-
+        
+        
         #endregion
+
+        private void OptimizeByComments_Checked(object sender, RoutedEventArgs e)
+        {
+                if (OptimizeByCommentsConversion)
+            {
+                CiscoParser.SpreadAclRemarks = true;
+                RuleBaseOptimizer.IsOptimizeByComments = true;
+            }
+            else
+            {
+                CiscoParser.SpreadAclRemarks = false;
+                RuleBaseOptimizer.IsOptimizeByComments = false;
+            }
+        }
     }
 }

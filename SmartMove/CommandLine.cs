@@ -13,6 +13,7 @@ using PanoramaPaloAltoMigration;
 using System.Text.RegularExpressions;
 using CommonUtils;
 using System.Threading;
+using CheckPointObjects;
 
 namespace SmartMove
 {
@@ -29,7 +30,7 @@ namespace SmartMove
         }
 
         #region command line options
-        //–s “D:\SmartMove\Content\config.txt” 
+        //–s “D:\SmartMove\Content\config.txt”
         private string configFileName { get; set; }
         public string ConfigFileName
         {
@@ -110,6 +111,7 @@ namespace SmartMove
         private bool _isInteractive = true;
 
         private bool _isCiscoSpreadAclRemarks = false;
+        private bool _isOptimizeByComments;
         #endregion
 
         public int DisplayHelp()
@@ -129,6 +131,7 @@ namespace SmartMove
             Console.WriteLine("\t" + "-f | --format" + "\t\t" + "format of the output file (JSON[default], TEXT)");
             Console.WriteLine("\t" + "-i | --interactive" + "\t" + @"-i false | -i true [default] Interactive mode provides a better user experience.Disable when automation is required[enabled by default]");
             Console.WriteLine("\t" + "-a | --analyzer" + "\t\t" + @"mode for analyze package");
+            Console.WriteLine("\t" + "-obc | --optimize-by-comments" + "\t" + @"(""-obc false"" | ""-obc true"" [default]) create optimized policy by comment and spread acl remarks - only for CiscoASA, FirePower");
             Console.WriteLine();
             Console.WriteLine("Example:");
             Console.WriteLine("\t" + "SmartMove.exe –s \"D:\\SmartMove\\Content\\config.txt\" –v CiscoASA - t \"D:\\SmartMove\\Content\" –n true -k false -f json -a");
@@ -319,7 +322,7 @@ namespace SmartMove
                                 _successCommands = false;
                                 Console.WriteLine("Value for option -d is not specified! ", MessageTypes.Error);
                             }
-                            else if(args[i] != args.Last() && !args[i + 1].StartsWith("-"))
+                            else if (args[i] != args.Last() && !args[i + 1].StartsWith("-"))
                                 this.domain = args[i + 1];
                             else
                             {
@@ -368,7 +371,7 @@ namespace SmartMove
                                 this.ldapAccountUnit = args[i + 1];
                                 this.ConvertUserConfiguration = true;
                             }
-                            else 
+                            else
                             {
                                 this.ConvertUserConfiguration = true;
                                 //Console.WriteLine("Value for option -u is not specified! ", MessageTypes.Error);
@@ -405,7 +408,7 @@ namespace SmartMove
                                 _successCommands = false;
                                 Console.WriteLine("Value for option -f is not specified! ", MessageTypes.Error);
                             }
-                            else if(new List<string>() { "text", "json" }.Contains(args[i + 1].ToLower()))
+                            else if (new List<string>() { "text", "json" }.Contains(args[i + 1].ToLower()))
                                 FormatOutput = args[i + 1];
                             else
                             {
@@ -454,10 +457,27 @@ namespace SmartMove
                             break;
                         }
                     case "-a":
-                    case "--analyzer": 
+                    case "--analyzer":
                         {
                             this.isAnalyze = true;
-                            break; 
+                            break;
+                        }
+                    case "-obc":
+                    case "--optimize-by-comments": // adding flag to optimize by comments option
+                        {
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option --optimize-by-comments is not specified! ", MessageTypes.Error);
+                            }
+                            else if (bool.TryParse(args[i + 1].ToLower(), out _isOptimizeByComments))
+                                break;
+                            else
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option format is not corrected! Allow only 'true' or 'false' ", MessageTypes.Error);
+                            }
+                            break;
                         }
                 }
             }
@@ -533,10 +553,17 @@ namespace SmartMove
             switch (commandLine.Vendor)
             {
                 case "CiscoASA":
-                    CiscoParser.SpreadAclRemarks = _isCiscoSpreadAclRemarks;
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments;
+                    RuleBaseOptimizer.IsOptimizeByComments = _isOptimizeByComments;
+                    // verifying that the user or the default option won't reverse the flag to false if asking optimize by comments option
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments ? true : _isCiscoSpreadAclRemarks;
                     vendorParser = new CiscoParser();
                     break;
                 case "FirePower":
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments;
+                    RuleBaseOptimizer.IsOptimizeByComments = _isOptimizeByComments;
+                    // verifying that the user or the default option won't reverse the flag to false if asking optimize by comments option
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments ? true : _isCiscoSpreadAclRemarks;
                     vendorParser = new CiscoParser()
                     {
                         isUsingForFirePower = true
@@ -765,7 +792,7 @@ namespace SmartMove
                     }
                     break;
             }
-            #endregion                       
+            #endregion
 
             string vendorFileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
 
@@ -789,7 +816,7 @@ namespace SmartMove
                     vendorConverter = converter;
                     break;
                 case "FirePower":
-                    CiscoConverter fpConverter =  new CiscoConverter()
+                    CiscoConverter fpConverter = new CiscoConverter()
                     {
                         isUsingForFirePower = true
                     };
@@ -896,7 +923,7 @@ namespace SmartMove
 
 
         /*
-         * This is the analog to MainWindow.Go_OnClick() function if application is run as WPF. 
+         * This is the analog to MainWindow.Go_OnClick() function if application is run as WPF.
          * It performs the migration.
          */
         public void DoMigration(CommandLine commandLine)
@@ -968,10 +995,15 @@ namespace SmartMove
             switch (commandLine.Vendor)
             {
                 case "CiscoASA":
-                    CiscoParser.SpreadAclRemarks = _isCiscoSpreadAclRemarks;
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments;
+                    RuleBaseOptimizer.IsOptimizeByComments = _isOptimizeByComments;
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments ? true : _isCiscoSpreadAclRemarks;
                     vendorParser = new CiscoParser();
                     break;
                 case "FirePower":
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments;
+                    RuleBaseOptimizer.IsOptimizeByComments = _isOptimizeByComments;
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments ? true : _isCiscoSpreadAclRemarks;
                     vendorParser = new CiscoParser()
                     {
                         isUsingForFirePower = true
@@ -1003,7 +1035,7 @@ namespace SmartMove
 
                 if (commandLine.Vendor.Equals("Panorama"))
                 {
-                    
+
                     PanoramaParser panParser = (PanoramaParser)vendorParser;
                     panParser.ParseWithTargetFolder(ciscoFile, Path.GetFullPath(TargetFolder));
                 }
@@ -1093,7 +1125,7 @@ namespace SmartMove
 
                 case "JuniperSSG":
                     break;
-                
+
                 case "FirePower":
                     if (string.IsNullOrEmpty(vendorParser.Version))
                     {
@@ -1200,7 +1232,7 @@ namespace SmartMove
                     }
                     break;
             }
-            #endregion                       
+            #endregion
 
             string vendorFileName = Path.GetFileNameWithoutExtension(commandLine.ConfigFileName);
 

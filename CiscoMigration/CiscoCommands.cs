@@ -19,7 +19,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using CheckPointObjects;
 using CommonUtils;
+using MigrationBase;
 
 namespace CiscoMigration
 {
@@ -124,7 +126,7 @@ namespace CiscoMigration
         public ConversionIncidentType ConversionIncidentType { get; set; }
         public string ConversionIncidentMessage { get; set; }
         public List<CiscoCommand> Children { get; set; }
-
+        
         public CiscoCommand()
         {
             CiscoId = "";
@@ -496,7 +498,7 @@ namespace CiscoMigration
                             break;
 
                         default:
-                            // No need to check also for CiscoKnownServices.IsKnownServiceNumber here, 
+                            // No need to check also for CiscoKnownServices.IsKnownServiceNumber here,
                             // because it is already done in Cisco_Service class!!!
                             if (CiscoKnownServices.IsKnownService(ServiceProtocol))
                             {
@@ -1615,11 +1617,11 @@ namespace CiscoMigration
              *
              * Each of these two types may be Static or Dynamic.
              * Static NAT allows bidirectional traffic (mirrored rules).
-             * 
+             *
              * Each NAT command is started as follows:
              * ---------------------------------------
              * nat [(real_interface, mapped_interface)] ...
-             * 
+             *
             **************************************************************************************/
 
             base.Parse(command, prevCommand, ciscoIds, aliases);
@@ -1678,9 +1680,9 @@ namespace CiscoMigration
              * Parsing options for Object NAT:
              * -------------------------------
              * ... static {mapped_host_ip_address | mapped_object_name | interface} [service {tcp | udp} real_port mapped_port]
-             * 
+             *
              * ... dynamic {mapped_host_ip_address | mapped_object_name | interface}
-             * 
+             *
              * + mapped_object may be a host or network or range
             */
 
@@ -1745,9 +1747,9 @@ namespace CiscoMigration
              * Parsing options for regular (manual or twice) NAT:
              * --------------------------------------------------
              * ... [after-object] source static real_object_name [mapped_object_name | interface] [destination static mapped_object_name real_object_name] [service real_service_name mapped_service_name]
-             * 
+             *
              * ... [after-auto] source dynamic {real_object_name | any} {mapped_object_name | interface} [destination static mapped_object_name real_object_name] [service mapped_service_name real_service_name]
-             * 
+             *
              * + real_object/mapped_object may be a host or network
             */
 
@@ -2132,47 +2134,47 @@ namespace CiscoMigration
         {
             /*
              * OPTION I - REMARK format - the easiest option:
-             * 
+             *
             access-list access_list_name remark text
             Example:
-            hostname(config)# access-list ACL_OUT remark - this is the inside admin address 
-             * 
+            hostname(config)# access-list ACL_OUT remark - this is the inside admin address
+             *
              * OPTION II - STANDARD format - used for a limited number of features, such as route maps or VPN filters.
              *                               uses IPv4 addresses only, and defines destination addresses only.
-             * 
+             *
             access-list access_list_name standard {deny | permit} {any/any4 | host ip_address | ip_address ip_mask}
             Example:
             hostname(config)# access-list OSPF standard permit 192.168.1.0 255.255.255.0
-             * 
+             *
              * OPTION III.I - EXTENDED format - for ICMP based traffic matching
-             * 
+             *
             access-list access_list_name extended {deny | permit} icmp source_address_argument dest_address_argument [icmp_argument] [time-range time_range_name] [inactive]
             Example:
             hostname(config)# access-list ACL_IN extended permit icmp any any echo
-             * 
+             *
              * OPTION III.II - EXTENDED format - for TCP and UDP based traffic matching, with ports
-             * 
+             *
             access-list access_list_name extended {deny | permit} {tcp | udp} source_address_argument [port_argument] dest_address_argument [port_argument] [time-range time_range_name] [inactive]
             Example:
             hostname(config)# access-list ACL_IN extended deny tcp any host 209.165.201.29 eq www
             hostname(config)# access-list ACL_IN extended deny tcp 192.168.1.0 255.255.255.0 209.165.201.0 255.255.255.224
-             * 
+             *
              * OPTION III.III - EXTENDED format - for general IP address and FQDN based matching
-             * 
+             *
             access-list access_list_name extended {deny | permit} protocol_argument source_address_argument dest_address_argument [time-range time_range_name] [inactive]
             Example:
             hostname(config)# access-list ACL_IN extended permit ip any any
-             * 
+             *
              * **********************
              * ACL COMMAND ARGUMENTS:
-             * 
+             *
              * protocol_argument specification: one of the following options:
              * --------------------------------------------------------------
              * protocol_name/protocol_number
              * object service_object_id --> may be also a icmp service object
              * object-group service_group_id
              * object-group protocol_group_id
-             * 
+             *
              * source_address_argument/dest_address_argument specification: one of the following options:
              * ------------------------------------------------------------------------------------------
              * any/any4/any6
@@ -2181,17 +2183,17 @@ namespace CiscoMigration
              * object network_object_id
              * object-group network_group_id
              * ip_address ip_mask
-             * 
+             *
              * icmp_argument specification: one of the following options:
              * ----------------------------------------------------------
              * icmp_type
              * object-group icmp_group_id --> object-group icmp-type command
-             * 
+             *
              * port_argument specification: one of the following options:
              * ----------------------------------------------------------
              * operator port --> where operator can be one of: lt, gt, eq, neq, range; port can be number or name of a TCP or UDP port
              * object-group service_group_id
-             * 
+             *
             */
 
             base.Parse(command, prevCommand, ciscoIds, aliases);
@@ -2231,11 +2233,11 @@ namespace CiscoMigration
 
                 return;
             }
-
+            
             if (prevAclCommand != null && ACLName.Equals(prevAclCommand.ACLName) && !string.IsNullOrEmpty(prevAclCommand.DataForNextElement))
             {
                 Remark = prevAclCommand.DataForNextElement;
-
+            
                 if (CiscoParser.SpreadAclRemarks)
                 {
                     DataForNextElement = Remark;

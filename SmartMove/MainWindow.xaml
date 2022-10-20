@@ -226,16 +226,23 @@
                             <CheckBox x:Name="SkipUnusedObjects" Grid.Row="13" Content="Do not import unused objects"
                                       IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=SkipUnusedObjectsConversion, Mode=TwoWay}"
                                       Margin="0,15,0,0" Background="Transparent" Focusable="False"/>
+                            <CheckBox x:Name="OptimizeByComments" Grid.Row="14" Content="Optimize by comments" 
+                                      IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=OptimizeByCommentsConversion, Mode=TwoWay}"
+                                      Margin="0,15,0,0" Background="Transparent" Focusable="False" Checked="OptimizeByComments_Checked" Unchecked="OptimizeByComments_Checked"/>
                             <CheckBox x:Name="CreateServiceGroupsConf" Grid.Row="14" Content="Import service groups"
                                       IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=CreateServiceGroupsConfiguration, Mode=TwoWay}"
                                       Margin="0,15,0,0" Background="Transparent" Focusable="False" Visibility="Collapsed"/>
                             <Grid Grid.Row="15" Margin="0,30,0,0" Background="Transparent" Focusable="False">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="8*"/>
+                                    <ColumnDefinition Width="8*"/>
+                                    <ColumnDefinition Width="84*"/>
+                                    <ColumnDefinition Width="401*"/>
                                 </Grid.ColumnDefinitions>
                                 <Button x:Name="Go" Style="{StaticResource GoButtonControlStyle}" HorizontalAlignment="Right"
-                                        Click="Go_OnClick"/>
+                                        Click="Go_OnClick" Grid.Column="3" Margin="0,0,-0.2,2.4"/>
                             </Grid>
+
                         </Grid>
                     </Grid>
                     <Grid x:Name="OutputPanel" Grid.Row="1" Background="Transparent" Focusable="False" Visibility="Collapsed">
