@@ -13,6 +13,7 @@ using PanoramaPaloAltoMigration;
 using System.Text.RegularExpressions;
 using CommonUtils;
 using System.Threading;
+using CheckPointObjects;
 
 namespace SmartMove
 {
@@ -110,6 +111,7 @@ namespace SmartMove
         private bool _isInteractive = true;
 
         private bool _isCiscoSpreadAclRemarks = false;
+        private bool _isOptimizeByComments;
         #endregion
 
         public int DisplayHelp()
@@ -129,6 +131,7 @@ namespace SmartMove
             Console.WriteLine("\t" + "-f | --format" + "\t\t" + "format of the output file (JSON[default], TEXT)");
             Console.WriteLine("\t" + "-i | --interactive" + "\t" + @"-i false | -i true [default] Interactive mode provides a better user experience.Disable when automation is required[enabled by default]");
             Console.WriteLine("\t" + "-a | --analyzer" + "\t\t" + @"mode for analyze package");
+            Console.WriteLine("\t" + "-obc | --optimize-by-comments" + "\t" + @"(""-obc false"" | ""-obc true"" [default]) create optimized policy by comment and spread acl remarks - only for CiscoASA, FirePower");
             Console.WriteLine();
             Console.WriteLine("Example:");
             Console.WriteLine("\t" + "SmartMove.exe –s \"D:\\SmartMove\\Content\\config.txt\" –v CiscoASA - t \"D:\\SmartMove\\Content\" –n true -k false -f json -a");
@@ -459,6 +462,23 @@ namespace SmartMove
                             this.isAnalyze = true;
                             break;
                         }
+                    case "-obc":
+                    case "--optimize-by-comments": // adding flag to optimize by comments option
+                        {
+                            if (args[i] == args.Last())
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option --optimize-by-comments is not specified! ", MessageTypes.Error);
+                            }
+                            else if (bool.TryParse(args[i + 1].ToLower(), out _isOptimizeByComments))
+                                break;
+                            else
+                            {
+                                _successCommands = false;
+                                Console.WriteLine("Value for option format is not corrected! Allow only 'true' or 'false' ", MessageTypes.Error);
+                            }
+                            break;
+                        }
                 }
             }
             return this;
@@ -533,10 +553,17 @@ namespace SmartMove
             switch (commandLine.Vendor)
             {
                 case "CiscoASA":
-                    CiscoParser.SpreadAclRemarks = _isCiscoSpreadAclRemarks;
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments;
+                    RuleBaseOptimizer.IsOptimizeByComments = _isOptimizeByComments;
+                    // verifying that the user or the default option won't reverse the flag to false if asking optimize by comments option
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments ? true : _isCiscoSpreadAclRemarks;
                     vendorParser = new CiscoParser();
                     break;
                 case "FirePower":
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments;
+                    RuleBaseOptimizer.IsOptimizeByComments = _isOptimizeByComments;
+                    // verifying that the user or the default option won't reverse the flag to false if asking optimize by comments option
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments ? true : _isCiscoSpreadAclRemarks;
                     vendorParser = new CiscoParser()
                     {
                         isUsingForFirePower = true
@@ -968,10 +995,15 @@ namespace SmartMove
             switch (commandLine.Vendor)
             {
                 case "CiscoASA":
-                    CiscoParser.SpreadAclRemarks = _isCiscoSpreadAclRemarks;
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments;
+                    RuleBaseOptimizer.IsOptimizeByComments = _isOptimizeByComments;
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments ? true : _isCiscoSpreadAclRemarks;
                     vendorParser = new CiscoParser();
                     break;
                 case "FirePower":
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments;
+                    RuleBaseOptimizer.IsOptimizeByComments = _isOptimizeByComments;
+                    CiscoParser.SpreadAclRemarks = _isOptimizeByComments ? true : _isCiscoSpreadAclRemarks;
                     vendorParser = new CiscoParser()
                     {
                         isUsingForFirePower = true

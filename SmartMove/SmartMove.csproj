@@ -177,6 +177,10 @@
     <Resource Include="Resources\CPLogo.png" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CheckPointObjects\CheckPointObjects.csproj">
+      <Project>{d5c34605-141d-47f9-a838-c7b9470236a1}</Project>
+      <Name>CheckPointObjects</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CiscoMigration\CiscoMigration.csproj">
       <Project>{2221dbe4-0775-4bbd-9cbc-33a20e0a09e7}</Project>
       <Name>CiscoMigration</Name>
