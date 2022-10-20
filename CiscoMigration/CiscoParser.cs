@@ -147,7 +147,7 @@ namespace CiscoMigration
                     inserIndex -= 1;
                 }
                 newLines.Insert(inserIndex, "object network " + ip);
-                newLines.Insert(inserIndex+1, " host " + ip);
+                newLines.Insert(inserIndex + 1, " host " + ip);
             }
         }
 
@@ -171,12 +171,12 @@ namespace CiscoMigration
 
             int prevIndentationLevel = 0;
             int lineId = 0;
-            
+
             foreach (string line in lines)
             {
                 lineId++;
-                
-                
+
+
 
                 // Check for an empty line or line with just spaces.
                 if (line.Trim().Length == 0)

@@ -113,7 +113,7 @@ namespace JuniperMigration
             _optimizationServicesPotentialCount = _disabledServicesRulesCount +
                                                   _unnamedServicesRulesCount +
                                                   _timesServicesRulesCount +
-                                                  _nonServicesLoggingServicesRulesCount;           
+                                                  _nonServicesLoggingServicesRulesCount;
 
         }
 

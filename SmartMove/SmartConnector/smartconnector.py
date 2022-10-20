@@ -150,6 +150,17 @@ def addUserObjectToServer(client, apiCommand, payload, userObjectNamePostfix=1, 
                     #if we have time object need to fill name with condition 11 symbols as max length
                     payload['name'] = userObjectNameInitial[:-(len(str(userObjectNamePostfix))+1)] + '_' + str(userObjectNamePostfix)
                     userObjectNamePostfix += 1
+                elif args.reuse_group_name.lower() == "true" and \
+                    (apiCommand == 'add-group'
+                     or apiCommand == 'add-service-group'
+                     or apiCommand == 'add-time-group'
+                     or apiCommand == 'add-group-with-exclusion'
+                     or apiCommand == 'add-application-site-group'):
+                    # In the case of duplicate names and the user uses the 'reuse-group-name' flag,
+                    # the smartconnector will not create a new name, it will add the data to the existing name
+                    addedObject = res_add_obj.data
+                    isObjectAdded = True
+                    addedObject["name"] = payload['name']
                 else:
                     payload['name'] = userObjectNameInitial + '_' + str(userObjectNamePostfix)
                     userObjectNamePostfix += 1
@@ -158,6 +169,7 @@ def addUserObjectToServer(client, apiCommand, payload, userObjectNamePostfix=1, 
         else:
             addedObject = res_add_obj.data
             isObjectAdded = True
+
     return addedObject
 
 
@@ -395,7 +407,7 @@ def is_valid_ipv6(ip):
              |  (?<!:)              #
              |  (?<=:) (?<!::) :    #
              )                      # OR
-         |                          #   A v4 address with NO leading zeros 
+         |                          #   A v4 address with NO leading zeros
             (?:25[0-4]|2[0-4]\d|1\d\d|[1-9]?\d)
             (?: \.
                 (?:25[0-4]|2[0-4]\d|1\d\d|[1-9]?\d)
@@ -581,7 +593,11 @@ def processNetGroups(client, userNetworkGroups, mergedNetworkObjectsMap):
                                                         mergedGroupsNamesDict, False)
         if addedNetworkGroup is not None:
             mergedGroupsNamesDict[userNetworkGroupNameInitial] = addedNetworkGroup['name']
-            printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is added as " + addedNetworkGroup['name'])
+            if 'errors' in addedNetworkGroup:
+                if 'More than one object' in addedNetworkGroup['errors'][0]['message']:
+                    printStatus(None, "REPORT: Using the existing object '{}'".format(addedNetworkGroup['name']))
+            else:
+                printStatus(None, "REPORT: " + userNetworkGroupNameInitial + " is added as " + addedNetworkGroup['name'])
             publishCounter = publishUpdate(publishCounter, True)
             userNetworkGroup["Name"] = addedNetworkGroup['name']
             if userNetworkGroup['TypeName'] != 'CheckPoint_GroupWithExclusion':
@@ -817,7 +833,11 @@ def processServicesGroups(client, userServicesGroups, mergedServicesMap):
                                                      mergedServicesGroupsNamesMap, False)
         if addedServicesGroup is not None:
             mergedServicesGroupsNamesMap[userServicesGroupNameInitial] = addedServicesGroup['name']
-            printStatus(None, "REPORT: " + userServicesGroupNameInitial + " is added as " + addedServicesGroup['name'])
+            if 'errors' in addedServicesGroup:
+                if 'More than one object' in addedServicesGroup['errors'][0]['message']:
+                    printStatus(None, "REPORT: Using the existing object '{}'".format(addedServicesGroup['name']))
+            else:
+                printStatus(None, "REPORT: " + userServicesGroupNameInitial + " is added as " + addedServicesGroup['name'])
             publishCounter = publishUpdate(publishCounter, True)
             userServicesGroup["Name"] = addedServicesGroup['name']
             processGroupWithMembers(client, "add-service-group", userServicesGroup, mergedServicesMap,
@@ -850,7 +870,11 @@ def processTimesGroups(client, userTimesGroups, mergedTimesNamesMap):
                                                   mergedTimesGroupsNamesMap, False)
         if addedTimesGroup is not None:
             mergedTimesGroupsNamesMap[userTimesGroupNameInitial] = addedTimesGroup['name']
-            printStatus(None, "REPORT: " + userTimesGroupNameInitial + " is added as " + addedTimesGroup['name'])
+            if 'errors' in addedTimesGroup:
+                if 'More than one object' in addedTimesGroup['errors'][0]['message']:
+                    printStatus(None, "REPORT: Using the existing object '{}'".format(addedTimesGroup['name']))
+            else:
+                printStatus(None, "REPORT: " + userTimesGroupNameInitial + " is added as " + addedTimesGroup['name'])
             publishCounter = publishUpdate(publishCounter, True)
             userTimesGroup["Name"] = addedTimesGroup['name']
             processGroupWithMembers(client, "add-time-group", userTimesGroup, mergedTimesNamesMap,
@@ -1230,6 +1254,9 @@ args_parser.add_argument('-d', '--domain', default=None,
                          help="The name/uid of the domain you want to log into in an MDS environment.")
 args_parser.add_argument('--replace-from-global-first', default="false",
                          help="The argument indicates that SmartConnector should use 'Global' objects at first, by default it uses 'Local' objects. [true, false]")
+args_parser.add_argument('--reuse-group-name', default="false",
+                         help="The argument indicates that SmartConnector should use reuse the group by name instead "
+                              "of creating a new group, take cautions. [true, false]")
 
 args = args_parser.parse_args()
 
@@ -1267,6 +1294,10 @@ elif args.replace_from_global_first.lower() != "true" and args.replace_from_glob
                 "smartconnector.py: error: argument --replace-from-global-first: invalid boolean value: '" + args.replace_from_global_first + "'")
     print("")
     args_parser.print_help()
+elif args.reuse_group_name.lower() != "true" and args.reuse_group_name.lower() != "false":
+    print("")
+    printStatus(None, None, "smartconnector.py: error: argument --reuse-group-name: invalid boolean value: '" + args.reuse_group_name + "'")
+    print("")
 else:
     if args.replace_from_global_first.lower() == "true":
         isReplaceFromGlobalFirst = True
@@ -1284,6 +1315,7 @@ else:
     printStatus(None, "file: " + args.file)
     printStatus(None, "threshold: " + str(args.threshold))
     printStatus(None, "replace-from-global-first: " + str(isReplaceFromGlobalFirst))
+    printStatus(None, "reuse-group-name: " + str(args.reuse_group_name).lower())
     printStatus(None, "===========================================")
     printStatus(None, "reading and parsing processes are started for JSON file: " + args.file)
     with open(args.file) as json_file:
@@ -1383,7 +1415,7 @@ else:
                 login_res = client.login_with_api_key(args.key, domain=args.domain)
 
             if login_res.success is False:
-                printStatus(None, "Login failed: {}".format(login_res.error_message))
+                printStatus(None, f"Login failed: {login_res.error_message}")
             else:
                 printStatus(None, "")
                 mergedNetworkObjectsMap = {}
@@ -1391,7 +1423,7 @@ else:
                 mergedNetworkObjectsMap.update(processHosts(client, userHosts))
                 mergedNetworkObjectsMap.update(processNetworks(client, userNetworks))
                 mergedNetworkObjectsMap.update(processRanges(client, userRanges))
-                mergedNetworkObjectsMap.update(processNetGroups(client, userNetGroups, mergedNetworkObjectsMap))
+                mergedNetworkObjectsMap.update(processNetGroups(client, userNetGroups, mergedNetworkObjectsMap)) 
                 mergedNetworkObjectsMap.update(processSimpleGateways(client, userSimpleGateways))
                 mergedNetworkObjectsMap.update(processZones(client, userZones))
                 mergedServicesObjectsMap = {}

@@ -43,13 +43,13 @@ namespace MigrationBase
         public const string PaloAltoPanoramaConfigurationFileLabel = "PaloAlto Panorama configuration files archive:";
         public const string PaloAltoPanoramaProduct = "PaloAlto Panorama to Check Point Migration Tool";
         public const string PaloAltoPanoramaProductDescription = "This tool supports migration of PaloAlto Panorama 7.x \nand above configuration files.";
-        
+
         #endregion
 
         #region Private Members
 
         private readonly List<Vendor> _vendors = new List<Vendor> { Vendor.CiscoASA, Vendor.JuniperJunosOS, Vendor.JuniperScreenOS, Vendor.FortiGate, Vendor.PaloAlto };
-        
+
         #endregion
 
         #region Properties
@@ -60,7 +60,7 @@ namespace MigrationBase
         }
 
         public Vendor SelectedVendor { get; set; }
-        
+
         #endregion
     }
 
@@ -68,7 +68,7 @@ namespace MigrationBase
     public enum Vendor
     {
         [Description("Cisco ASA")]
-        CiscoASA, 
+        CiscoASA,
         [Description("FirePower")]
         FirePower,
         [Description("Juniper JunosOS SRX")]
