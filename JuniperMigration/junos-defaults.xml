@@ -3,11 +3,11 @@
             <groups>
                 <name>junos-defaults</name>
                 <junos:comment>#
-        # Predefined applications 
+        # Predefined applications
         #</junos:comment>
                 <applications>
                     <junos:comment>#
-        # File Transfer Protocol 
+        # File Transfer Protocol
         #</junos:comment>
                     <application>
                         <name>junos-ftp</name>
@@ -22,7 +22,7 @@
                         <destination-port>20</destination-port>
                     </application>
                     <junos:comment>#
-        # Trivial File Transfer Protocol 
+        # Trivial File Transfer Protocol
         #</junos:comment>
                     <application>
                         <name>junos-tftp</name>
@@ -31,7 +31,7 @@
                         <destination-port>69</destination-port>
                     </application>
                     <junos:comment>#
-        # Real Time Streaming Protocol 
+        # Real Time Streaming Protocol
         #       </junos:comment>
                     <application>
                         <name>junos-rtsp</name>
@@ -213,7 +213,7 @@
                         <protocol>tcp</protocol>
                         <destination-port>2401</destination-port>
                     </application>
-                    <junos:comment># 
+                    <junos:comment>#
         # Label Distribution Protocol
         # </junos:comment>
                     <application>
@@ -226,7 +226,7 @@
                         <protocol>udp</protocol>
                         <destination-port>646</destination-port>
                     </application>
-                    <junos:comment># 
+                    <junos:comment>#
         # JUNOScript and JUNOScope management
         # </junos:comment>
                     <application>
@@ -247,8 +247,8 @@
                         <protocol>udp</protocol>
                         <destination-port>500</destination-port>
                     </application>
-                    <junos:comment>#    
-        # Any IPv4 application 
+                    <junos:comment>#
+        # Any IPv4 application
         #</junos:comment>
                     <application>
                         <name>any</name>
@@ -280,7 +280,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # DHCP Relay services 
+        # DHCP Relay services
         #</junos:comment>
                     <application>
                         <name>junos-dhcp-relay</name>
@@ -334,7 +334,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # Gopher internet protocol 
+        # Gopher internet protocol
         #</junos:comment>
                     <application>
                         <name>junos-gopher</name>
@@ -371,7 +371,7 @@
                             <alg>gprs-gtp-u</alg>
                             <protocol>udp</protocol>
                             <destination-port>2152</destination-port>
-                        </term>         
+                        </term>
                     </application>
                     <application>
                         <name>junos-gprs-gtp-v0</name>
@@ -395,7 +395,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # Gnutella File Sharing Protocol 
+        # Gnutella File Sharing Protocol
         #</junos:comment>
                     <application>
                         <name>junos-gnutella</name>
@@ -434,7 +434,7 @@
         #</junos:comment>
                     <application>
                         <name>junos-icmp-ping</name>
-                        <term>          
+                        <term>
                             <name>t1</name>
                             <protocol>icmp</protocol>
                             <icmp-type>echo-request</icmp-type>
@@ -496,7 +496,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # Line Printer Daemon protocol  
+        # Line Printer Daemon protocol
         #</junos:comment>
                     <application>
                         <name>junos-lpr</name>
@@ -518,7 +518,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # H.323 Protocol for audio/video conferencing 
+        # H.323 Protocol for audio/video conferencing
         #</junos:comment>
                     <application>
                         <name>junos-h323</name>
@@ -556,9 +556,9 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # MGCP Protocol 
+        # MGCP Protocol
         #</junos:comment>
-                    <application>       
+                    <application>
                         <name>junos-mgcp-ua</name>
                         <term>
                             <name>t1</name>
@@ -806,7 +806,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # NetBIOS Name Service          
+        # NetBIOS Name Service
         #</junos:comment>
                     <application>
                         <name>junos-nbname</name>
@@ -938,7 +938,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # ICMP6 destination unreachable beyond 
+        # ICMP6 destination unreachable beyond
         #</junos:comment>
                     <application>
                         <name>junos-icmp6-dst-unreach-beyond</name>
@@ -993,7 +993,7 @@
                             <name>t1</name>
                             <protocol>58</protocol>
                             <icmp6-type>128</icmp6-type>
-                        </term>         
+                        </term>
                     </application>
                     <junos:comment>#
         # ICMP6 packet too big
@@ -1008,7 +1008,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # ICMP6 parameter problem header 
+        # ICMP6 parameter problem header
         #</junos:comment>
                     <application>
                         <name>junos-icmp6-param-prob-header</name>
@@ -1020,7 +1020,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # ICMP6 parameter problem next header 
+        # ICMP6 parameter problem next header
         #</junos:comment>
                     <application>
                         <name>junos-icmp6-param-prob-nexthdr</name>
@@ -1055,7 +1055,7 @@
                             <icmp6-code>1</icmp6-code>
                         </term>
                     </application>
-                    <junos:comment>#    
+                    <junos:comment>#
         # ICMP6 time exceeded transit
         #</junos:comment>
                     <application>
@@ -1092,9 +1092,9 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # Real players use this protocol for real time streaming 
-        # This was the original protocol for real players. 
-        # RTSP is more widely used by real players 
+        # Real players use this protocol for real time streaming
+        # This was the original protocol for real players.
+        # RTSP is more widely used by real players
         # but they still support realaudio.
         #</junos:comment>
                     <application>
@@ -1117,7 +1117,7 @@
                             <protocol>tcp</protocol>
                             <destination-port>2000</destination-port>
                         </term>
-                    </application>      
+                    </application>
                     <application>
                         <name>junos-sctp-any</name>
                         <term>
@@ -1144,7 +1144,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # RSH 
+        # RSH
         #</junos:comment>
                     <application>
                         <name>junos-rsh</name>
@@ -1179,7 +1179,7 @@
                             <destination-port>1434</destination-port>
                         </term>
                     </application>
-                    <junos:comment>#    
+                    <junos:comment>#
         # Oracle SQL*Net Version 1
         #</junos:comment>
                     <application>
@@ -1241,7 +1241,7 @@
                             <protocol>udp</protocol>
                             <rpc-program-number>100000</rpc-program-number>
                         </term>
-                    </application>      
+                    </application>
                     <junos:comment>#
         # Sun RPC nfs
         #</junos:comment>
@@ -1365,7 +1365,7 @@
                             <name>t1</name>
                             <protocol>tcp</protocol>
                             <rpc-program-number>100021</rpc-program-number>
-                        </term>         
+                        </term>
                     </application>
                     <application>
                         <name>junos-sun-rpc-nlockmgr-udp</name>
@@ -1601,7 +1601,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # Yahoo Messenger 
+        # Yahoo Messenger
         #</junos:comment>
                     <application>
                         <name>junos-ymsg</name>
@@ -1615,7 +1615,7 @@
                             <protocol>tcp</protocol>
                             <destination-port>5050</destination-port>
                         </term>
-                        <term>          
+                        <term>
                             <name>t3</name>
                             <protocol>udp</protocol>
                             <destination-port>5000-5010</destination-port>
@@ -1651,7 +1651,7 @@
                         </term>
                     </application>
                     <junos:comment>#
-        # Simple Traversal of User Datagram Protocol (UDP) Through 
+        # Simple Traversal of User Datagram Protocol (UDP) Through
         # Network Address Translators (NATs)
         #</junos:comment>
                     <application>
@@ -1678,15 +1678,15 @@
                             <destination-port>28672</destination-port>
                         </term>
                     </application>
-                    <junos:comment># 
+                    <junos:comment>#
         # 'junos-routing-inbound' represents routing protocols that may
         # that may need access the trusted network from the untrusted
         # network.
-        # 
+        #
         # Set is intended for a UI to display routing involvement choices.
         #
         # NOTE:  It is not recommended you use the entire set directly in
-        #        a firewall rule and open up firewall to all of these 
+        #        a firewall rule and open up firewall to all of these
         #        applications.  Also, you should always specify the source
         #        and destination prefixes when using each application.
         #
@@ -1789,7 +1789,7 @@
                         <application>
                             <name>junos-ms-rpc-wmic-webm-level1login</name>
                         </application>
-                        <application>   
+                        <application>
                             <name>junos-ms-rpc-wmic-mgmt</name>
                         </application>
                     </application-set>
@@ -1851,7 +1851,7 @@
                         </application>
                         <application>
                             <name>junos-sun-rpc-udp</name>
-                        </application>  
+                        </application>
                         <application>
                             <name>junos-sun-rpc-portmap-tcp</name>
                         </application>
@@ -1975,7 +1975,7 @@
                         <application>
                             <name>junos-sun-rpc-ypserv-tcp</name>
                         </application>
-                        <application>   
+                        <application>
                             <name>junos-sun-rpc-ypserv-udp</name>
                         </application>
                     </application-set>
@@ -2037,7 +2037,7 @@
                         </application>
                         <application>
                             <name>junos-sun-rpc-ruserd-tcp</name>
-                        </application>  
+                        </application>
                         <application>
                             <name>junos-sun-rpc-ruserd-udp</name>
                         </application>

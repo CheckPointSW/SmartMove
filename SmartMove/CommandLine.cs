@@ -461,6 +461,7 @@ namespace SmartMove
                         {
                             this.isAnalyze = true;
                             break;
+
                         }
                     case "-obc":
                     case "--optimize-by-comments": // adding flag to optimize by comments option
@@ -478,6 +479,7 @@ namespace SmartMove
                                 Console.WriteLine("Value for option format is not corrected! Allow only 'true' or 'false' ", MessageTypes.Error);
                             }
                             break;
+
                         }
                 }
             }

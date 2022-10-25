@@ -90,25 +90,25 @@ namespace PanoramaPaloAltoMigration
     {
         [XmlArray("templates")]
         [XmlArrayItem("member")]
-        public List<string> StackTemplatesMembers{ get; set; }
-       
+        public List<string> StackTemplatesMembers { get; set; }
+
 
         [XmlArray("devices")]
         [XmlArrayItem("entry")]
         public List<PA_DevicesTemplateStackEntry> DevicesEntries { get; set; }
     }
-/*
-    public class PA_StackTemplates: PA_Entry
-    {        
-        [XmlElement("member")]
-        public List<string> StackTemplateMembers { get; set; }
-    }
-*/
-    public class PA_DevicesTemplateStackMemberEntry: PA_Entry
+    /*
+        public class PA_StackTemplates: PA_Entry
+        {
+            [XmlElement("member")]
+            public List<string> StackTemplateMembers { get; set; }
+        }
+    */
+    public class PA_DevicesTemplateStackMemberEntry : PA_Entry
     {
 
     }
-     public class PA_DevicesTemplateStackEntry : PA_Entry
+    public class PA_DevicesTemplateStackEntry : PA_Entry
     {
 
     }
@@ -118,15 +118,15 @@ namespace PanoramaPaloAltoMigration
     {
         [XmlElement("config")]
         public PA_TemplateConfig Config { get; set; }
-        
+
     }
 
     public class PA_TemplateConfig : PA_Entry
     {
-        [XmlElement("devices")]        
+        [XmlElement("devices")]
         public PA_DevicesTemplateEntry TemplateDevices { get; set; }
 
-    }       
+    }
 
     public class PA_DevicesTemplateEntry : PA_Entry
     {
@@ -142,7 +142,7 @@ namespace PanoramaPaloAltoMigration
         [XmlArray("vsys")]
         [XmlArrayItem("entry")]
         public List<PA_VsysEntry> VsysEntries { get; set; }
-    }  
+    }
 
     public class PA_DeviceGroupEntry : PA_Objects
     {
@@ -163,7 +163,7 @@ namespace PanoramaPaloAltoMigration
     }
 
     public class PA_DevicesGroupDevicesEntry : PA_Entry // devices serial numbers
-    {       
+    {
 
     }
 
@@ -253,9 +253,9 @@ namespace PanoramaPaloAltoMigration
         [XmlArray("zone")]
         [XmlArrayItem("entry")]
         public List<PA_ZoneEntry> ZoneEntries { get; set; }
-/*
-        [XmlElement("rulebase")]
-        public PA_Rulebase Rulebase { get; set; }*/
+        /*
+                [XmlElement("rulebase")]
+                public PA_Rulebase Rulebase { get; set; }*/
     }
 
     public class PA_TagEntry : PA_Entry { /* the class is empty as we need to know only 'name' attribute of Tag entry */ }
@@ -518,18 +518,18 @@ namespace PanoramaPaloAltoMigration
         public List<PA_TargetDeviceEntry> DevicesEntry { get; set; }
     }
 
-    public class PA_TargetDeviceEntry : PA_Entry{}
+    public class PA_TargetDeviceEntry : PA_Entry { }
 
-#endregion
+    #endregion
 
     #region NAT XML tags binding (NAT rules)
 
     public class PA_Nat
-        {
-            [XmlArray("rules")]
-            [XmlArrayItem("entry")]
-            public List<PA_NatRuleEntry> RulesList { get; set; }
-        }
+    {
+        [XmlArray("rules")]
+        [XmlArrayItem("entry")]
+        public List<PA_NatRuleEntry> RulesList { get; set; }
+    }
 
     public class PA_NatRuleEntry : PA_EntryExt
     {
@@ -551,7 +551,7 @@ namespace PanoramaPaloAltoMigration
         public PA_DestinationTranslation DestinationTranslation { get; set; }
 
         [XmlElement("dynamic-destination-translation")]
-        public PA_DynamicDestinationTranslation DynamicDestinationTranslation { get;set;}
+        public PA_DynamicDestinationTranslation DynamicDestinationTranslation { get; set; }
 
         [XmlElement("disabled")]
         public string Disabled { get; set; }

@@ -407,7 +407,7 @@ def is_valid_ipv6(ip):
              |  (?<!:)              #
              |  (?<=:) (?<!::) :    #
              )                      # OR
-         |                          #   A v4 address with NO leading zeros 
+         |                          #   A v4 address with NO leading zeros
             (?:25[0-4]|2[0-4]\d|1\d\d|[1-9]?\d)
             (?: \.
                 (?:25[0-4]|2[0-4]\d|1\d\d|[1-9]?\d)
@@ -1415,7 +1415,7 @@ else:
                 login_res = client.login_with_api_key(args.key, domain=args.domain)
 
             if login_res.success is False:
-                printStatus(None, "Login failed: {}".format(login_res.error_message))
+                printStatus(None, f"Login failed: {login_res.error_message}")
             else:
                 printStatus(None, "")
                 mergedNetworkObjectsMap = {}
@@ -1423,11 +1423,7 @@ else:
                 mergedNetworkObjectsMap.update(processHosts(client, userHosts))
                 mergedNetworkObjectsMap.update(processNetworks(client, userNetworks))
                 mergedNetworkObjectsMap.update(processRanges(client, userRanges))
-<<<<<<< HEAD
-                mergedNetworkObjectsMap.update(processNetGroups(client, userNetGroups, mergedNetworkObjectsMap))
-=======
                 mergedNetworkObjectsMap.update(processNetGroups(client, userNetGroups, mergedNetworkObjectsMap)) 
->>>>>>> 4d08fa05d3252e21b44ee2f070db3df78cb3421f
                 mergedNetworkObjectsMap.update(processSimpleGateways(client, userSimpleGateways))
                 mergedNetworkObjectsMap.update(processZones(client, userZones))
                 mergedServicesObjectsMap = {}

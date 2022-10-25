@@ -32,7 +32,7 @@ namespace SmartMove
         #region Constants
 
         private const string DisclaimerFileName = "SmartMove Tool Legal.rtf";
-        
+
         #endregion
 
         #region Construction
@@ -42,7 +42,7 @@ namespace SmartMove
             InitializeComponent();
             Loaded += OnLoaded;
         }
-        
+
         #endregion
 
         #region Event Handlers
@@ -87,7 +87,7 @@ namespace SmartMove
                 DragMove();
             }
         }
-        
+
         #endregion
     }
 }

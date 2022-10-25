@@ -165,7 +165,7 @@ namespace NetScreenMigration
 
             if (relevantCommands.Contains(command.ObjectWord))
             {
-                if(command.ObjectWord == "vsys-id")
+                if (command.ObjectWord == "vsys-id")
                 {
                     _numOfVsysInConfiguration++;
                 }
@@ -205,7 +205,7 @@ namespace NetScreenMigration
                         continue;
                     }
 
-                    if ((!string.IsNullOrEmpty(ifc.InterfaceName) && route.Interface == ifc.InterfaceObjName) 
+                    if ((!string.IsNullOrEmpty(ifc.InterfaceName) && route.Interface == ifc.InterfaceObjName)
                         || ifc.CheckIfInterfaceIsGateway(route.Network))
                     {
                         ifc.Topology.Add(new ScreenOSCommand_Interface.Subnet(route.Network, route.Mask, route));
@@ -249,7 +249,7 @@ namespace NetScreenMigration
                 else
                 {
                     _addressNamesOverZonesLookup.Add(addressName, new List<string> { zoneName });
-                }   
+                }
             }
         }
 
@@ -329,7 +329,7 @@ namespace NetScreenMigration
 
                 newCommandsList.Add(command);
                 command.GotTreated = true;
-                for (int i = 0; i< commandsGroup.Count;++i)
+                for (int i = 0; i < commandsGroup.Count; ++i)
                 {
                     if (commandsGroup[i].GotTreated == true)
                     {
@@ -363,7 +363,7 @@ namespace NetScreenMigration
 
         private static IList<ScreenOSCommand> AggregateGroupService(this IEnumerable<ScreenOSCommand_GroupService> source, ScreenOSCommand_GroupService groupServiceObj)
         {
-            IEnumerable<IGrouping<string, ScreenOSCommand_GroupService>> groups = source.GroupBy( i => i.GroupName );
+            IEnumerable<IGrouping<string, ScreenOSCommand_GroupService>> groups = source.GroupBy(i => i.GroupName);
             return groups.FirstOrDefault(g => g.Key.Equals(groupServiceObj.GroupName)).ToList<ScreenOSCommand>();
         }
 

@@ -35,7 +35,7 @@ namespace MigrationBase
 
         public int TotalNetworkObjectsPercent { get { return 100; } }
         public float UnusedNetworkObjectsPercent { get { return _totalNetworkObjectsCount > 0 ? ((float)_unusedNetworkObjectsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }
-        public float DuplicateNetworkObjectsPercent { get { return _totalNetworkObjectsCount > 0 ?  ((float)_duplicateNetworkObjectsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }
+        public float DuplicateNetworkObjectsPercent { get { return _totalNetworkObjectsCount > 0 ? ((float)_duplicateNetworkObjectsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }
         public float NestedNetworkGroupsPercent { get { return _totalNetworkObjectsCount > 0 ? ((float)_nestedNetworkGroupsCount / (float)_totalNetworkObjectsCount) * 100 : 0; } }
 
         public float TotalServicesObjectsPercent { get { return 100; } }

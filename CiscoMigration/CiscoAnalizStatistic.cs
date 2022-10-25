@@ -48,7 +48,7 @@ namespace CiscoMigration
                 }
                 foreach (var item in _cpHosts)
                 {
-                    if (_cpHosts.Where(nt => nt.IpAddress == item.IpAddress ).Count() > 1) { _duplicateServicesObjectsCount++; }
+                    if (_cpHosts.Where(nt => nt.IpAddress == item.IpAddress).Count() > 1) { _duplicateServicesObjectsCount++; }
                 }
                 foreach (var item in _cpRanges)
                 {

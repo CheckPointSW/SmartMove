@@ -83,11 +83,11 @@ namespace FortiGateMigration
             {
                 vs.RemoveAll(vv => item.Service != null ? (vv == item.Service.Name) : false || item.Source != null ? (vv == item.Source.Name) : false || item.Destination != null ? (vv == item.Destination.Name) : false);
             }
-            foreach(var package in _cpPackages)
+            foreach (var package in _cpPackages)
             {
                 foreach (var rule in package.ParentLayer.Rules)
                 {
-                    foreach(var dest in rule.Destination)
+                    foreach (var dest in rule.Destination)
                     {
                         if (typeof(CheckPoint_Network) == dest.GetType())
                             networks.RemoveAll(nn => nn.Subnet == ((CheckPoint_Network)dest).Subnet);

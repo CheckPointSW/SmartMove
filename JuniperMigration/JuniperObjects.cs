@@ -83,7 +83,7 @@ namespace JuniperMigration
     {
         public string IpAddress { get; set; }
         public string Netmask { get; set; }
-        
+
         public Subnet(string ipAddress, string netmask)
         {
             IpAddress = ipAddress;
@@ -693,31 +693,31 @@ namespace JuniperMigration
             }
         }
     }
-	
+
     public class Juniper_Scheduler : JuniperObject
-    {        
+    {
         public List<string> StartStopDates = new List<string>();
 
-        public Dictionary<string, List<string>> patternDictionary = new Dictionary<string, List<string>>();               
-        
+        public Dictionary<string, List<string>> patternDictionary = new Dictionary<string, List<string>>();
+
         public override void Parse(XElement objectNode, string zoneName)
         {
-            base.Parse(objectNode, zoneName);            
+            base.Parse(objectNode, zoneName);
 
             var startDates = objectNode.Elements("start-date").ToList();
-                       
+
             if (startDates.Count > 0)
-            {                
+            {
                 List<string> startStop = new List<string>();
                 string startStopDateString;
                 foreach (var startDate in startDates)
                 {
-                    startStopDateString = startDate.Element("start-date").Value + ";" + startDate.Element("stop-date").Value;                 
+                    startStopDateString = startDate.Element("start-date").Value + ";" + startDate.Element("stop-date").Value;
                     StartStopDates.Add(startStopDateString);
                 }
             }
-            
-            List<string> days = new List<string> { "daily", "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday" };            
+
+            List<string> days = new List<string> { "daily", "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday" };
 
             foreach (string dayKey in days)
             {
@@ -726,12 +726,12 @@ namespace JuniperMigration
                 if (day != null)
                 {
                     if (day.Element("all-day") != null)
-                    {                        
-                        daysValue.Add("all-day");                        
+                    {
+                        daysValue.Add("all-day");
                     }
                     else if (day.Element("exclude") != null)
-                    {                        
-                        daysValue.Add("exclude");                        
+                    {
+                        daysValue.Add("exclude");
                     }
                     else if (day.Elements("start-time").ToList() != null)
                     {
@@ -741,12 +741,12 @@ namespace JuniperMigration
                         {
                             startStopTimeString = startTime.Element("start-time-value").Value + ";" + startTime.Element("stop-time").Value;
                             startStopTime.Add(startStopTimeString);
-                        }                                        
-                        daysValue.AddRange(startStopTime);                        
+                        }
+                        daysValue.AddRange(startStopTime);
                     }
                     patternDictionary.Add(dayKey, daysValue);
                 }
-            }      
+            }
         }
     }
 
@@ -784,14 +784,15 @@ namespace JuniperMigration
                 ConversionIncidentMessage = "Missing action information for policy rule object.";
                 return;
             }
-			
+
             //add scheduler
             var schedulerNode = objectNode.Elements("scheduler-name");
 
             if (schedulerNode != null)
             {
-                foreach (var scheduler in schedulerNode) { 
-                Scheduler.Add(scheduler.Value);                
+                foreach (var scheduler in schedulerNode)
+                {
+                    Scheduler.Add(scheduler.Value);
                 }
             }
 
