@@ -293,8 +293,14 @@ namespace CheckPointObjects
                 return commentToProcess.Trim();
 
             }
+            // slicing the conversion comment if there are more than 250 characters
+            string comment = commentBuilder == "Matched rule(s)" ? "" : commentBuilder;
+            if (comment.Length > 0)
+                return comment.Substring(0, Math.Min(comment.Length, 250));
+            else
+                return comment;
 
-            return (commentBuilder == "Matched rule(s)" ? "" : commentBuilder).Substring(0, Math.Min(commentBuilder.Length, 250));
         }
     }
 }
+ 
