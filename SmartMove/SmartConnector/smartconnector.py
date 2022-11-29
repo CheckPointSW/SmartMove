@@ -8,6 +8,7 @@ import re
 import operator
 import uuid
 
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
 from cpapi import APIClient, APIClientArgs
 
@@ -197,8 +198,7 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
         printStatus(res_add_obj_with_ip, "REPORT: " + userObjectNameInitial + " is added as " + payload['name'])
         if res_add_obj_with_ip.success is False:
             if isIpDuplicated(res_add_obj_with_ip) and not isIgnoreWarnings:
-                res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": False,
-                                                                                "type": userObjectType})
+                res_get_obj_with_ip = client.api_query("show-objects", payload={"filter": userObjectIp, "ip-only": False, "type": userObjectType})
                 printStatus(res_get_obj_with_ip, None)
                 if res_get_obj_with_ip.success is True:
                     if len(res_get_obj_with_ip.data) > 0:
@@ -206,9 +206,9 @@ def addCpObjectWithIpToServer(client, payload, userObjectType, userObjectIp, mer
                             isIgnoreWarnings = True
                         else:
                             if userObjectType == "host":
+                                res_get_obj_with_ip.data = [obj for obj in res_get_obj_with_ip.data if userObjectIp in obj['ipv4-address']]  # this is additional filter in order to remove irrelevant results (show-objects command is also filtering by other unexpected fields and we want to filter by ip-address)
                                 mergedObjectsNamesMap[userObjectNameInitial] = res_get_obj_with_ip.data[0]['name']
-                                printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[
-                                    userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
+                                printStatus(None, "REPORT: " + "CP object " + mergedObjectsNamesMap[userObjectNameInitial] + " is used instead of " + userObjectNameInitial)
                                 isFinished = True
                                 break
                             for serverObject in res_get_obj_with_ip.data:
